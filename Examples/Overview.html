@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-US">
+  <head>
+    <meta name="generator" content="emacs and ericP's fingers" />
+    <title>Shape Expression Examples</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="copyright" content="Copyright © 2013 W3C ® (MIT, ERCIM, Keio, Beihang) Usage policies apply." />
+    <link rel="stylesheet" type="text/css" href="../local.css" />
+    <link rel="stylesheet" href="../demobits/ShExDemo.css" type="text/css" />
+    <script src="../demobits/jquery.min.js" type="text/javascript"></script>
+    <style type="text/css">
+        .exampleLink { background-color: #ff0; }
+
+        .sample { margin-left: 1.5em; }
+        .fancyh2 { font-size: 1.5em; font-weight: bold; }
+
+        .h2div { padding-top: 0em; margin-top: 0em; border-left: 1px solid #777; padding-left: 1em; }
+    </style>
+  </head>
+  <body>
+    <h1>Shape Expression Examples</h1>
+
+    <p>
+        This document describes several Shape Expression examples available in the <a href="../FancyShExDemo">web interface</a>.
+    </p>
+
+    <h2 id="basicFunctionality">Basic Functionality</h2>
+    <div class="h2div">
+        <p>
+            These initial examples include only the standard functionality of Shape Expressions.
+            Examples of Semantic Actions are <a href="#semanticActions">found below</a>.
+        </p>
+
+        <h3 id="issueRep">Issue Representation</h3>
+        <p>
+            This <a class="exampleLink" href="../FancyShExDemo?schemaURL=Examples/Issue-simple-annotated.shex&amp;dataURL=test/Issue-pass-date.ttl">annotated example</a> exemplifies the Shape Expression language with an example which verifies an RDF record such as you would find in an issue tracking system.
+        </p>
+    </div>
+
+    <h2 id="demoFeatures">Demo Features</h2>
+    <div class="h2div">
+
+        <p>
+            For those who like syntax highlighting, note the <span style="color: #700;">c</span><span style="color: #510;">o</span><span style="color: #330;">l</span><span style="color: #150;">o</span><span style="color: #070;">r</span><span style="color: #051;">i</span><span style="color: #033;">z</span><span style="color: #015;">e</span><span style="color: #007;">d</span> option above <span class="fancyh2">Validation:</span>.
+            Selecting this also enables one to use the control up and down arrows to highlight the correspondences between schema, data and the solutions shown after successful validation:
+        </p>
+
+<!-- BEGIN -->
+
+<div class="sample">
+            <div id="schema" class="column">
+                <div>
+                    <h2 class="task schema">Schema (ShEx):</h2>
+                    <div class="message schema-color">Schema parsed.<span class="size-and-time" title="Schema parsing time and speed">0.0&amp;nbsp;kB, 6&amp;nbsp;ms, 0.0&amp;nbsp;kB/s</span></div>
+                    <div style="clear:both;"></div>
+                </div>
+                <div class="editparent"><pre class="textInput" style="display: block; overflow: scroll !important;"><span id="r0_s" class="IRI">&lt;IssueShape&gt;</span> {                           # An &lt;IssueShape&gt; has:
+    <span id="r0" class="rule hilightRule">ex:state (ex:unassigned ex:assigned)</span>, # state which is
+                                          #   unassigned or assigned.
+}
+</pre></div>
+                <input class="save" value=""/>
+            </div>
+            <div id="data" class="column">
+                <div>
+                    <h2 class="task data">Data (Turtle):</h2>
+                    <div class="message data-color">Data parsed.<span class="size-and-time" title="Data parsing time and speed">0.0&amp;nbsp;kB, 2&amp;nbsp;ms, 0.0&amp;nbsp;kB/s</span></div>
+                    <div style="clear:both;"></div>
+                </div>
+                <div class="editparent"><pre class="textInput" style="display: block; overflow: scroll !important;">
+<span id="t0_s" class="IRI hilightData">&lt;Issue1&gt;</span>
+    <span id="t0_p" class="IRI hilightData">ex:state</span>        <span id="t0_o" class="IRI hilightData">ex:unassigned</span> ;
+.
+
+</pre></div>
+                <input class="save" value=""/>
+            </div>
+            <div style="clear:both">
+                <!-- 
+                <h2 style="color: #330; width: 200em;" id="valResults-header" class="validation-color">Validation Results</h2>
+                -->
+                <pre id="valResults">PASS {
+  <span id="s0" onclick="hilight([0], [0], [0]);" class="hilightSolution"><span class="schemaflow">&lt;http://ex.example/#state&gt; (&lt;http://ex.example/#unassigned&gt; &lt;http://ex.example/#assigned&gt;)</span> matched by <span class="dataflow">&lt;Issue1&gt; &lt;http://ex.example/#state&gt; &lt;http://ex.example/#unassigned&gt;.</span></span>
+}
+</pre>
+            </div>
+        </div>
+<!-- END -->
+
+        <p>
+            Changing focus between the schema, data and validation panes affects the order in which the rules, triples and solutions are visited by control up and down arrow.
+        </p>
+
+        <p>
+            One can either verify that a given node in the data matches the start shape in the schema or select "Find type nodes" to test all subject nodes in the graph against any of the types in the schema:
+        </p>
+        <div class="sample" id="options">
+                            <input type="radio" name="mode" id="opt-pre-typed" value="pre-typed" checked="checked"/>
+                            <label for="opt-pre-typed">Pre-typed</label>
+                            <label for="starting-node">graph node:</label>
+                            <input type="text" id="starting-node" value="&lt;Issue1&gt;"/><br/>
+                            <input type="radio" name="mode" id="opt-find-type" value="find-type"/> <label for="opt-pre-typed">Find node types</label>
+        </div>
+        <p>
+            The Shape Expression schema can be expressed using a superset of <a href="http://open-services.net/bin/view/Main/OSLCCoreSpecAppendixA?sortcol=table;up=#oslc_ResourceShape_Resource">Resource Shapes</a> and implemented as a SPARQL query.
+            Another SPARQL query finds the triples that were not touched by a particular schema.
+            These links are in the <span class="fancyh2">Validation:</span> pane and look like:
+            <span id="view"><a id="as-sparql-query" href="data:text/plain;charset=utf-8;base64,U0VMRUNUICogew0KICAjIEhlcmUgdGhlIGRlbW8gd2lsbCBzaG93IGEgY29tcGxleCBTUEFSUUwgcXVlcnkNCiAgIyB3aGljaCB2ZXJpZmllcyBjb25mb3JtYW5jZSB3aXRoIGEgU2hhcGUgRXhwcmVzc2lvbi4NCn0=">SPARQL query</a></span>
+        </p>
+
+        <p>
+            The &lt;<span style="text-decoration: underline;">permalink</span>&gt; captures the current contents of the schema and data inputs in a long, long URL.
+            Selecting 
+<span id="permalink" style="border: 1px solid #777; padding: 0px .25em; margin: 0px .25em;"><input type="checkbox" id="ctl-keep-history"/> <label for="ctl-keep-history">add to history</label>
+                    </span> continuously updates the browser history with permalinks, enabling the browser's back button to act as undo.
+            In order to prevent confused deputy attacks, the javascript semantic actions are disabled by default on any schemas loaded from the URL.
+        </p>                        
+    </div>
+
+    <h2 id="inherit">Inheritance and Inclusion</h2>
+    <div class="h2div">
+        <p>
+            Inheritance of shape expressions produces data structures analogous to those produced by class inheritance in programming languages.
+        </p>
+
+        <h3 id="inher">Issue with Inheritance</h3>
+        <p>
+            We extend the <a href="#issueRep">issue representation</a> with <a class="exampleLink" href="../FancyShExDemo?schemaURL=test/Issue-inheritance/schema.shex&amp;dataURL=test/Issue-inheritance/pass-user-employee.ttl">(multiple) inheritance</a> to show how <a href="../Primer/ValueReference">ValueReferences</a> can be satisfied by subshapes.
+        </p>
+    </div>
+
+    <h2 id="semActs">Semantic Actions</h2>
+    <div class="h2div">
+        <p>
+            Semantic actions can be used to extend validation expressivity or invoke functions when the input data satisfies a particular rule in a pattern.
+        </p>
+
+        <h3 id="dates">Date order verification</h3>
+        <p>
+            The core functionality of Shape Expressions does not include any date comparisons.
+            This can be accomplished with semanti actions, at the cost of portability.
+            For instance, the issue record example <a href="">above</a> can be extended with both <span class="code">%js{ %}</span> and <span class="code">%sparql{ %}</span> extensions to perform the necessary comparisons in those implementations, but this will not necessarily work for other implementations.
+            In this example, we sanity-check that the <span class="IRI">ex:reproducedOn</span> date of an issue is later than the <span class="IRI">ex:reportedOn</span>.<br/>
+            <span class="code sample">%sparql{ ?s ex:reportedOn ?rpt . FILTER (?o > ?rpt) %}</span><br/>
+            The table below shows the effect of applying error checks at different granularities and passing or failing data:
+        </p>
+
+        <table>
+            <tr><th>passing data:</th>
+                <td><a class="exampleLink" href="../FancyShExDemo?schemaURL=test/Issue-js-test-date-triple.shex&amp;dataURL=test/Issue-pass-date.ttl&amp;colorize=1">triple</a></td>
+                <td><a class="exampleLink" href= "../FancyShExDemo?schemaURL=test/Issue-js-test-date-group.shex&amp;dataURL=test/Issue-pass-date.ttl&amp;colorize=1">group</a></td>
+                <td><a class="exampleLink" href= "../FancyShExDemo?schemaURL=test/Issue-js-test-date-shape.shex&amp;dataURL=test/Issue-pass-date.ttl&amp;colorize=1">shape</a></td>
+            </tr>
+            <tr><th>failing data:</th>
+                <td><a class="exampleLink" href="../FancyShExDemo?schemaURL=test/Issue-js-test-date-triple.shex&amp;dataURL=test/Issue-fail-date.ttl&amp;colorize=1">triple</a></td>
+                <td><a class="exampleLink" href= "../FancyShExDemo?schemaURL=test/Issue-js-test-date-group.shex&amp;dataURL=test/Issue-fail-date.ttl&amp;colorize=1">group</a></td>
+                <td><a class="exampleLink" href= "../FancyShExDemo?schemaURL=test/Issue-js-test-date-shape.shex&amp;dataURL=test/Issue-fail-date.ttl&amp;colorize=1">shapd</a></td>
+            </tr>
+        </table>
+
+        <p>
+            The failing examples include a <span class="IRI">ex:reproducedOn</span> <span id="t4_o" class="literal">"2013-01-23T10:00:00"^^<span id="t4_o" class="IRI">xsd:dateTime</span></span> which is before <span class="IRI">ex:reportedOn</span> <span id="t4_o" class="literal">"2013-01-23T10:18:00"^^<span id="t4_o" class="IRI">xsd:dateTime</span></span> (and is thus logically suspect).
+            These examples can be made to pass by e.g. editing the <span class="IRI">ex:reproducedOn</span> to be an hour later: <span id="t4_o" class="literal">"2013-01-23T11:00:00"^^<span id="t4_o" class="IRI">xsd:dateTime</span></span>.
+        </p>
+
+        <h3 id="GenX">GenX/GenJ</h3>
+        <p>
+            "GenX" is an example application which uses a simple language to convert RDF data into XML.
+            After loading the <a id="genxDemo" class="exampleLink" href="../FancyShExDemo?schemaURL=test/GenX/schema.shex&amp;dataURL=test/Issue-pass-date.ttl">GenX Issue example</a> or <a id="genxDemo" class="exampleLink" href="../FancyShExDemo?schemaURL=test/GenJ/schema.shex&amp;dataURL=test/Issue-pass-date.ttl">GenJ Issue example</a>, you will see<br/>
+            <span class="validation-color sample">View GenX output as <button id="UseGenXButton" onclick="$('#genxDemo').fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);">popup</button> or <a style="background-color: buttonface;" onclick="$('#genxDemo').fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);">link</a>.</span><br/>
+            on the right underneath <span class="fancyh2">Validation messages:</span>.
+            This will display the XML tree produced by executing the GenX semantic actions whill validating the input.
+            Enabling the popup in another window allows one to see the generated XML change dynamically as one manipulates the data or the <span class="code">%GenX{ %}</span> actions in the schema.
+        </p>
+
+        <p>
+            The same tree can be generated <a class="exampleLink" href="../FancyShExDemo?schemaURL=test/GenX/XML-generation-js.shex&amp;dataURL=test/Issue-pass-date.ttl&amp;colorize=1">with <span class="code">%js{ %}</span> semantic actions</a> at the cost of readability.
+        </p>
+    </div>
+
+    <h2 id="collection">Working with RDF Collections</h2>
+    <div class="h2div">
+        <p>
+            <a href="http://www.w3.org/TR/rdf11-mt/#rdf-collections">RDF Collections</a> are first/rest lists written in RDF.
+            There are special syntaxes for them in most RDF serializations, including <a href="http://www.w3.org/TR/2014/REC-turtle-20140225/#collections">Turtle's (el1 el2 ...)</a> syntax.
+            This ShEx idiom provides a typed-collection, enforcing that each element be of a particular type, in this example, an integer:
+        </p>
+
+            <div id="schema" class="column">
+<pre class="textInput" style="display: block; overflow: scroll !important;">
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX xs: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+start=&lt;subj&gt;
+
+<span class="IRI">&lt;subj&gt;</span> {
+  <span class="rule">&lt;p&gt; @&lt;li&gt;</span>
+}
+
+<span class="IRI">&lt;li&gt;</span> {
+  <span class="rule">rdf:rest (rdf:nil)</span>
+  | <span class="rule">rdf:first xs:integer,</span>
+    <span class="rule">rdf:rest @&lt;li&gt;</span>
+}
+</pre></div>
+            <div id="data" class="column">
+<pre class="textInput" style="display: block; overflow: scroll !important;">
+<span class="IRI">&lt;s1&gt;</span> <span class="IRI">&lt;p&gt;</span> (1 2) .
+<span class="IRI">&lt;s2&gt;</span> <span class="IRI">&lt;p&gt;</span> (3 4 5) .
+</pre></div>
+        <p style="clear:both;">
+            (see <a href="../FancyShExDemo?foo=bar&amp;foo=bar&amp;schema=PREFIX%20rdf%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0APREFIX%20xs%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0Astart%3D%3Csubj%3E%0A%0A%3Csubj%3E%20%7B%0A%20%20%3Cp%3E%20%40%3Cli%3E%0A%7D%0A%0A%3Cli%3E%20%7B%0A%20%20rdf%3Arest%20(rdf%3Anil)%0A%20%20%7C%20rdf%3Afirst%20xs%3Ainteger%2C%0A%20%20%20%20rdf%3Arest%20%40%3Cli%3E%0A%7D&amp;data=%3Cs1%3E%20%3Cp%3E%20(1%202)%20.%0A%3Cs2%3E%20%3Cp%3E%20(3)%20.%0A&amp;find-types=true">live example</a>)
+        </p>
+        <p>
+            The type constraint on the <span class="rule">rdf:first xs:integer</span> arc rule can instead reference a complex type, e.g. <span class="rule">rdf:first @&lt;issue&gt;</span>. (see <a href="../FancyShExDemo?foo=bar&amp;foo=bar&amp;find-types=true&amp;schema=PREFIX%20rdf%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0APREFIX%20xs%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0Astart%3D%3Csubj%3E%0A%0A%3Clist%3E%20%7B%0A%20%20%3Cp%3E%20%40%3Cli%3E%20%7C%20%3Cp%3E%20(rdf%3Anil)%20%23%20permit%20empty%20list%0A%7D%0A%0A%3Cli%3E%20%7B%0A%20%20rdf%3Arest%20(rdf%3Anil)%0A%20%20%7C%20rdf%3Afirst%20%40%3Cissue%3E%2C%0A%20%20%20%20rdf%3Arest%20%40%3Cli%3E%0A%7D%0A%0A%3Cissue%3E%20%7B%0A%20%20%3Cstatus%3E%20(%3Cfixed%3E%20%3Cbroken%3E)%0A%7D&amp;data=%3Clist1%3E%20%3Cp%3E%20(_%3Aissue1%20_%3Aissue2)%20.%0A%3Clist2%3E%20%3Cp%3E%20()%20.%0A%0A_%3Aissue1%20%3Cstatus%3E%20%3Cfixed%3E%20.%0A_%3Aissue2%20%3Cstatus%3E%20%3Cbroken%3E%20.%0A">live example</a>)
+        </p>
+    </div>
+  </body>
+</html>

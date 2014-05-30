@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta name="generator" content="emacs" />
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="author" content="Eric Prud'hommeaux (eric+shex@w3.org)" />
+        <meta name="copyright" content="Copyright &copy; 2013 Eric Prud'hommeaux" />
+        <meta name="keywords" content="schema validator, Turtle" />
+        <meta name="description" content="ShEx is a structural validator for RDF graphs." />
+
+        <title>ShEx Data Validation Demo</title>
+        <link rel="stylesheet" href="demobits/ShExDemo.css" type="text/css" />
+        <style type="text/css">
+        </style>
+        <link rel="shortcut icon" href="shortcut.ico" type="image/x-icon" />
+    </head>
+
+    <body>
+        <div id="apology">Sorry, this demo needs javascript.</div>
+
+        <div id="main">
+            <div id="schema" class="column">
+                <div>
+                    <h2 class="task schema">Schema (ShEx):</h2>
+                    <div class="message progress">Preparing to parse schema.</div>
+                    <div style="clear:both;"></div>
+                </div>
+                <textarea class="textInput" cols="70" rows="20"></textarea>
+                <div class="editparent"><pre class="textInput" contenteditable="true" style="display:none; overflow:scroll !important; "></pre></div>
+                <input class="save" value=""></input>
+            </div>
+
+            <div id="data" class="column">
+                <div>
+                    <h2 class="task data">Data (Turtle):</h2>
+                    <div class="message progress">Preparing to parse data.</div>
+                    <div style="clear:both;"></div>
+                </div>
+                <textarea class="textInput" cols="70" rows="20"></textarea>
+                <div class="editparent"><pre class="textInput" contenteditable="true" style="display:none; overflow:scroll !important; "></pre></div>
+                <input class="save" value=""></input>
+            </div>
+
+            <div class="column">
+                <div id="title">
+                    <h1><a href="." tabindex="10">ShEx</a></h1>
+                    <h2>Data Validation Demo</h2>
+                </div>
+
+                <div style="clear:both; padding-left:5em" id="colorize">
+                    <input type="checkbox" id="ctl-colorize" tabindex="9"/> <label for="ctl-colorize"><span style="color: #700;">c</span><span style="color: #510;">o</span><span style="color: #330;">l</span><span style="color: #150;">o</span><span style="color: #070;">r</span><span style="color: #051;">i</span><span style="color: #033;">z</span><span style="color: #015;">e</span><span style="color: #007;">d</span></label>
+                </div>
+
+                <div id="validation">
+                    <h2 id="validation-label" class="task validation">Validation:</h2>
+
+                <div style="clear:both;">
+                    <div id="settings">
+                        <div id="options">
+                            <input type="radio" name="mode" id="opt-pre-typed" value="pre-typed" checked="checked" />
+                            <label for="opt-pre-typed">Pre-typed</label>
+                            <label for="starting-node">graph node:</label>
+                            <input type="text" id="starting-node" value="???" disabled="disabled" /><br/>
+                            <input type="radio" name="mode" id="opt-find-type" value="find-type"/> <label for="opt-pre-typed">Find node types</label>
+                        </div>
+                        <input type="checkbox" id="opt-disable-js" disabled="disabled"/> <label for="opt-disable-js">Disable javascript extensions</label>
+                    </div>
+
+                    <div style="float:left">View as </div>
+                    <div id="view" style="padding-left: .2em; float:left">
+                        <a id="as-sparql-query"      class="disabled" href="#">SPARQL query</a><br/>
+                        <a id="as-remaining-triples" class="disabled" href="#">SPARQL remaining triples</a><br/>
+                        <a id="as-sparql-dump"       class="disabled" href="#">SPARQL value dump</a><br/>
+                        <a id="as-resource-shape"    class="disabled" href="#">Resource Shape</a>
+                        <a id="as-resource-sexpr"    class="disabled" href="#">S-Expression</a>
+                        <a id="as-resource-haskell"    class="disabled" href="#">Haskell AST</a>
+                    </div>
+                    <div id="permalink">
+                        <a href="#">permalink</a> <input type="checkbox" id="ctl-keep-history"/> <label for="ctl-keep-history">add to history</label>
+                    </div>
+                </div>
+
+                <h2 id="validation-header" style="clear:both">Validation messages:</h2>
+                <pre id="validation-messages" class="disabled">unexpected state</pre>
+                </div>
+                <!-- div style="clear:both" id="ch">
+                <pre class="changeable" contenteditable="true">edit me</pre>
+                </div -->
+            </div>
+
+            <div style="clear:both">
+                <h2 style="color: #330;" id="valResults-header">Validation Results</h2>
+                <pre id="valResults" class="disabled">unexpected state.</pre>
+            </div>
+        </div>
+
+        <div style="display:none"><!-- some state -->
+            <input id="curRule" type="text" size="1" value="-1"></input><br/>
+            <input id="curSolution" type="text" size="1" value="-1"></input><br/>
+            <input id="curData" type="text" size="1" value="-1"></input><br/>
+        </div>
+
+        <script src="demobits/jquery.min.js" type= "text/javascript"></script>
+        <script src="demobits/jquery.contenteditable.js" type="text/javascript"></script>
+        <script src="demobits/webtoolkit.base64.js" type="text/javascript"></script>
+        <script src="RDF.js" type="text/javascript"></script>
+        <script src="ShExParser.js" type="text/javascript"></script>
+        <script src="TurtleParser.js" type="text/javascript"></script>
+        <script src="demobits/ShExDemo.js" type="text/javascript"></script>
+        <script type="text/javascript">
+      var d = false;
+      if (d) $("#schema .textInput").val('\
+# Issue-js-test-date-triple.shex - tests relative dates\n\
+\n\
+#BASE <http://base.example/#>\n\
+PREFIX ex: <http://ex.example/#>\n\
+PREFIX foaf: <http://foaf.example/#>\n\
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
+\n\
+start = <IssueShape>\n\
+\n\
+<IssueShape> {\n\
+    ex:state (ex:unassigned ex:assigned),\n\
+    ex:reportedBy @<UserShape>,\n\
+    ex:reportedOn xsd:dateTime\n\
+        %js{ report = _.o; return true; %},\n\
+    (ex:reproducedBy @<EmployeeShape>,\n\
+     ex:reproducedOn xsd:dateTime\n\
+        %js{ return _.o.lex > report.lex; %}\n\
+        %sparql{ ?s ex:reportedOn ?rpt . FILTER (?o > ?rpt) %}\n\
+    ),\n\
+    ex:related @<IssueShape>*\n\
+}\n\
+\n\
+<UserShape> {\n\
+    (foaf:name xsd:string\n\
+     | foaf:givenName xsd:string+,\n\
+       foaf:familyName xsd:string),\n\
+    foaf:mbox rdf:Resource\n\
+}\n\
+\n\
+<EmployeeShape> {\n\
+    foaf:givenName xsd:string+,\n\
+    foaf:familyName xsd:string,\n\
+    foaf:phone rdf:Resource*,\n\
+    foaf:mbox rdf:Resource\n\
+}');
+    if (d) $("#data .textInput").val('\
+#BASE <http://base.example/#>\n\
+PREFIX ex: <http://ex.example/#>\n\
+PREFIX foaf: <http://foaf.example/#>\n\
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\
+\n\
+<Issue1>\n\
+    ex:state        ex:unassigned ;\n\
+    ex:reportedBy   <User2> ;\n\
+    ex:reportedOn   "2013-01-23T10:18:00"^^xsd:dateTime ;\n\
+    ex:reproducedBy <Thompson.J> ;\n\
+    ex:reproducedOn "2013-01-23T11:00:00"^^xsd:dateTime ;\n\
+#    ex:related      <Issue2>, <Issue3> \n\
+.\n\
+\n\
+<User2>\n\
+    foaf:givenName "Bob" ;\n\
+    foaf:familyName "Smith" ;\n\
+    foaf:mbox <mail:bob@example.org>\n\
+.\n\
+\n\
+<Thompson.J>\n\
+    foaf:givenName "Joe", "Joseph" ;\n\
+    foaf:familyName "Thompson" ;\n\
+    foaf:phone <tel:+456> ;\n\
+    foaf:mbox <mail:joe@example.org>\n\
+.');
+            var interactionInterface = ShExDemo(RDF);
+            window.message = interactionInterface.message;
+            RDF.message = function (m) {
+                interactionInterface.message(m);
+            }
+
+            $("#apology").text("Starting javascript libraries...");
+            $(document).ready(function () {
+                try {
+                    interactionInterface.loadAndStart();
+                } catch (e) { // Sigh, exceptions ajax callbacks never get here.
+                    $("#apology").text("Error running javascript libraries: " + e);
+                }
+            });
+        </script>
+    </body>
+</html>
