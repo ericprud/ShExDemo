@@ -89,14 +89,8 @@ ShExDemo = function() {
                 $(id + " pre").text(newValue); // element.innerText = newValue;
         } else {
             ret = $(id + " textarea").val();
-            // deal with itsaltext
-            if (ret === "[object XMLDocument]") {
-                ret = "";
-                $(id + " textarea").val("");
-                // alert($(id + " textarea").val());
-            }
             if (newValue !== undefined)
-                $(id + " textarea").text(newValue);
+                $(id + " textarea").val(newValue);
         }
         return ret;
     }
@@ -294,16 +288,13 @@ ShExDemo = function() {
                     if (list.length) {
                         $.ajax({
                             type: 'GET',
+                            dataType: "text",
                             //contentType: 'text/plain',{turtle,shex}
                             url: list[0],
-                            success: function(data, textStatus, jqXHR) {
+                            success: function(body, textStatus, jqXHR) {
                                 if (/^([a-z]+:)?\/\//g.test(list[0]))
                                     $('#opt-disable-js').attr('checked', true);
-//debugger;
-console.log("302"+data);
-                                textValue(into, textValue(into)+data);
-console.log("304"+$(into+" textarea").text());
-console.log("305"+$(into+" textarea").val());
+                                textValue(into, textValue(into)+body);
                                 getSequenceOfURLs(list.slice(1), into, done);
                             },
                             error: function(jqXHR, textStatus, errorThrown) {

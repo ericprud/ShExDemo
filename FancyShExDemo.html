@@ -1,57 +1,127 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-    <head>
-        <meta name="generator" content="emacs" />
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-        <meta name="author" content="Eric Prud'hommeaux (eric+shex@w3.org)" />
-        <meta name="copyright" content="Copyright &copy; 2013 Eric Prud'hommeaux" />
-        <meta name="keywords" content="schema validator, Turtle" />
-        <meta name="description" content="ShEx is a structural validator for RDF graphs." />
+  <head>
+    <meta name="generator" content="emacs" />
+	  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="author" content="Eric Prud'hommeaux (eric+shex@w3.org)" />
+    <meta name="copyright" content="Copyright &copy; 2013, 2014 Eric Prud'hommeaux" />
+    <meta name="keywords" content="schema validator, Turtle" />
+    <meta name="description" content="ShEx is a structural validator for RDF graphs." />
+	  <meta name="language" content="en" />
+    <title>ShEx Data Validation Demo</title>
 
-        <title>ShEx Data Validation Demo</title>
+	  <!-- DEMO styles - specific to this page -->
+	  <link rel="stylesheet" type="text/css" href="demobits/ShExDemo-layout.css" />
+	  <link rel="stylesheet" type="text/css" href="http://layout.jquery-dev.com/lib/css/layout-default-latest.css" />
+	  <link rel="stylesheet" type="text/css" href="http://layout.jquery-dev.com/lib/css/themes/base/jquery.ui.all.css" />
+	  <!--[if lte IE 7]>
+		    <style type="text/css"> body { font-size: 85%; } </style>
+	  <![endif]-->
+    
+	  <script type="text/javascript" src="http://layout.jquery-dev.com/lib/js/jquery-latest.js"></script>
+	  <script type="text/javascript" src="http://layout.jquery-dev.com/lib/js/jquery-ui-latest.js"></script>
+	  <script type="text/javascript" src="http://layout.jquery-dev.com/lib/js/jquery.layout-latest.js"></script>
+	  <script type="text/javascript" src="http://layout.jquery-dev.com/lib/js/jquery.layout.resizePaneAccordions-latest.min.js"></script>
+	  <script type="text/javascript" src="http://layout.jquery-dev.com/lib/js/debug.js"></script>
 
-        <!-- import css in this order so .hilightData trumps .ui-state-hover -->
-        <link href="demobits/jquery.multiselect.css" rel="stylesheet" type="text/css" />
-        <link rel="stylesheet" href="demobits/ShExDemo.css" type="text/css" />
+    <link href="demobits/jquery.multiselect.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="demobits/ShExDemo.css" type="text/css" />
 
-        <style type="text/css">
-        </style>
-        <link rel="shortcut icon" href="shortcut.ico" type="image/x-icon" />
-    </head>
+    <style type="text/css">
+    </style>
+    <link rel="shortcut icon" href="shortcut.ico" type="image/x-icon" />
 
-    <body>
-        <div id="apology">loading javascript.</div>
+    <script type="text/javascript">
+    </script>
 
-        <div id="mainContent">
-            <div id="schema" class="column">
-                <div>
-                    <h2 class="task schema">Schema (ShEx):</h2>
-                    <div class="message progress">Preparing to parse schema.</div>
-                    <div style="clear:both;"></div>
-                </div>
-                <textarea class="textInput" spellcheck="false" cols="70" rows="20"></textarea>
-                <div class="editparent"><pre class="textInput" contenteditable="true" spellcheck="false" style="display:none; overflow:scroll !important; "></pre></div>
-                <input class="save" value=""></input>
-            </div>
+  </head>
+  <body>
+    <div id="apology">loading javascript.</div>
 
-            <div id="data" class="column">
-                <div>
-                    <h2 class="task data">Data (Turtle):</h2>
-                    <div class="message progress">Preparing to parse data.</div>
-                    <div style="clear:both;"></div>
-                </div>
-                <textarea class="textInput" spellcheck="false" cols="70" rows="20"></textarea>
-                <div class="editparent"><pre class="textInput" contenteditable="true" spellcheck="false" style="display:none; overflow:scroll !important; "></pre></div>
-                <input class="save" value=""></input>
-            </div>
+    <div id="examples">
 
-            <div class="column">
-                <div id="title">
+	    <div class="header">Examples</div>
+
+	    <div class="content">
+            <ul>
+              <li>basic
+                <ul>
+                  <li>object datatype: <a href="FancyShExDemo?schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20ex%3AreporterName%20xsd%3Astring%2C%0A%20%20%20%20ex%3AreportedOn%20xsd%3AdateTime%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20ex%3AreportedOn%20%20%20%222013-01-23T10%3A18%3A00%22%5E%5Exsd%3AdateTime%20%3B%0A%20%20%20%20%23%20RDF%20simple%20literals%20have%20type%20xsd%3Astring.%0A%20%20%20%20ex%3AreporterName%20%22Bob%22%20.%0A%0A&amp;starting-nodes=%3CSomebody%3E">pass</a> <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20ex%3AreporterName%20xsd%3Astring%2C%0A%20%20%20%20ex%3AreportedOn%20xsd%3AdateTime%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20%23%20should%20be%20a%20dateTime%0A%20%20%20%20ex%3AreportedOn%20%20%20%222013-01-23%22%5E%5Exsd%3Adate%20%3B%0A%20%20%20%20%23%20should%20be%20a%20string.%0A%20%20%20%20ex%3AreporterName%20808%20.%0A%0A">fail</a></li>
+                  <li>cardinality: <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20ex%3AbirthDate%20xsd%3AdateTime%20%3F%2C%0A%20%20%20%20ex%3AgivenName%20xsd%3Astring%20%2B%2C%0A%20%20%20%20ex%3Abirthmarks%20xsd%3Astring%20*%2C%0A%20%20%20%20ex%3AbiologicalParentName%20xsd%3Astring%20%7B2%7D%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20ex%3AbirthDate%20%221980-04-27T17%3A23%3A31%22%5E%5Exsd%3AdateTime%20%3B%0A%20%20%20%20ex%3AgivenName%20%22Sarah%22%2C%20%22Ann%22%3B%0A%20%20%20%20ex%3Abirthmarks%20%22posterior%20left%20shoulder%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22right%20cheek%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22left%20index%20finger%22%3B%0A%20%20%20%20ex%3AbiologicalParentName%20%22Pat%20Jones%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Gene%20Holmes%22%20.%0A%0A">pass</a> <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20ex%3AbirthDate%20xsd%3AdateTime%20%3F%2C%0A%20%20%20%20ex%3AgivenName%20xsd%3Astring%20%2B%2C%0A%20%20%20%20ex%3Abirthmarks%20xsd%3Astring%20*%2C%0A%20%20%20%20ex%3AbiologicalParentName%20xsd%3Astring%20%7B2%7D%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20%23%20two%20recorded%20birthdates%0A%20%20%20%20ex%3AbirthDate%20%221980-04-27T17%3A23%3A31%22%5E%5Exsd%3AdateTime%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%221980-04-27T17%3A24%3A00%22%5E%5Exsd%3AdateTime%20%3B%0A%20%20%20%20%23%20missing%20ex%3AgivenName%0A%20%20%20%20ex%3AbiologicalParentName%20%22Pat%20Jones%22%20.%0A">fail</a></li>
+                  <li>choices (exclusive or): <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20(%20%20ex%3AbirthDate%20xsd%3AdateTime%0A%20%20%20%20%20%7C%20ex%3AbirthDate%20xsd%3Adate)%2C%0A%20%20%20%20ex%3AgivenName%20xsd%3Astring%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20ex%3AbirthDate%20%221980-04-27%22%5E%5Exsd%3Adate%3B%0A%20%20%20%20ex%3AgivenName%20%22Sarah%22%20.%0A">pass</a> <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20(%20%20ex%3AbirthDate%20xsd%3AdateTime%0A%20%20%20%20%20%7C%20ex%3AbirthDate%20xsd%3Adate)%2C%0A%20%20%20%20ex%3AgivenName%20xsd%3Astring%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20%23%20must%20pass%20only%20one%20disjoint.%0A%20%20%20%20ex%3AbirthDate%20%221980-04-27T17%3A23%3A31%22%5E%5Exsd%3AdateTime%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%221980-04-27%22%5E%5Exsd%3AdateTime%20%3B%0A%20%20%20%20ex%3AgivenName%20%22Sarah%22%20.%0A">fail</a></li>
+                  <li>value sets: <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20foaf%3Aname%20xsd%3Astring%2C%0A%20%20%20%20%23%20value%20sets%20inluded%20in%20()s%0A%20%20%20%20ex%3Agender%20(ex%3AMale%20ex%3AFemale)%2C%0A%20%20%20%20%23%20required%20value%20is%20a%20small%20value%20set%0A%20%20%20%20a%20(ex%3ACitizen)%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0A%0A%3CSomebody%3E%20a%20ex%3ACitizen%20%3B%0A%20%20%20%20foaf%3Aname%20%22Sarah%20Ann%20Holmes%22%3B%0A%20%20%20%20ex%3Agender%20ex%3AFemale%20.">pass</a> <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20foaf%3Aname%20xsd%3Astring%2C%0A%20%20%20%20%23%20value%20sets%20inluded%20in%20()s%0A%20%20%20%20ex%3Agender%20(ex%3AMale%20ex%3AFemale)%2C%0A%20%20%20%20%23%20required%20value%20is%20a%20small%20value%20set%0A%20%20%20%20a%20(ex%3ACitizen)%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0A%0A%3CSomebody%3E%20a%20ex%3ACitzien%20%3B%20%23%20typo%0A%20%20%20%20foaf%3Aname%20%22Sarah%20Ann%20Holmes%22%3B%0A%20%20%20%20ex%3Agender%20ex%3AMefale%20.%20%23%20typo">fail</a></li>
+                  <li>nested shapes: <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20foaf%3Aname%20xsd%3Astring%2C%0A%20%20%20%20ex%3AbiologicalParent%20%7B%0A%20%20%20%20%20%20%20%20ex%3Agender%20(ex%3AMale)%2C%0A%20%20%20%20%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20ex%3AbiologicalParent%20%7B%0A%20%20%20%20%20%20%20%20ex%3Agender%20(ex%3AFemale)%2C%0A%20%20%20%20%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%20%20%20%20%20%20%7D%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20foaf%3Aname%20%22Sarah%20Ann%20Holmes%22%3B%0A%20%20%20%20ex%3AbiologicalParent%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AMale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Pat%20Jones%22%20%5D%2C%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AFemale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Gene%20Holmes%22%20%5D.">pass</a> <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20foaf%3Aname%20xsd%3Astring%2C%0A%20%20%20%20ex%3AbiologicalParent%20%7B%0A%20%20%20%20%20%20%20%20ex%3Agender%20(ex%3AMale)%2C%0A%20%20%20%20%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20ex%3AbiologicalParent%20%7B%0A%20%20%20%20%20%20%20%20ex%3Agender%20(ex%3AFemale)%2C%0A%20%20%20%20%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%20%20%20%20%20%20%7D%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20foaf%3Aname%20%22Sarah%20Ann%20Holmes%22%3B%0A%20%20%20%20ex%3AbiologicalParent%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AMale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Pat%20Jones%22%20%5D%2C%0A%20%20%20%20%20%20%23%202nd%20biological%20parent%20with%20same%20gender%3A%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AMale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Gene%20Holmes%22%20%5D.">fail</a></li>
+                  <li>named shapes: <a href="FancyShExDemo?starting-nodes=%3CSomeIssue%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20ex%3AbirthDate%20xsd%3AdateTime%20%3F%2C%0A%20%20%20%20ex%3AgivenName%20xsd%3Astring%20%2B%2C%0A%20%20%20%20ex%3Abirthmarks%20xsd%3Astring%20*%2C%0A%20%20%20%20ex%3AbiologicalParentName%20xsd%3Astring%20%7B2%7D%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomeIssue%3E%0A%20%20%20%20ex%3AbirthDate%20%221980-04-27T17%3A23%3A31%22%5E%5Exsd%3AdateTime%20%3B%0A%20%20%20%20ex%3AgivenName%20%22Sarah%22%2C%20%22Ann%22%3B%0A%20%20%20%20ex%3Abirthmarks%20%22posterior%20left%20shoulder%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22right%20cheek%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22left%20index%20finger%22%3B%0A%20%20%20%20ex%3AbiologicalParentName%20%22Pat%20Jones%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Gene%20Holmes%22%20.%0A%0A">pass</a></li>
+                  <li><a href="FancyShExDemo?schemaURL=Examples/Issue-simple-annotated.shex&amp;dataURL=test/Issue-pass-date.ttl">annotated issue example</a></li>
+                </ul>
+              </li>
+              <!-- li>mode d'employ
+                <ul>
+                  <li><a href=""></a>verify specific node</li>
+                  <li><a href=""></a>find node types</li>
+                  <li><a href=""></a>saving state</li>
+                  <li><a href=""></a>using browser history</li>
+                </ul>
+              </li -->
+              <li>inheritance/polymorphism
+                <ul>
+                  <li>basic inheritance <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%3CbirthCertificateShape%3E%0A%0A%3CPersonShape%3E%20%7B%20%23%20common%20structure%20for%20shapes%20below%0A%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%7D%0A%0A%3CbirthCertificateShape%3E%20%7B%0A%20%20%20%20%26%3CPersonShape%3E%2C%0A%20%20%20%20ex%3AbiologicalParent%20%40%3CFatherShape%3E%2C%0A%20%20%20%20ex%3AbiologicalParent%20%40%3CMotherShape%3E%0A%7D%0A%0A%3CFatherShape%3E%20%7B%0A%20%20%20%20%26%3CPersonShape%3E%2C%0A%20%20%20%20ex%3Agender%20(ex%3AMale)%0A%7D%0A%0A%3CMotherShape%3E%20%7B%0A%20%20%20%20%26%3CPersonShape%3E%2C%0A%20%20%20%20ex%3Agender%20(ex%3AFemale)%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20foaf%3Aname%20%22Sarah%20Ann%20Holmes%22%3B%0A%20%20%20%20ex%3AbiologicalParent%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AMale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Pat%20Jones%22%20%5D%2C%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AFemale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Gene%20Holmes%22%20%5D.">factor our commonalities</a></li>
+                  <li>virtual base <a href="FancyShExDemo?find-types=true&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%3CbirthCertificateShape%3E%0A%23%20Add%20VIRTUAL%20to%20prevent%20uninteresting%20type%20matches.%0AVIRTUAL%20%3CPersonShape%3E%20%7B%20%23%20common%20structure%20for%20shapes%20below%0A%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%7D%0A%0A%3CbirthCertificateShape%3E%20%7B%0A%20%20%20%20%26%3CPersonShape%3E%2C%0A%20%20%20%20ex%3AbiologicalParent%20%40%3CFatherShape%3E%2C%0A%20%20%20%20ex%3AbiologicalParent%20%40%3CMotherShape%3E%0A%7D%0A%0A%3CFatherShape%3E%20%7B%0A%20%20%20%20%26%3CPersonShape%3E%2C%0A%20%20%20%20ex%3Agender%20(ex%3AMale)%0A%7D%0A%0A%3CMotherShape%3E%20%7B%0A%20%20%20%20%26%3CPersonShape%3E%2C%0A%20%20%20%20ex%3Agender%20(ex%3AFemale)%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20foaf%3Aname%20%22Sarah%20Ann%20Holmes%22%3B%0A%20%20%20%20ex%3AbiologicalParent%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AMale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Pat%20Jones%22%20%5D%2C%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AFemale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Gene%20Holmes%22%20%5D.">sanitizes type-finding</a> (without <code>VIRTUAL</code> you get <a href="FancyShExDemo?schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%3CbirthCertificateShape%3E%0A%0A%3CPersonShape%3E%20%7B%20%23%20common%20structure%20for%20shapes%20below%0A%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%7D%0A%0A%3CbirthCertificateShape%3E%20%7B%0A%20%20%20%20%26%3CPersonShape%3E%2C%0A%20%20%20%20ex%3AbiologicalParent%20%40%3CFatherShape%3E%2C%0A%20%20%20%20ex%3AbiologicalParent%20%40%3CMotherShape%3E%0A%7D%0A%0A%3CFatherShape%3E%20%7B%0A%20%20%20%20%26%3CPersonShape%3E%2C%0A%20%20%20%20ex%3Agender%20(ex%3AMale)%0A%7D%0A%0A%3CMotherShape%3E%20%7B%0A%20%20%20%20%26%3CPersonShape%3E%2C%0A%20%20%20%20ex%3Agender%20(ex%3AFemale)%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20foaf%3Aname%20%22Sarah%20Ann%20Holmes%22%3B%0A%20%20%20%20ex%3AbiologicalParent%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AMale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Pat%20Jones%22%20%5D%2C%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AFemale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Gene%20Holmes%22%20%5D.&amp;find-types=true">uninteresting matches</a>)</li>
+                  <li><a href="FancyShExDemo?schemaURL=test/Issue-inheritance/schema.shex&amp;dataURL=test/Issue-inheritance/pass-user-employee.ttl">issue with base person shape</a></li>
+                </ul>
+              </li>
+            </ul>
+		    <!-- ul>
+			    <li><a href="#" onclick="outerLayout.toggle('north')">Toggle North</a></li>
+			    <li><a href="#" onclick="outerLayout.toggle('south')">Toggle South</a></li>
+			    <li><a href="#" onclick="outerLayout.toggle('west')"> Toggle West</a></li>
+			    <li><a href="#" onclick="outerLayout.toggle('east')"> Toggle East</a></li>
+			    <li><a href="#" onclick="outerLayout.hide('north')">Hide North</a></li>
+			    <li><a href="#" onclick="outerLayout.hide('south')">Hide South</a></li>
+			    <li><a href="#" onclick="outerLayout.show('south', false)">Unhide South</a></li>
+			    <li><a href="#" onclick="outerLayout.hide('east')"> Hide East</a></li>
+			    <li><a href="#" onclick="outerLayout.show('east', false)">Unhide East</a></li>
+			    <li><a href="#" onclick="outerLayout.open('east')"> Open East</a></li>
+			    <li><a href="#" onclick="outerLayout.open('north'); outerLayout.sizePane('north', 'auto')">  Resize North="auto"</a></li>
+			    <li><a href="#" onclick="outerLayout.sizePane('north', 100); outerLayout.open('north')">  Resize North=100</a></li>
+			    <li><a href="#" onclick="outerLayout.sizePane('north', 300); outerLayout.open('north')">  Resize North=300</a></li>
+			    <li><a href="#" onclick="outerLayout.sizePane('north', 10000); outerLayout.open('north')">Resize North=10000</a></li>
+			    <li><a href="#" onclick="outerLayout.open('south'); outerLayout.sizePane('south', 'auto')">  Resize South="auto"</a></li>
+			    <li><a href="#" onclick="outerLayout.sizePane('south', 100); outerLayout.open('south')">  Resize South=100</a></li>
+			    <li><a href="#" onclick="outerLayout.sizePane('south', 300); outerLayout.open('south')">  Resize South=300</a></li>
+			    <li><a href="#" onclick="outerLayout.sizePane('south', 10000); outerLayout.open('south')">Resize South=10000</a></li>
+			    <li><a href="#" onclick="outerLayout.panes.north.css('backgroundColor','#FCC')">North Color = Red</a></li>
+			    <li><a href="#" onclick="outerLayout.panes.north.css('backgroundColor','#CFC')">North Color = Green</a></li>
+			    <li><a href="#" onclick="outerLayout.panes.north.css('backgroundColor','')">    North Color = Default</a></li>
+			    <li><a href="#" onclick="alert('outerLayout.name = \''+outerLayout.options.name+'\'')">Show Layout Name</a></li>
+			    <li><a href="#" onclick="showOptions(outerLayout,'defaults')">Show Options.Defaults</a></li>
+			    <li><a href="#" onclick="showOptions(outerLayout,'north')">   Show Options.North</a></li>
+			    <li><a href="#" onclick="showOptions(outerLayout,'south')">   Show Options.South</a></li>
+			    <li><a href="#" onclick="showOptions(outerLayout,'west')">    Show Options.West</a></li>
+			    <li><a href="#" onclick="showOptions(outerLayout,'east')">    Show Options.East</a></li>
+			    <li><a href="#" onclick="showOptions(outerLayout,'center')">  Show Options.Center</a></li>
+			    <li><a href="#" onclick="showState(outerLayout,'container')"> Show State.Container</a></li>
+			    <li><a href="#" onclick="showState(outerLayout,'north')">     Show State.North</a></li>
+			    <li><a href="#" onclick="showState(outerLayout,'south')">     Show State.South</a></li>
+			    <li><a href="#" onclick="showState(outerLayout,'west')">      Show State.West</a></li>
+			    <li><a href="#" onclick="showState(outerLayout,'east')">      Show State.East</a></li>
+			    <li><a href="#" onclick="showState(outerLayout,'center')">    Show State.Center</a></li>
+		    </ul -->
+	    </div>
+    </div>
+
+    <div id="controls">
+
+                <div class="header" id="title">
                     <h1><a href="." tabindex="10">ShEx</a></h1>
-                    <h2>Data Validation Demo</h2>
+                    <h2>Data Validation Workbench</h2>
                 </div>
 
-                <div style="clear:both; padding-left:5em" id="colorize">
+	    <div id="controls-accordion">
+
+			  <h2>Rendering</h2>
+              <div>
+                <div id="colorize">
                     <input type="checkbox" id="ctl-colorize" tabindex="9"/> <label for="ctl-colorize">
                     <a href="#" class="hasToolTip">
                       <span style="color: #700;">c</span><span style="color: #510;">o</span><span style="color: #330;">l</span><span style="color: #150;">o</span><span style="color: #070;">r</span><span style="color: #051;">i</span><span style="color: #033;">z</span><span style="color: #015;">e</span><span style="color: #007;">d</span>
@@ -65,11 +135,16 @@
                     </a>
                   </label>
                 </div>
+                    <div id="permalink">
+                        <a href="#">permalink</a> <input type="checkbox" id="ctl-keep-history"/> <label for="ctl-keep-history">add to history</label><br/>
+                         <input type="checkbox" id="ctl-accordion"/> <label for="ctl-accordion">accordion-style control pane</label>
+                    </div>
+              </div>
+
+                    <h2>Validation:</h2>
+                <div>
 
                 <div id="validation">
-                    <h2 id="validation-label" class="task validation">Validation:</h2>
-
-                <div style="clear:both;">
                     <div id="settings">
                         <div id="options">
                             <input type="radio" name="mode" id="opt-pre-typed" value="pre-typed" checked="checked" />
@@ -105,7 +180,11 @@
                         </a>
                       </label>
                     </div>
+                </div>
+                </div>
 
+                <h2>Translations</h2>
+                <div>
                     <div style="float:left">SPARQL: </div>
                     <div id="view" style="padding-left: .2em; float:left">
                         <a id="as-sparql-query"      class="disabled" href="#">validating query</a>
@@ -118,25 +197,38 @@
                         <a id="as-resource-sexpr"    class="disabled" href="#">S-Expression</a>
                         <a id="as-resource-haskell"    class="disabled" href="#">Haskell AST</a>
                     </div>
-                    <div id="permalink">
-                        <a href="#">permalink</a> <input type="checkbox" id="ctl-keep-history"/> <label for="ctl-keep-history">add to history</label>
-                    </div>
+                    <div style="clear:both"></div>
                 </div>
-
-                <h2 id="validation-header" style="clear:both">Validation messages:</h2>
+                <h2>Validation messages:</h2>
+                <div>
                 <pre id="validation-messages" class="disabled">unexpected state</pre>
                 </div>
-                <!-- div style="clear:both" id="ch">
-                <pre class="changeable" contenteditable="true">edit me</pre>
-                </div -->
-            </div>
+	    </div>
+    </div>
 
-            <div style="clear:both">
+
+    <div id="resourceNav">
+                <div id="title"><!-- @@ -->
+                    <h1><a href="." tabindex="10">ShEx</a></h1>
+                    <h2>Shape Expressions Resources:</h2>
+                </div>
+	    <div class="content">
+          @@todo add navigation to specs, etc.
+	    </div>
+	    <ul class="toolbar">
+		    <li id="tbarToggleResults" class="first"><span></span>Toggle Results</li>
+		    <li id="tbarPinExamples"><span></span>Pin/Unpin Examples</li>
+		    <li id="tbarPinControls" class="last"><span></span>Pin/Unpin Controls</li>
+	    </ul>
+    </div>
+
+
+    <div id="results">
                 <h2 style="color: #330;" id="valResults-header">Validation Results</h2>
                 <div id="valStatus"></div>
                 <pre id="valResults" class="disabled">unexpected state.</pre>
-            </div>
-        </div>
+    </div>
+
 
         <div style="display:none"><!-- some state -->
             <input id="curRule" type="text" size="1" value="-1"></input><br/>
@@ -144,6 +236,96 @@
             <input id="curData" type="text" size="1" value="-1"></input><br/>
         </div>
 
+    <div id="mainContent">
+	    <!-- DIVs for the INNER LAYOUT -->
+
+      <div id="schema" class="column">
+        <div>
+          <h2 class="task schema">Schema (ShEx):</h2>
+          <div class="message progress">Preparing to parse schema.</div>
+          <div style="clear:both;"></div>
+        </div>
+        <textarea class="textInput" spellcheck="false" cols="70" rows="20"></textarea>
+        <div class="editparent"><pre class="textInput" contenteditable="true" spellcheck="false" style="display:none; overflow:scroll !important; "></pre></div>
+        <input class="save" value=""></input>
+      </div>
+
+      <div id="data" class="column">
+        <div>
+          <h2 class="task data">Data (Turtle):</h2>
+          <div class="message progress">Preparing to parse data.</div>
+          <div style="clear:both;"></div>
+        </div>
+        <textarea class="textInput" spellcheck="false" cols="70" rows="20"></textarea>
+        <div class="editparent"><pre class="textInput" contenteditable="true" spellcheck="false" style="display:none; overflow:scroll !important; "></pre></div>
+        <input class="save" value=""></input>
+      </div>
+
+        <script src="demobits/jquery.multiselect.js" type="text/javascript"></script>
+        <script src="demobits/jquery.contenteditable.js" type="text/javascript"></script>
+        <script src="demobits/webtoolkit.base64.js" type="text/javascript"></script>
+        <script src="RDF.js" type="text/javascript"></script>
+        <script src="ShExParser.js" type="text/javascript"></script>
+        <script src="TurtleParser.js" type="text/javascript"></script>
+        <script src="demobits/ShExDemo-layout.js" type="text/javascript"></script>
+        <script src="demobits/ShExDemo.js" type="text/javascript"></script>
+        <script type="text/javascript">
+            var interactionInterface = ShExDemo(RDF);
+            window.message = interactionInterface.message;
+            RDF.message = function (m) {
+                interactionInterface.message(m);
+            }
+
+            $("#apology").text("Starting javascript libraries...");
+            $(document).ready(function () {
+                $("#ctl-accordion").change(function () {
+                    if (this.checked)
+                        $("#controls-accordion").accordion({ heightStyle: "fill" });
+                    else
+                        $("#controls-accordion").children().each(function (ord, elt) {
+                            $(elt).off();
+                            var i = this.attributes.length;
+                            while( i-- )
+                                this.removeAttributeNode(this.attributes[i]);
+                            $(elt).children().filter(function (ord, elt) {
+                                return $(elt).hasClass("ui-accordion-header-icon");
+                            }).remove();
+                        });
+                });
+                // override getPanelHeight() for jquery.layout.
+                interactionInterface.getPanelHeight = function () {
+                    return $("#schema").innerHeight() -
+                        $("#schema  > div:first-of-type").outerHeight() -
+                        $("#schema textarea").css("padding-top").replace("px", "") -
+                        $("#schema textarea").css("padding-bottom").replace("px", "") -
+                        0+3 + "px";
+                };
+                var oldEnableOutput = interactionInterface.enableValidatorOutput;
+                interactionInterface.enableValidatorOutput = function() {
+                    var ret = oldEnableOutput();
+                    outerLayout.open('south');
+                    return ret;
+                };
+                var oldDisableOutput = interactionInterface.disableValidatorOutput;
+                interactionInterface.disableValidatorOutput = function() {
+                    var ret = oldDisableOutput();
+                    outerLayout.close('south');
+                    return ret;
+                };
+                try {
+                    prepareLayout(function (p1) {
+                      console.log("laying-out "+p1);
+                      $("#schema .textInput").outerWidth($("#schema").innerWidth()-1);
+                      $("#data .textInput").outerWidth($("#data").innerWidth()-1);
+                      interactionInterface.layoutPanelHeights();
+                    });
+                    interactionInterface.loadAndStart();
+                } catch (e) { // Sigh, exceptions ajax callbacks never get here.
+                    $("#apology").text("Error running javascript libraries: " + e);
+                }
+            });
+        </script>
+<!-- 
         <script src="demobits/jquery.min.js" type= "text/javascript"></script>
         <script src="demobits/jquery.contenteditable.js" type="text/javascript"></script>
         <script src="demobits/jquery-ui.js" type="text/javascript"></script>
@@ -153,86 +335,7 @@
         <script src="ShExParser.js" type="text/javascript"></script>
         <script src="TurtleParser.js" type="text/javascript"></script>
         <script src="demobits/ShExDemo.js" type="text/javascript"></script>
-        <script type="text/javascript">
-      var d = false;
-      if (d) $("#schema .textInput").val('\
-# Issue-js-test-date-triple.shex - tests relative dates\n\
-\n\
-#BASE <http://base.example/#>\n\
-PREFIX ex: <http://ex.example/#>\n\
-PREFIX foaf: <http://foaf.example/#>\n\
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\
-\n\
-start = <IssueShape>\n\
-\n\
-<IssueShape> {\n\
-    ex:state (ex:unassigned ex:assigned),\n\
-    ex:reportedBy @<UserShape>,\n\
-    ex:reportedOn xsd:dateTime\n\
-        %js{ report = _.o; return true; %},\n\
-    (ex:reproducedBy @<EmployeeShape>,\n\
-     ex:reproducedOn xsd:dateTime\n\
-        %js{ return _.o.lex > report.lex; %}\n\
-        %sparql{ ?s ex:reportedOn ?rpt . FILTER (?o > ?rpt) %}\n\
-    ),\n\
-    ex:related @<IssueShape>*\n\
-}\n\
-\n\
-<UserShape> {\n\
-    (foaf:name xsd:string\n\
-     | foaf:givenName xsd:string+,\n\
-       foaf:familyName xsd:string),\n\
-    foaf:mbox rdf:Resource\n\
-}\n\
-\n\
-<EmployeeShape> {\n\
-    foaf:givenName xsd:string+,\n\
-    foaf:familyName xsd:string,\n\
-    foaf:phone rdf:Resource*,\n\
-    foaf:mbox rdf:Resource\n\
-}');
-    if (d) $("#data .textInput").val('\
-#BASE <http://base.example/#>\n\
-PREFIX ex: <http://ex.example/#>\n\
-PREFIX foaf: <http://foaf.example/#>\n\
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\
-\n\
-<Issue1>\n\
-    ex:state        ex:unassigned ;\n\
-    ex:reportedBy   <User2> ;\n\
-    ex:reportedOn   "2013-01-23T10:18:00"^^xsd:dateTime ;\n\
-    ex:reproducedBy <Thompson.J> ;\n\
-    ex:reproducedOn "2013-01-23T11:00:00"^^xsd:dateTime ;\n\
-#    ex:related      <Issue2>, <Issue3> \n\
-.\n\
-\n\
-<User2>\n\
-    foaf:givenName "Bob" ;\n\
-    foaf:familyName "Smith" ;\n\
-    foaf:mbox <mail:bob@example.org>\n\
-.\n\
-\n\
-<Thompson.J>\n\
-    foaf:givenName "Joe", "Joseph" ;\n\
-    foaf:familyName "Thompson" ;\n\
-    foaf:phone <tel:+456> ;\n\
-    foaf:mbox <mail:joe@example.org>\n\
-.');
-            var interactionInterface = ShExDemo(RDF);
-            window.message = interactionInterface.message;
-            RDF.message = function (m) {
-                interactionInterface.message(m);
-            }
-
-            $("#apology").text("Starting javascript libraries...");
-            $(document).ready(function () {
-                try {
-                    interactionInterface.loadAndStart();
-                } catch (e) { // Sigh, exceptions ajax callbacks never get here.
-                    $("#apology").text("Error running javascript libraries: " + e);
-                }
-            });
-        </script>
-    </body>
+-->
+    </div>
+  </body>
 </html>
