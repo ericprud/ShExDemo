@@ -10,27 +10,29 @@
     var curListHead  = createStack();
     var curListTail  = createStack();
     var insertTripleAt = createStack(); // where to place (collection) triples for nice defaults
-    var db = new RDF.DB();
+    var db = RDF.Dataset();
     db.nextInsertAt = null;
     db.add = function (s, p, o) {
-	var t = new RDF.Triple(s, p, o);
-	if (this.nextInsertAt == null)
-	    this.triples.push(t);
-	else {
-	    this.triples.splice(this.nextInsertAt, 0, t);
-	    this.nextInsertAt = null;
-	}
+	var t = RDF.Triple(s, p, o);
+    	if (this.nextInsertAt == null)
+    	    this.push(t);
+    	else {
+    	    this.insertAt(this.nextInsertAt, t);
+    	    this.nextInsertAt = null;
+    	}
     }
     var RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
     var XSD_NS = 'http://www.w3.org/2001/XMLSchema#'
     var iriResolver = ("iriResolver" in options) ? options.iriResolver : RDF.createIRIResolver();
+    var bnodeScope = ("bnodeScope" in options) ? options.bnodeScope : RDF.createBNodeScope();
     iriResolver.errorHandler = function (message) {
         throw peg$buildException(message, null, peg$reportedPos);
     };
 
     function _literalHere (value, type) {
-	return new RDF.RDFLiteral(line(), column(), offset(), value.length, value, undefined,
-				  new RDF.IRI(line(), column(), offset(), value.length, XSD_NS+type ));
+	var dt = RDF.IRI(XSD_NS+type, RDF.Position5(text(), line(), column(), offset(), value.length));
+	var pos = RDF.Position5(text(), line(), column(), offset(), value.length+2);
+	return RDF.RDFLiteral(value, undefined, dt, pos);
     }
 }
 
@@ -75,7 +77,7 @@ object = n:iri                   { db.add(curSubject.peek(), curPredicate.peek()
 
 blankNodePropertyList = s:_lbracket predicateObjectList _ _rbracket { curSubject.pop(); return s; }
 _lbracket       = '['            {
-    var ret = RDF.nextBNode(line(), column(), offset(), 1);
+    var ret = RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column(), offset(), 1));
     curSubject.push(ret);
     return ret;
 }
@@ -87,16 +89,16 @@ _openCollection = '('            {
     curListHead.push(null);
     curListTail.push(null);
     insertTripleAt.push(db.triples.length);
-    curSubject.push(RDF.nextBNode(line(), column()-1, offset()-1, 1));
-    curPredicate.push(new RDF.IRI(line(), column()  , offset()  , 1, RDF_NS+'first'));
+    curSubject.push(RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column()-1, offset()-1, 1)));
+    curPredicate.push(RDF.IRI(RDF_NS+'first', RDF.Position5(text(), line(), column(), offset(), 1)));
 }
 _closeCollection= ')'            {
     curSubject.pop();
     curPredicate.pop();
-    var nil = new RDF.IRI(line(), column()  , offset()  , 1, RDF_NS+'nil');
+    var nil = RDF.IRI(RDF_NS+'nil', RDF.Position5(text(), line(), column(), offset(), 1));
     if (curListHead.peek() != null) // got some elements
         db.add(curListTail.peek(),
-               new RDF.IRI(line(), column()-1, offset()-1, 1, RDF_NS+'rest'),
+               RDF.IRI(RDF_NS+'rest', RDF.Position5(text(), line(), column()-1, offset()-1, 1)),
                nil);
     db.nextInsertAt = insertTripleAt.pop();
     curListTail.pop();
@@ -110,14 +112,14 @@ _members = o:object _           {
     else {
 	db.nextInsertAt = db.triples.length-1;
         db.add(curListTail.peek(), // last tail
-               new RDF.IRI(line(), column(), offset(), 1, RDF_NS+'rest'),
+               RDF.IRI(RDF_NS+'rest', RDF.Position5(text(), line(), column(), offset(), 1)),
                cur);
 	db.nextInsertAt = null;
     }
-    var next = RDF.nextBNode(line(), o.column-2, o.offset-2, 1);
+    var next = RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), o._pos.column-2, o._pos.offset-2, 1));
     curListTail.replace(cur);
     curSubject.replace(next);
-    curPredicate.replace(new RDF.IRI(line(), o.column-1, o.offset-1, 1, RDF_NS+'first'));
+    curPredicate.replace(RDF.IRI(RDF_NS+'first', RDF.Position5(text(), line(), o._pos.column-1, o._pos.offset-1, 1)));
 }
 
 // Literals
@@ -125,29 +127,26 @@ literal        = RDFLiteral / NumericLiteral / BooleanLiteral
 NumericLiteral = value:DOUBLE  { return _literalHere(value, 'double'); }
                / value:DECIMAL { return _literalHere(value, 'decimal'); }
                / value:INTEGER { return _literalHere(value, 'integer'); }
-RDFLiteral     = s:String l:LANGTAG { return new RDF.RDFLiteral(s.line, s.column, s.offset,
-								s.length+1, s.lex, l, undefined); }
-               / s:String '^^' i:iri { return new RDF.RDFLiteral(s.line, s.column, s.offset,
-								 s.length+2+i.width, s.lex, undefined, i); }
-               / s:String      { return new RDF.RDFLiteral(s.line, s.column, s.offset, s.length,
-							   s.lex, undefined, undefined); }
-BooleanLiteral = 'true' / 'false'
+RDFLiteral     = s:String l:LANGTAG { return RDF.RDFLiteral(s.lex, l, undefined, RDF.Position5(text(), s.line, s.column, s.offset, s.length+3+l._pos.width)); }
+               / s:String '^^' i:iri { return RDF.RDFLiteral(s.lex, undefined, i, RDF.Position5(text(), s.line, s.column, s.offset, s.length+4+i._pos.width)); }
+               / s:String      { return RDF.RDFLiteral(s.lex, undefined, undefined, RDF.Position5(text(), s.line, s.column, s.offset, s.length)); }
+BooleanLiteral = 'true'        { return _literalHere('true', 'boolean'); }
+               / 'false'       { return _literalHere('false', 'boolean'); }
 String = STRING_LITERAL_LONG1 / STRING_LITERAL_LONG2 / STRING_LITERAL1 / STRING_LITERAL2
 
 // IRIs
 iri = IRIREF / PrefixedName
 PrefixedName = ln:PNAME_LN {
-    return new RDF.IRI(line(), column(), offset(), ln.width,
-                       iriResolver.getAbsoluteIRI(iriResolver.getPrefix(ln.prefix) + ln.lex));
+    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(ln.prefix) + ln.lex), RDF.Position5(text(), line(), column(), offset(), ln.width));
 }
-    / p:PNAME_NS { return new RDF.IRI(line(), column(), offset(), p.length+1, iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p))); }
+    / p:PNAME_NS { return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1)); }
 BlankNode = BLANK_NODE_LABEL / ANON
 
 // Terminals:
-RDF_TYPE = 'a' { return new RDF.IRI(line(), column(), offset(), 1, RDF_NS+'type'); }
+RDF_TYPE = 'a' { return RDF.IRI(RDF_NS+'type', RDF.Position5(text(), line(), column(), offset(), 1)); }
 
 IRIREF = b:_IRIREF_BEGIN s:([^\u0000-\u0020<>\"{}|^`\\] / UCHAR)* e:_IRIREF_END {
-    return new RDF.IRI(line(), column(), offset(), e-b+1, iriResolver.getAbsoluteIRI(s.join('')))
+    return RDF.IRI(iriResolver.getAbsoluteIRI(s.join('')), RDF.Position5(text(), line(), column(), offset(), e-b+1));
 }
 _IRIREF_BEGIN = '<' { return offset(); }
 _IRIREF_END = '>' { return offset(); }
@@ -158,16 +157,16 @@ SPARQL_PREFIX = [Pp][Rr][Ee][Ff][Ii][Xx]
 SPARQL_BASE = [Bb][Aa][Ss][Ee]
 PNAME_NS = pre:PN_PREFIX? ':' { return pre ? pre : '' } // pre+'|' : '|';
 PNAME_LN = pre:PNAME_NS l:PN_LOCAL { 
-    return {width: pre.length+1+1+l.length, prefix:pre, lex:l};
+    return {width: pre.length+1+l.length, prefix:pre, lex:l};
 }
 
 BLANK_NODE_LABEL = '_:' first:[a-zA-Z_] rest:[a-zA-Z0-9_]* {
-    return new RDF.BNode(line(), column(), offset(), 2+first.length+rest.length, first+rest.join(''));
+    return RDF.BNode(bnodeScope.uniqueLabel(first+rest.join('')), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
 }
 LANGTAG          = '@' s:([a-zA-Z]+ ('-' [a-zA-Z0-9]+)*) {
     s[1].splice(0, 0, '');
     var str = s[0].join('')+s[1].reduce(function(a,b){return a+b[0]+b[1].join('');});
-    return new RDF.LangTag(line(), column()+1, offset()+1, str.length, str);
+    return RDF.LangTag(str, RDF.Position5(text(), line(), column()+1, offset()+1, str.length));
 }
 INTEGER          = sign:[+-]? s:[0-9]+ { if (!sign) sign=''; return sign+s.join(''); }
 DECIMAL          = sign:[+-]? l:[0-9]* '.' d:[0-9]+ { if (!sign) sign=''; return sign+l.join('')+'.'+d.join(''); }
@@ -219,7 +218,7 @@ ECHAR = '\\' r:[tbnrf"'\\] { // "
          : r=='\'' ? '\''
          : '\\'
 }
-ANON             = '[' s:_ ']' { return RDF.nextBNode(line(), column(), offset(), s.length+2); }
+ANON             = '[' s:_ ']' { return RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column(), offset(), s.length+2)); }
 PN_CHARS_BASE = [A-Z] / [a-z]
 PN_CHARS_U = PN_CHARS_BASE / '_'
 PN_CHARS = PN_CHARS_U / '-' / [0-9]
@@ -239,5 +238,5 @@ PN_LOCAL_ESC = '\\' r:[_~.!$&'()*+,;=/?#@%-] { return r; }
 
 _ = x:(WS / COMMENT)* { return ''; }
 WS               = [ \t\r\n]+ { return ''; }
-COMMENT          =  "#" comment:[^\r\n]* { return new RDF.Comment(line(), column(), offset(), comment.length+1, comment.join('')); }
+COMMENT          =  "#" comment:[^\r\n]* { db.addComment(new RDF.Comment(comment.join(''), RDF.Position5(text(), line(), column(), offset(), comment.length+1))); }
 // [/terminals]

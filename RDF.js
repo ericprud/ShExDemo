@@ -18,98 +18,118 @@ function defix (term, prefixes) {
 }
 
 function IntStringMap () {
-    this.stringToInt = {};
-    this.intToString = [];
-    this.intToMembers = [];
-    this.add = function (string) {
-        if (this.stringToInt[string])
-            return this.stringToInt[string];
-        size = this.intToString.length;
-        this.stringToInt[string] = size;
-        this.intToString.push(string);
-        this.intToMembers.push([]);
-        return size;
+    var stringToInt = {};
+    var intToString = [];
+    var intToMembers = [];
+    return {
+        add: function (string) {
+            if (stringToInt[string])
+                return stringToInt[string];
+            size = intToString.length;
+            stringToInt[string] = size;
+            intToString.push(string);
+            intToMembers.push([]);
+            return size;
+        },
+        addMember: function (member, offset) {
+            if (offset === undefined) offset = intToMembers.length - 1;
+            if (intToMembers.indexOf(member) == -1)
+                intToMembers[offset].push(member);
+        },
+        getInt: function (str) { return stringToInt[str]; },
+        getString: function (i) { return intToString[i]; },
+        getMembers: function (offset) {
+            if (offset === undefined) offset = intToMembers.length - 1;
+            return intToMembers[offset];
+        }
     };
-    this.addMember = function (member, offset) {
-        if (offset === undefined) offset = this.intToMembers.length - 1;
-        if (this.intToMembers.indexOf(member) == -1)
-            this.intToMembers[offset].push(member);
+}
+
+function StringIdMap () {
+    var _map = {};
+    return {
+        add: function (string, id) {
+            if (!(string in _map))
+                _map[string] = [];
+            _map[string].push(id);
+        },
+        get: function (string) {
+            return _map[string];
+        }
     };
-    this.getInt = function (str) { return this.stringToInt[str]; }
-    this.getString = function (i) { return this.intToString[i]; }
-    this.getMembers = function (offset) {
-        if (offset === undefined) offset = this.intToMembers.length - 1;
-        return this.intToMembers[offset];
-    };
-};
+}
 
 function CharMap (text, offsets) {
-    this.text = text || '';
-    this.offsets = offsets;
-    if (this.offsets == undefined) {
-        this.offsets = [];
+    var _text = text || '';
+    var _offsets = offsets;
+    if (_offsets === undefined) {
+        _offsets = [];
         var i;
         for (i = 0; i < text.length; ++i) {
-            this.text[i] = text[i];
-            this.offsets[i] = i;
+            _text[i] = text[i];
+            _offsets[i] = i;
         }
-        this.offsets[i] = i;
-    };
+        _offsets[i] = i;
+    }
 
-    this.length = function () { return this.offsets.length - 1; };
+    return {
+        getText: function () { return _text; },
 
-    this.insertBefore = function (offset, str, skip) {
-        this.text = this.text.substr(0, this.offsets[offset] + skip) + str + this.text.substr(this.offsets[offset] + skip);
-        this.offsets = this.offsets.slice(0, offset+1)
-            .concat(this.offsets.slice(offset+1).map(
-                function (el) {
-                    return el + str.length;
-                }
-            ));
-    };
+        length: function () { return _offsets.length - 1; },
 
-    this.insertAfter = function (offset, str, skip) {
-        this.text = this.text.substr(0, this.offsets[offset] + skip) + str + this.text.substr(this.offsets[offset] + skip);
-        this.offsets = this.offsets.slice(0, offset)
-            .concat(this.offsets.slice(offset).map(
-                function (el) {
-                    return el + str.length;
-                }
-            ));
-    };
+        insertBefore: function (offset, str, skip) {
+            _text = _text.substr(0, _offsets[offset] + skip) + str + _text.substr(_offsets[offset] + skip);
+            _offsets = _offsets.slice(0, offset+1)
+                .concat(_offsets.slice(offset+1).map(
+                    function (el) {
+                        return el + str.length;
+                    }
+                ));
+        },
 
-    this.replace = function (offset, str) {
-        this.text = this.text.substr(0, this.offsets[offset]) + str + this.text.substr(this.offsets[offset]+1);
-        this.offsets = this.offsets.slice(0, offset+1)
-            .concat(this.offsets.slice(offset+1).map(
-                function (el) {
-                    return el + str.length - 1;
-                }
-            ));
-    };
+        insertAfter: function (offset, str, skip) {
+            _text = _text.substr(0, _offsets[offset] + skip) + str + _text.substr(_offsets[offset] + skip);
+            _offsets = _offsets.slice(0, offset)
+                .concat(_offsets.slice(offset).map(
+                    function (el) {
+                        return el + str.length;
+                    }
+                ));
+        },
 
-    this.HTMLescape = function () {
-        var copy = this.text;
-        for (var i = 0; i < copy.length; ++i) {
-            switch (copy[i]) {
-            case "<":
-                this.replace(i, "&lt;");
-                break;
-            case ">":
-                this.replace(i, "&gt;");
-                break;
-            default:
-            }            
+        replace: function (offset, str) {
+            _text = _text.substr(0, _offsets[offset]) + str + _text.substr(_offsets[offset]+1);
+            _offsets = _offsets.slice(0, offset+1)
+                .concat(_offsets.slice(offset+1).map(
+                    function (el) {
+                        return el + str.length - 1;
+                    }
+                ));
+        },
+
+        HTMLescape: function () {
+            var copy = _text;
+            for (var i = 0; i < copy.length; ++i) {
+                switch (copy[i]) {
+                case "<":
+                    this.replace(i, "&lt;");
+                    break;
+                case ">":
+                    this.replace(i, "&gt;");
+                    break;
+                default:
+                }            
+            }
         }
     };
-};
+}
 
 function SPARQLCardinality (min, max) {
     var ret = '';
     if (min === 0 && max === undefined)
         ;
     else {
-        ret += " HAVING ("
+        ret += " HAVING (";
         if (min === max)
             ret += "COUNT(*)=" + min;
         else {
@@ -126,17 +146,17 @@ function SPARQLCardinality (min, max) {
 }
 
 function ResourceShapeCardinality (min, max, sePrefix, rsPrefix, seFix, rsFix) {
-    if (min == 1 && max == 1) {
+    if (min === 1 && max === 1) {
         return rsFix + "occurs " + rsPrefix + ":Exactly-one ;\n";
-    } else if (min == 0 && max == 1) {
+    } else if (min === 0 && max === 1) {
         return rsFix + "occurs " + rsPrefix + ":Zero-or-one ;\n";
-    } else if (min == 0 && max == undefined) {
+    } else if (min === 0 && max === undefined) {
         return rsFix + "occurs " + rsPrefix + ":Zero-or-many ;\n";
-    } else if (min == 1 && max == undefined) {
+    } else if (min === 1 && max === undefined) {
         return rsFix + "occurs " + rsPrefix + ":One-or-many ;\n";
     } else {
-        return seFix + "min " + min + " ;\n"
-            + seFix + (max === undefined ? "maxundefined true" : "max " + max) + " ;\n";
+        return seFix + "min " + min + " ;\n" +
+            seFix + (max === undefined ? "maxundefined true" : "max " + max) + " ;\n";
     }
 }
 
@@ -158,6 +178,13 @@ function ResourceShapeCardinality (min, max, sePrefix, rsPrefix, seFix, rsFix) {
         }).join("");
     }
 
+    function origText () {
+        if (this._pos && "origText" in this._pos)
+            return this._pos.origText();
+        else
+            return this.toString();
+    }
+
 RDF = {
     message: function (str) {
         console.error(str);
@@ -171,8 +198,8 @@ RDF = {
     UnknownRule: function (label) {
         this._ = 'UnknownRule'; this.label = label;
         this.toString = function () {
-            return "Rule " + this.label.toString() + " not found in schema."
-        }
+            return "Rule " + this.label.toString() + " not found in schema.";
+        };
     },
 
     createIRIResolver: function() {
@@ -187,7 +214,7 @@ RDF = {
                 for (var p in this)
                     if (p != 'Prefixes')
                         ret[p]=this[p];
-                for (var p in this.Prefixes)
+                for (p in this.Prefixes)
                     ret.Prefixes[p]=this.Prefixes[p];
                 return ret;
             },
@@ -207,11 +234,11 @@ RDF = {
             getPrefix: function (pre) {
                 // unescapeReserved
                 var nspace = this.Prefixes[pre];
-                if (nspace == undefined) {
+                if (nspace === undefined) {
                     this.errorHandler("unknown namespace prefix: " + pre);
                     // throw("unknown namespace prefix: " + pre);
                     RDF.message("unknown namespace prefix: " + pre);
-                    nspace = '<!' + pre + '!>'
+                    nspace = '<!' + pre + '!>';
                 }
                 return nspace;
             },
@@ -228,35 +255,28 @@ RDF = {
                 var prepend = path.substr(0,startAt);
                 path = path.substr(startAt);
                 while (path.match(/\/\.\./)) {
-                    path
-                        = path.match(/\/\.\.$/)
-                        ? path.replace(/\/([^\/]*?)\/\.\.$/, '')
-                        : path.replace(/\/([^\/]*?)\/\.\.\//, '/');
-                    var startAt = path.match(/^(\/\.\.)*/g)[0].length;
+                    path = path.match(/\/\.\.$/) ?
+                        path.replace(/\/([^\/]*?)\/\.\.$/, '') :
+                        path.replace(/\/([^\/]*?)\/\.\.\//, '/');
+                    startAt = path.match(/^(\/\.\.)*/g)[0].length;
                     prepend += path.substr(0,startAt);
                     path = path.substr(startAt);
                 }
                 if ((prot || host) && !path)
                     path = "/";
                 return prot + host + prepend + path;
+            }
+        };
+    },
+
+    createBNodeScope: function() {
+        return {
+            NextBNode: 0,
+            nextLabel: function () {
+                return ''+this.NextBNode++; // needs mutex
             },
-            oldAttemptsAt_getAbsoluteIRI: function (url) {
-                if (url.indexOf('//') > 0 || this.getBase() == undefined)
-                    return url;
-                return this.getBase().substr(0, this.getBase().lastIndexOf('/') + 1) + url;
-                var doc      = document,
-                old_base = doc.getElementsByTagName('base')[0],
-                old_href = old_base && old_base.href,
-                doc_head = doc.head || doc.getElementsByTagName('head')[0],
-                our_base = old_base || doc_head.appendChild(doc.createElement('base')),
-                resolver = doc.createElement('a'),
-                resolved_url;
-                our_base.href = this.getBase();
-                resolver.href = url;
-                resolved_url  = resolver.href; // browser magic at work here
-                if (old_base) old_base.href = old_href;
-                else doc_head.removeChild(our_base);
-                return resolved_url;
+            uniqueLabel: function (proposed) {
+                return proposed; // @@ check against allocated.
             }
         };
     },
@@ -264,8 +284,9 @@ RDF = {
     DISPOSITION: {
         PASS :      {value: 1, name: "pass"      }, 
         FAIL:       {value: 3, name: "fail"      }, 
-        EMPTY:      {value: 0, name: "empty"     },
-        INDEFINITE: {value: 2, name: "indefinite"}
+        NONE:       {value: 0, name: "empty"     },
+        ZERO:       {value: 2, name: "indefinite"},
+        EXOR :      {value: 1, name: "error"     }
     },
 
     SPARQLprefixes: function (prefixes) {
@@ -278,12 +299,12 @@ RDF = {
     },
 
     decodeUCHAR: function (el) {
-        if (el.length == 1) return el;
+        if (el.length === 1) return el;
         var code;
         if (el.length==9)
-            code = parseInt(el.slice(1,9).join(''), 16)
+            code = parseInt(el.slice(1,9).join(''), 16);
         if (el.length==5)
-            code = parseInt(el.slice(1,5).join(''), 16)
+            code = parseInt(el.slice(1,5).join(''), 16);
         if (code<0x10000) { // RDFa.1.2.0.js:2712
             return String.fromCharCode(code);
         } else {
@@ -294,260 +315,432 @@ RDF = {
             return String.fromCharCode(h + 0xd800) + String.fromCharCode(l + 0xdc00);
         }
     },
+
+    // Three kinds of position. Not needed in the long run, but useful for recording what's expected.
+    Position5: function (_orig, line, column, offset, width) {
+        if (Math.abs(_orig.length - width) > 1)
+            RDF.message(new Error("'"+_orig+"'.length = "+_orig.length+" != "+width));
+        return { _orig:_orig, line:line, column:column, offset:offset, width:width,
+                 origText: function () { return this._orig; }
+               };
+    },
+    Position2: function (line, column) {
+        return { line: line, column: column };
+    },
+    Position0: function () {
+        return {  };
+    },
+
     // Turtle types
-    IRI: function (line, column, offset, width, lex) {
-        this._ = 'IRI'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.lex = lex; this.id = undefined;
-        this.toString = function () {
-            return '<' + this.lex + '>';
-        },
-        this.assignId = function (charmap, id) {
-            if (this.id === undefined) {
-                this.id = id;
-                charmap.insertBefore(this.offset, "<span id='"+id+"' class='IRI'>", 0);
-                charmap.insertAfter(this.offset+this.width, "</span>", 0);
+    IRI: function (lexP, _posP) {
+        return {
+            _: 'IRI',
+            lex: lexP,
+            _pos: _posP,
+            id: undefined,
+            toString: function (orig) {
+                if (orig && this._pos && "origText" in this._pos) return this._pos.origText();
+                return '<' + this.lex + '>';
+            },
+            assignId: function (charmap, idP) {
+                if (this.id === undefined) {
+                    this.id = idP;
+                    charmap.insertBefore(this._pos.offset, "<span id='"+idP+"' class='IRI'>", 0);
+                    charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
+                }
+                return this.id;
             }
-            return this.id;
-        }
-    },
-    RDFLiteral: function (line, column, offset, width, lex, langtag, datatype) {
-        this._ = 'RDFLiteral'; this.line = line; this.column = column; this.offset = offset; this.width = width+2; this.lex = lex; this.langtag = langtag; this.datatype = datatype; this.id = undefined;
-        this.toString = function () {
-            var ret = '"' + this.lex + '"';
-            if (this.langtag != undefined)
-                ret += '@' + this.langtag.toString();
-            if (this.datatype != undefined)
-                ret += '^^' + this.datatype.toString();
-            return ret;
         };
-        this.assignId = function (charmap, id) {
-            if (this.id === undefined) {
-                this.id = id;
+    },
+    RDFLiteral: function (lexP, langtagP, datatypeP, _posP) {
+        return {
+            _: 'RDFLiteral',
+            lex: lexP,
+            langtag: langtagP,
+            datatype: datatypeP,
+            _pos: _posP,
+            id: undefined,
+            toString: function (orig) {
+                if (orig && this._pos && "origText" in this._pos) return this._pos.origText();
+                var ret = '"' + this.lex + '"';
+                if (this.langtag !== undefined)
+                    ret += '@' + this.langtag.toString();
+                if (this.datatype !== undefined)
+                    ret += '^^' + this.datatype.toString();
+                return ret;
+            },
+            assignId: function (charmap, id) {
+                if (this.id === undefined) {
+                    this.id = id;
 
-                // Adding the markup for the lexical form before the datatype or
-                // langtag takes advantage of the insert order and renders an
-                // irrelevent datatype tag for native types (integer, decimal,
-                // real).
-                charmap.insertBefore(this.offset, "<span id='"+id+"' class='literal'>", 0);
-                charmap.insertAfter(this.offset+this.width-2, "</span>", 0); // !! needed to prevent two extra chars getting colored, but why?!
-                // if (this.langtag != undefined)
-                //     this.langtag.assignId(charmap, id);
-                if (this.datatype != undefined)
-                    this.datatype.assignId(charmap, id);
-                if (this.langtag != undefined)
-                    this.langtag.assignId(charmap, id);
+                    // Adding the markup for the lexical form before the datatype or
+                    // langtag takes advantage of the insert order and renders an
+                    // irrelevent datatype tag for native types (integer, decimal,
+                    // real).
+                    charmap.insertBefore(this._pos.offset, "<span id='"+id+"' class='literal'>", 0);
+                    charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0); // !! needed to prevent two extra chars getting colored, but why?!
+                    // if (this.langtag !== undefined)
+                    //     this.langtag.assignId(charmap, id);
+                    if (this.datatype !== undefined)
+                        this.datatype.assignId(charmap, id);
+                    if (this.langtag !== undefined)
+                        this.langtag.assignId(charmap, id);
+                }
+                return this.id;
             }
-            return this.id;
         };
     },
-    LangTag: function (line, column, offset, width, lex) {
-        this._ = 'LangTag'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.lex = lex; this.id = undefined;
-        this.toString = function () {
-            return this.lex;
-        },
-        this.assignId = function (charmap, id) {
-            if (this.id === undefined) {
-                this.id = id;
-                charmap.insertBefore(this.offset, "<span id='"+id+"' class='langtag'>", 0);
-                charmap.insertAfter(this.offset+this.width, "</span>", 0);
+    LangTag: function (lexP, _posP) {
+        return {
+            _: 'LangTag',
+            lex: lexP,
+            _pos: _posP,
+            id: undefined,
+            toString: function () {
+                return this.lex;
+            },
+            assignId: function (charmap, id) {
+                if (this.id === undefined) {
+                    this.id = id;
+                    charmap.insertBefore(this._pos.offset, "<span id='"+id+"' class='langtag'>", 0);
+                    charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
+                }
+                return this.id;
             }
-            return this.id;
-        }
-    },
-    BNode: function (line, column, offset, width, lex) {
-        this._ = 'BNode'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.lex = lex; this.id = undefined;
-        this.toString = function () {
-            return '_:' + this.lex;
-        };
-        this.assignId = function (charmap, id) {
-            if (this.id === undefined) {
-                this.id = id;
-                charmap.insertBefore(this.offset, "<span id='"+id+"' class='bnode'>", 0);
-                charmap.insertAfter(this.offset+this.width, "</span>", 0);
-            }
-            return this.id;
         };
     },
-    NextBNode: 0,
-    nextBNode: function (line, column, offset, width) {
-        return new RDF.BNode(line, column, offset, width, ''+this.NextBNode++); // needs mutex
+    BNode: function (lexP, _posP) {
+        return {
+            _: 'BNode',
+            lex: lexP,
+            _pos: _posP,
+            id: undefined,
+            toString: function (orig) {
+                if (orig && this._pos && "origText" in this._pos) {
+                    var ret = this._pos.origText();
+                    if (ret[0] != '\u005b' && ret[0] != '\u0028') // !open square bracket && !open paren
+                        return orig;
+                }
+                return '_:' + this.lex;
+            },
+            assignId: function (charmap, id) {
+                if (this.id === undefined) {
+                    this.id = id;
+                    charmap.insertBefore(this._pos.offset, "<span id='"+id+"' class='bnode'>", 0);
+                    charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
+                }
+                return this.id;
+            }
+        };
     },
 
-    Triple: function (s, p, o) {
-        this._ = 'Triple'; this.s = s; this.p = p; this.o = o;
-        this.toString = function () {
-            return this.s.toString() + ' ' + this.p.toString() + ' ' + this.o.toString() + '.';
-        },
-        this.colorize = function (charmap, idMap) {
-            var tripleId = "t"+idMap.add(this.toString());
-            // Assignid permits only one XML ID for a given term *rendering*.
-            idMap.addMember(this.s.assignId(charmap, tripleId+"_s"));
-            idMap.addMember(this.p.assignId(charmap, tripleId+"_p"));
-            idMap.addMember(this.o.assignId(charmap, tripleId+"_o"));
-        }
+    Triple: function (sP, pP, oP) {
+        var ret = {
+            _: 'Triple',
+            s: sP,
+            p: pP,
+            o: oP,
+            toString: function (orig) {
+                return this.s.toString(orig) + ' ' + this.p.toString(orig) + ' ' + this.o.toString(orig) + '.';
+            },
+            desparateToString: function () {
+                var ss;
+                function str (t) {
+                    var ret;
+                    try {ret = t.toString();}
+                    catch (e) {ret = JSON.stringify(t);}
+                    return ret;
+                }
+                return str(this.s) + ' ' + str(this.p) + ' ' + str(this.s) + '.';
+            },
+            colorize: function (charmap, idMap, termStringToIds) {
+                var tripleId = "t"+idMap.add(this.toString());
+                // Assignid permits only one XML ID for a given term *rendering*.
+                idMap.addMember(this.s.assignId(charmap, tripleId+"_s"));
+                termStringToIds.add(this.s.toString(true), tripleId+"_s");
+                idMap.addMember(this.p.assignId(charmap, tripleId+"_p"));
+                termStringToIds.add(this.p.toString(true), tripleId+"_p");
+                idMap.addMember(this.o.assignId(charmap, tripleId+"_o"));
+                termStringToIds.add(this.o.toString(true), tripleId+"_o");
+            }
+        };
+        if (sP === null || sP === undefined || !('_' in sP) ||
+            pP === null || pP === undefined || !('_' in pP) ||
+            oP === null || oP === undefined || !('_' in oP))
+            throw "invalid Triple(" + this.desparateToString() + ")";
+        else
+            return ret;
     },
 
-    DB: function () {
-        this._ = 'DB'; this.triples = new Array();
-        this.triplesMatching = function (s, p, o) {
-            var ret = [];
-            for (var i = 0; i < this.triples.length; ++i) {
-                var t = this.triples[i];
-                if ((s === undefined || s === t.s)
-                    && (p === undefined || p === t.p)
-                    && (o === undefined || o === t.o))
-                    ret.push(t);
+    Dataset: function () {
+        return {
+            _: 'Dataset',
+            triples: [],
+            comments: [],
+            SPO: {},
+            indexEntries: [],
+            triplesMatching: function (s, p, o) {
+                var ret = [];
+                var sStr = s ? s.toString() : '', pStr = p ? p.toString() : '', oStr = o ? o.toString() : '';
+                function os (O) {
+                    if (o) {
+                        if (oStr in O) {
+                            ret.push(O[oStr][0]);
+                        }
+                    } else {
+                        for (var oi in O) {
+                            ret.push(O[oi][0]);
+                        }
+                    }
+                }
+                function ps (PO) {
+                    if (p) {
+                        if (pStr in PO) {
+                            os(PO[pStr]);
+                        }
+                    } else {
+                        for (var pi in PO) {
+                            os(PO[pi]);
+                        }
+                    }
+                }
+                function ss (SPO) {
+                    if (s) {
+                        if (sStr in SPO) {
+                            ps(SPO[sStr]);
+                        }
+                    } else {
+                        for (var si in SPO) {
+                            ps(SPO[si]);
+                        }
+                    }
+                }
+                ss(this.SPO);
+                //            for (var i = 0; i < this.triples.length; ++i) {
+                //                var t = this.triples[i];
+                //                if ((s === null || s === undefined || s.lex == t.s.lex && s._ == t.s._) &&
+                //                    (p === null || p === undefined || p.lex == t.p.lex && p._ == t.p._) &&
+                //                    (o === null || o === undefined || o.lex == t.o.lex && o._ == t.o._))
+                //                    ret.push(t);
+                //            }
+                return ret;
+            },
+            triplesMatching_str: function (s, p, o) {
+                var ret = [];
+                for (var i = 0; i < this.triples.length; ++i) {
+                    var t = this.triples[i];
+                    if ((s === null || s === undefined || s === t.s.toString()) &&
+                        (p === null || p === undefined || p === t.p.toString()) &&
+                        (o === null || o === undefined || o === t.o.toString()))
+                        ret.push(t);
+                }
+                return ret;
+            },
+            length: function () {
+                return this.triples.length;
+            },
+            uniqueSubjects: function () {
+                var ret = [];
+                var subjects = {};
+                for (var i = 0; i < this.triples.length; ++i) {
+                    var t = this.slice(i)[0].s;
+                    var s = t.toString();
+                    if (subjects[s] === undefined) {
+                        subjects[s] = t;
+                        ret.push(t);
+                    }
+                }
+                return ret;
+            },
+            slice: function (from, length) {
+                return this.triples.slice(from, length);
+            },
+            clone: function () {
+                var ret = RDF.Dataset();
+                ret.triples = this.triples.slice();
+                return ret;
+            },
+            splice: function (from, length) {
+                return this.triples.splice(from, length);
+            },
+            index: function (t, at) {
+                var sStr = t.s.toString(), pStr = t.p.toString(), oStr = t.o.toString();
+                if (!(sStr in this.SPO))
+                    this.SPO[sStr] = {};
+                var PO = this.SPO[sStr];
+                if (!(pStr in PO))
+                    PO[pStr] = {};
+                var O = PO[pStr];
+                var entry = [t, at];
+                var len = this.indexEntries.length;
+                if (at < len)
+                    for (var i = at; i < len; ++i) {
+                        this.indexEntries[i+1] = this.indexEntries[i];
+                        this.indexEntries[i+1][1] = i+1;
+                    }
+                O[oStr] = entry;
+            },
+            push: function (t) {
+                if (this.triplesMatching(t.s, t.p, t.o).length === 0) {
+                    this.triples.push(t);
+                    this.index(t, this.triples.length);
+                }
+            },
+            insertAt: function (offset, t) {
+                if (this.triplesMatching(t.s, t.p, t.o).length === 0) {
+                    this.triples.splice(offset, 0, t);
+                    this.index(t, offset);
+                }
+            },
+            addComment: function (c) {
+                this.comments.push(c);
+            },
+
+            toString: function () {
+                return this.triples.map(function (t) { return t.toString(); }).join("\n");
+            },
+            colorize: function (charmap) {
+                var idMap = IntStringMap();
+                var termStringToIds = StringIdMap();
+                for (var iTriple = 0; iTriple < this.triples.length; ++iTriple)
+                    this.triples[iTriple].colorize(charmap, idMap, termStringToIds);
+                var commentId = "tc";
+                //this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
+                for (var iComment = 0; iComment < this.comments.length; ++iComment) {
+                    var comment = this.comments[iComment];
+                    charmap.insertBefore(comment._pos.offset, "<span id='"+commentId+"_"+iComment+"' class='comment'>", 0);
+                    charmap.insertAfter(comment._pos.offset+comment._pos.width, "</span>", 0);
+                }
+                return {idMap:idMap, termStringToIds:termStringToIds};
             }
-            return ret;
-        },
-        this.triplesMatching_str = function (s, p, o) {
-            var ret = [];
-            for (var i = 0; i < this.triples.length; ++i) {
-                var t = this.triples[i];
-                if (   (s === undefined || s === t.s.toString())
-                    && (p === undefined || p === t.p.toString())
-                    && (o === undefined || o === t.o.toString()))
-                    ret.push(t);
-            }
-            return ret;
-        },
-        this.length = function () {
-            return this.triples.length;
-        },
-        this.slice = function (from, length) {
-            return this.triples.slice(from, length);
-        },
-        this.clone = function () {
-            var ret = new RDF.DB();
-            ret.triples = this.triples.slice();
-            return ret;
-        }
-        this.splice = function (from, length) {
-            return this.triples.splice(from, length);
-        },
-        this.push = function (t) {
-            this.triples.push(t);
-        },
-        this.toString = function () {
-            return this.triples.map(function (t) { return t.toString(); }).join("\n");
-        },
-        this.colorize = function (charmap) {
-            var idMap = new IntStringMap();
-            for (var i = 0; i < this.triples.length; ++i)
-                this.triples[i].colorize(charmap, idMap);
-            return idMap;
-        }
+        };
     },
 
     // ShEx types
-    Code: function (line, column, offset, width, label, code) {
-        this._ = 'Code'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.label = label; this.code = code;
+    Code: function (label, code, _pos) {
+        this._ = 'Code'; this.label = label; this.code = code; this._pos = _pos;
         this.toString = function () {
             return '%' + this.label + '{' + this.code + '%}';
-        }
+        };
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             var lead = pad(depth, '    ');
             var seFix = lead + sePrefix + ":";
             var rsFix = lead + rsPrefix + ":";
-            return seFix + "extension [\n"
-                + "    " + seFix + "label \"" + this.label + "\" ;\n"
-                + "    " + seFix + "action \"\"\"" + this.code + "\"\"\"\n"
-                + lead + "] ;\n";
-        }
+            return seFix + "extension [\n" +
+                "    " + seFix + "label \"" + this.label + "\" ;\n" +
+                "    " + seFix + "action \"\"\"" + this.code + "\"\"\"\n" +
+                lead + "] ;\n";
+        };
         this.toSExpression = function (depth) {
             return "(code \""+this.label+"\" \""+this.code+"\")";
-        }
+        };
         this.toHaskell = function (depth) {
             return "(code \""+this.label+"\" \""+this.code+"\")";
-        }
+        };
     },
 
-    Comment: function (line, column, offset, width, comment) {
-        this._ = 'Comment'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.comment = comment;
+    Comment: function (comment, _pos) {
+        this._ = 'Comment'; this.comment = comment; this._pos = _pos;
         this.toString = function () {
             return '#' + this.comment;
-        }
+        };
     },
 
 
-    NameTerm: function (line, column, term) {
-        this._ = 'NameTerm'; this.line = line; this.column = column; this.term = term;
-        this.toString = function () {
-            return this.term.toString();
-        }
+    NameTerm: function (term, _pos) {
+        this._ = 'NameTerm'; this.term = term; this._pos = _pos;
+        this.toString = function (orig) {
+            return this.term.toString(orig);
+        };
         this.match = function (t2) {
             return t2.toString() == this.term.toString();
-        }
+        };
         this.SPARQLpredicate = function (prefixes) { // @@ simplify later
             return defix(this.term, prefixes);
-        }
+        };
         this.SPARQLpredicateTest = function (prefixes) {
             return "true";
-        }
+        };
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             var lead = pad(depth, '    ');
             var seFix = lead + sePrefix + ":";
             var rsFix = lead + rsPrefix + ":";
             var t = defix(this.term, prefixes);
-            return rsFix + "name \"" + t.substr(t.indexOf(':')+1) + "\" ;\n"
-                + rsFix + "propertyDefinition " + this.SPARQLpredicate(prefixes) + " ;\n";
-        }
+            return rsFix + "name \"" + t.substr(t.indexOf(':')+1) + "\" ;\n" +
+                rsFix + "propertyDefinition " + this.SPARQLpredicate(prefixes) + " ;\n";
+        };
         this.toSExpression = function (depth) {
             return "(NameTerm "+this.term.toString()+")";
-        }
+        };
         this.toHaskell = function (depth) {
             return "(NameTerm "+this.term.toString()+")";
-        }
+        };
     },
-    NameWild: function (line, column, exclusions) {
-        this._ = 'NameWild'; this.line = line; this.column = column; this.exclusions = exclusions;
-        this.toString = function () {
+    NameWild: function (exclusions, _pos) {
+        this._ = 'NameWild'; this.exclusions = exclusions; this._pos = _pos;
+        this.toString = function (orig) {
             var ret = '.';
-            ret += this.exclusions.map(function (ex) { return ' - ' + ex.toString(); }).join('');
+            ret += this.exclusions.map(function (ex) { return ' - ' + ex.toString(orig); }).join('');
             return ret;
-        }
+        };
+        this.match = function (t2) {
+            for (var i = 0; i < this.exclusions.length; ++i)
+                if (this.exclusions[i].lex === t2.lex)
+                    return false;
+            return true;
+        };
         this.SPARQLpredicate = function (prefixes) { // @@ simplify later
             return "?p";
-        },
+        };
         this.SPARQLpredicateTest = function (prefixes) {
             return "true"; // defix(this.term, prefixes)
-        }
+        };
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             if (exclusions.length)
-                throw "expressing NameWild with exclusions " + this.toString() + " will require some fancy POWDER.";
+                return "# expressing NameWild with exclusions " + this.toString() + " will require some fancy POWDER.";
             return '';
-        }
+        };
         this.toSExpression = function (depth) {
             return "(NameWild "+(this.exclusions.map(function(ex){return ex.toString();}).join(' '))+")";
-        }
+        };
         this.toHaskell = function (depth) {
             return "(NameWild "+(this.exclusions.map(function(ex){return ex.toString();}).join(' '))+")";
-        }
+        };
     },
-    NamePattern: function (line, column, term) {
-        this._ = 'NamePattern'; this.line = line; this.column = column; this.term = term;
-        this.toString = function () {
-            return this.term.toString() + '~';
-        }
+    NamePattern: function (term, exclusions) {
+        this._ = 'NamePattern'; this.term = term; this.exclusions = exclusions; this._pos = _pos;
+        this.toString = function (orig) {
+            return this.term.toString(orig) + '~' + this.exclusions.map(function (ex) { return ' - ' + ex.toString(orig); }).join('');
+        };
+        this.match = function (t2) {
+            var ts = this.term.lex;
+            if (ts != t2.lex.substr(0, ts.length))
+                return false;
+            for (var i = 0; i < this.exclusions.length; ++i)
+                if (this.exclusions[i].lex === t2.lex)
+                    return false;
+            return true;
+        };
         this.SPARQLpredicate = function (prefixes) { // @@ simplify later
             return "?p";
-        }
+        };
         this.SPARQLpredicateTest = function (prefixes) {
             return "true"; // defix(this.term, prefixes)
-        }
+        };
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             var lead = pad(depth, '    ');
             var seFix = lead + sePrefix + ":";
             var rsFix = lead + rsPrefix + ":";
             var t = defix(this.term, prefixes);
-            return seFix + "name \"" + t.substr(0, t.indexOf(':')) + ":*\" ;\n"
-                + seFix + "propertyStem " + this.SPARQLpredicate(prefixes) + " ;\n";
-        }
+            return seFix + "name \"" + t.substr(0, t.indexOf(':')) + ":*\" ;\n" +
+                seFix + "propertyStem " + this.SPARQLpredicate(prefixes) + " ;\n";
+        };
         this.toSExpression = function (depth) {
             return "(NamePattern "+this.term.toString()+")";
-        }
+        };
         this.toHaskell = function (depth) {
             return "(NamePattern "+this.term.toString()+")";
-        }
+        };
     },
 
     QueryClause: function (counter, sparql) {
@@ -555,11 +748,22 @@ RDF = {
         this.prepend = function (str) {
             this.sparql = str + this.sparql;
             return this;
-        }
+        };
         this.append = function (str) {
             this.sparql += str;
             return this;
-        }
+        };
+    },
+
+    /** beautify and potentially eliminated FILTERs
+     */
+    filterConjunction: function (conjoints) {
+        while (conjoints.indexOf("true") != -1)
+            conjoints.splice(conjoints.indexOf("true"), 1);
+        if (conjoints.length !== 0)
+            return " FILTER (" + conjoints.join(" && ") + ")";
+        else
+            return '';
     },
 
     /*
@@ -575,15 +779,16 @@ RDF = {
             counter = counters.incr(label.lex + "_c");
             countSelect = " (COUNT(*) AS " + counter + ")";
         }
-        var cardStr = card === undefined ? '' : SPARQLCardinality(card.min, card.max)
-        var str = lead
-            + "{ SELECT ?" + label.lex + countSelect + " {\n"
-            + lead + "  ?" + label.lex + " "
-            + predicate + " " + object
-            + " . FILTER ("
-            + predicateTest + " && " + objectTest + ")" + codeStr + "\n"
-            + lead + "} GROUP BY ?" + label.lex
-            + cardStr + "}\n";
+        var cardStr = card === undefined ? '' : SPARQLCardinality(card.min, card.max);
+        var str = lead +
+            "{ SELECT ?" + label.lex + countSelect + " {\n" +
+            lead + "  ?" + label.lex + " " +
+            predicate + " " + object +
+            " ." +
+            this.filterConjunction([predicateTest, objectTest]) +
+            codeStr + "\n" +
+            lead + "} GROUP BY ?" + label.lex +
+            cardStr + "}\n";
         return new RDF.QueryClause(counter, str);
     },
     arcTest: function (schema, label, prefixes, depth, counters, needCounter, predicate, predicateTest, object, objectTest, card, code) {
@@ -601,30 +806,34 @@ RDF = {
     },
     arcDump: function (schema, label, prefixes, depth, variables, predicate, predicateTest, object, objectTest, card, code) {
         var lead = pad(depth, '    ');
-        return new RDF.QueryClause(undefined, lead+"?"+label+" "+predicate+" "+"?"+object+" .\n");
+        return new RDF.QueryClause(undefined, lead+"?"+label+" "+predicate+" "+object+" .\n");
     },
     arcSelect: function (schema, as, prefixes, depth, counters, predicate, predicateTest, object, objectTest) {
         var lead = pad(depth, '    ');
         var countSelect = '';
         var counter = undefined;
         var str =
-            lead + "  { " + as + " "
-            + predicate + " " + object
-            + " . FILTER ("
-            + predicateTest + " && " + objectTest + ") BIND (" + as + " AS ?s) BIND (" + predicate + " AS ?p) }";
+            lead + "  { " + as + " " +
+            predicate + " " + object +
+            " . FILTER (" +
+            predicateTest + " && " + objectTest + ") BIND (" + as + " AS ?s) BIND (" + predicate + " AS ?p) }";
         return new RDF.QueryClause(counter, str);
     },
 
     // @<foo>
-    ValueReference: function (line, column, offset, width, label) {
-        this._ = 'ValueReference'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.label = label;
-        this.toString = function () {
-            return '@' + this.label.toString();
+    ValueReference: function (label, _pos) {
+        this._ = 'ValueReference'; this.label = label; this._pos = _pos;
+        this.toString = function (orig, schema) {
+            var l = this.label.toString(orig);
+            if (schema && this.label._ === 'BNode' && l in schema.ruleMap)
+                return "{ " + schema.ruleMap[l].toString(orig) + " }";
+            else
+                return '@' + l;
         },
-        this.validate = function (schema, rule, t, db) {
+        this.validate = function (schema, rule, t, point, db, validatorStuff) {
             var ret = new RDF.ValRes();
             schema.dispatch('enter', rule.codes, rule, t);
-            var r = schema.validatePoint(t.o, this.label, db, true);
+            var r = schema.validatePoint(point, this.label, db, validatorStuff, true);
             schema.dispatch('exit', rule.codes, rule, r);
             ret.status = r.status;
             if (r.passed())
@@ -638,7 +847,7 @@ RDF = {
         },
         this.SPARQLobjectTest = function (prefixes) {
             return "(isIRI(?o) || isBlank(?o))";
-        }
+        },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
             inOpt = 1;
             var ret = RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
@@ -653,18 +862,18 @@ RDF = {
             try {
                 
                 ret.append(
-                    lead1 + "{ SELECT ?" + label.lex + countSelect + " {\n"
-                        + lead2 + "{ SELECT ?" + label.lex + " ?" + this.label.lex + " {\n"
-                        + lead2 + "  ?" + label.lex + " " + predicate + " ?" + this.label.lex
-                        + " . FILTER (" + predicateTest + " && (isIRI(?" + this.label.lex + ") || isBlank(?" + this.label.lex + ")))\n"
-                        + lead2 + "} }\n"
-                        + schema.SPARQLvalidation3(this.label, prefixes, depth+1, counters).sparql
-                        + lead1 + "} GROUP BY ?" + label.lex + " }\n"
-                        + lead1 + "FILTER (" + ret.counter + " = " + counter + ")\n");
+                    lead1 + "{ SELECT ?" + label.lex + countSelect + " {\n" +
+                        lead2 + "{ SELECT ?" + label.lex + " ?" + this.label.lex + " {\n" +
+                        lead2 + "  ?" + label.lex + " " + predicate + " ?" + this.label.lex +
+                        " . FILTER (" + predicateTest + " && (isIRI(?" + this.label.lex + ") || isBlank(?" + this.label.lex + ")))\n" +
+                        lead2 + "} }\n" +
+                        schema.SPARQLvalidation3(this.label, prefixes, depth+1, counters).sparql +
+                        lead1 + "} GROUP BY ?" + label.lex + " }\n" +
+                        lead1 + "FILTER (" + ret.counter + " = " + counter + ")\n");
                 var o = counters.incr(label.lex + '_' + this.label.lex + "_ref");
                 ret.append(
-                    lead1 + "OPTIONAL { ?" + label.lex + " " + predicate + " " + o
-                        + " . FILTER (" + predicateTest + " && (isIRI(" + o + ") || isBlank(" + o + "))) }\n");
+                    lead1 + "OPTIONAL { ?" + label.lex + " " + predicate + " " + o +
+                        " . FILTER (" + predicateTest + " && (isIRI(" + o + ") || isBlank(" + o + "))) }\n");
             } catch (e) {
                 if (typeof(e) === 'object' && e._ === 'ValidationRecursion')
                     RDF.message("avoiding cyclic validation of " + e.label.toString());
@@ -672,7 +881,7 @@ RDF = {
                     throw e;
             }
             return ret;
-        }
+        },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             var s = label.lex;
             var o = label.lex+"_"+predicate.lex;
@@ -681,7 +890,7 @@ RDF = {
             var ret = RDF.arcDump(schema, s, prefixes, depth, variables, predicate, predicateTest, o, this.SPARQLobjectTest(prefixes), card, code);
             try {
                 var lead1 = pad(depth, '    ');
-                ret.append(lead1 + schema.SPARQLdataDump3(this.label, o, prefixes, depth+1).sparql);
+                ret.append(lead1 + schema.SPARQLdataDump3(this.label, o, prefixes, depth+1, variables).sparql);
             } catch (e) {
                 if (typeof(e) === 'object' && e._ === 'ValidationRecursion')
                     RDF.message("avoiding cyclic validation of " + e.label.toString());
@@ -689,21 +898,21 @@ RDF = {
                     throw e;
             }
             return ret;
-        }
+        },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
             var ret = RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
             var lead1 = pad(depth, '    ');
             var lead2 = pad(depth+1, '    ');
             try {
                 var nestedLabel = counters.incr(as.substr(1) + '_' + this.label.lex + '_ref'); // !! remove '?'s from incr
-                ret.append( " UNION\n"
-                    + lead1 + "  {\n"
-                        + lead2 + "{ " + as + " " + predicate + " " + nestedLabel
-                        + " . FILTER (" + predicateTest + " && (isIRI(" + nestedLabel + ") || isBlank(" + nestedLabel + "))) }\n"
-                            + lead2 + "{\n"
-                            + schema.SPARQLremainingTriples3(this.label, nestedLabel, prefixes, depth+1, counters).sparql + "\n"
-                            + lead2 + "}\n"
-                        + lead1 + "  }");
+                ret.append( " UNION\n" +
+                    lead1 + "  {\n" +
+                        lead2 + "{ " + as + " " + predicate + " " + nestedLabel +
+                        " . FILTER (" + predicateTest + " && (isIRI(" + nestedLabel + ") || isBlank(" + nestedLabel + "))) }\n" +
+                            lead2 + "{\n" +
+                            schema.SPARQLremainingTriples3(this.label, nestedLabel, prefixes, depth+1, counters).sparql + "\n" +
+                            lead2 + "}\n" +
+                        lead1 + "  }");
             } catch (e) {
                 if (typeof(e) === 'object' && e._ === 'ValidationRecursion')
                     RDF.message("avoiding cyclic validation of " + e.label.toString());
@@ -711,46 +920,97 @@ RDF = {
                     throw e;
             }
             return ret;
-        }
+        },
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             var lead = pad(depth, '    ');
             var seFix = lead + sePrefix + ":";
             var rsFix = lead + rsPrefix + ":";
             return rsFix + "valueShape " + defix(this.label, prefixes) + " ;\n";
-        }
+        },
         this.toSExpression = function (depth) {
             return "(ValueRef "+this.label.toString()+")";
-        }
+        },
         this.toHaskell = function (depth) {
             return "(ValueRef "+this.label.toString()+")";
-        }
+        };
     },
 
     // IRI | LITERAL | xsd:integer
-    ValueType: function (line, column, offset, width, type) {
-        this._ = 'ValueType'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.type = type;
-        this.toString = function () {
-            return this.type.toString();
+    ValueTerm: function (term, _pos) {
+        this._ = 'ValueTerm'; this.term = term; this._pos = _pos;
+        this.toString = function (orig, schema) {
+            return this.term.toString(orig);
         },
-        this.validate = function (schema, rule, t, db) {
+        this.validate = function (schema, rule, t, point, db, validatorStuff) {
+            var ret = new RDF.ValRes();
+            if (point._ == this.term._ && point.lex == this.term.lex) {
+                ret.status = RDF.DISPOSITION.PASS;
+                ret.matched(rule, t);
+            } else {
+                ret.status = RDF.DISPOSITION.FAIL;
+                ret.error_noMatch(rule, t);
+            }
+            return ret;
+        },
+        this.SPARQLobject = function (prefixes) {
+            return "?o";
+        },
+        this.SPARQLobjectTest = function (prefixes) {
+            var s = this.term.toString();
+            if (s == "<http://www.w3.org/2013/ShEx/ns#Literal>") return "isLiteral(?o)";
+            if (s == "<http://www.w3.org/2013/ShEx/ns#NonLiteral>") return "(isIRI(?o) || isBlank(?o))";
+            if (s == "<http://www.w3.org/2013/ShEx/ns#IRI>") return "isIRI(?o)";
+            if (s == "<http://www.w3.org/2013/ShEx/ns#BNode>") return "isBlank(?o)";
+            return "(isLiteral(?o) && dataterm(?o) = " + defix(this.term, prefixes) + ")";
+        },
+        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
+            return RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        },
+        this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
+            return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        },
+        this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
+            return RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
+        },
+        this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
+            var lead = pad(depth, '    ');
+            var seFix = lead + sePrefix + ":";
+            var rsFix = lead + rsPrefix + ":";
+            return rsFix + "valueTerm " + defix(this.term, prefixes) + " ;\n";
+        },
+        this.toSExpression = function (depth) {
+            return "(ValueTerm "+this.term.toString()+")";
+        },
+        this.toHaskell = function (depth) {
+            return "(ValueTerm "+this.term.toString()+")";
+        };
+    },
+
+    // IRI | LITERAL | xsd:integer
+    ValueType: function (type, _pos) {
+        this._ = 'ValueType'; this.type = type; this._pos = _pos;
+        this.toString = function (orig, schema) {
+            return this.type.toString(orig);
+        },
+        this.validate = function (schema, rule, t, point, db, validatorStuff) {
             function passIf (b) {
                 if (b) { ret.status = RDF.DISPOSITION.PASS; ret.matched(rule, t); }
                 else { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatch(rule, t); }
-            };
+            }
             var ret = new RDF.ValRes();
             if      (this.type.toString() == "<http://www.w3.org/2013/ShEx/ns#Literal>")
-                passIf(t.o._ == "RDFLiteral");
+                passIf(point._ == "RDFLiteral");
             else if (this.type.toString() == "<http://www.w3.org/2013/ShEx/ns#IRI>")
-                passIf(t.o._ == "IRI");
+                passIf(point._ == "IRI");
             else if (this.type.toString() == "<http://www.w3.org/2013/ShEx/ns#BNode>")
-                passIf(t.o._ == "BNode");
+                passIf(point._ == "BNode");
             else if (this.type.toString() == "<http://www.w3.org/2013/ShEx/ns#NonLiteral>")
-                passIf(t.o._ == "BNode" || t.o._ == "IRI");
-            else if (t.o._ == "RDFLiteral") {
-                if (t.o.datatype == undefined) {
+                passIf(point._ == "BNode" || point._ == "IRI");
+            else if (point._ == "RDFLiteral") {
+                if (point.datatype === undefined) {
                     passIf(this.type.toString() == "<http://www.w3.org/2001/XMLSchema#string>");
                 } else {
-                    passIf(t.o.datatype.toString() == this.type.toString());
+                    passIf(point.datatype.toString() == this.type.toString());
                 }
             } else { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatch(rule, t); }
             return ret;
@@ -765,100 +1025,98 @@ RDF = {
             if (s == "<http://www.w3.org/2013/ShEx/ns#IRI>") return "isIRI(?o)";
             if (s == "<http://www.w3.org/2013/ShEx/ns#BNode>") return "isBlank(?o)";
             return "(isLiteral(?o) && datatype(?o) = " + defix(this.type, prefixes) + ")";
-        }
+        },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
             return RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
-        }
+        },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
-        }
+        },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
             return RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
-        }
+        },
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             var lead = pad(depth, '    ');
             var seFix = lead + sePrefix + ":";
             var rsFix = lead + rsPrefix + ":";
             return rsFix + "valueType " + defix(this.type, prefixes) + " ;\n";
-        }
+        },
         this.toSExpression = function (depth) {
             return "(ValueType "+this.type.toString()+")";
-        }
+        },
         this.toHaskell = function (depth) {
             return "(ValueType "+this.type.toString()+")";
-        }
+        };
     },
 
     // (1 2 3)
-    ValueSet: function (line, column, offset, width, values) {
-        this._ = 'ValueSet'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.values = values;
-        this.toString = function () {
-            return '(' + this.values.map(function (v) { return v.toString(); }).join(' ') + ')';
+    ValueSet: function (values, _pos) {
+        this._ = 'ValueSet'; this.values = values; this._pos = _pos;
+        this.toString = function (orig, schema) {
+            return '(' + this.values.map(function (v) { return v.toString(orig); }).join(' ') + ')';
         },
-        this.validate = function (schema, rule, t, db) {
+        this.validate = function (schema, rule, t, point, db, validatorStuff) {
             for (var i = 0; i < this.values.length; ++i) {
-                if (t.o.toString() == this.values[i].toString()) {
-                    var ret = new RDF.ValRes();
-                    { ret.status = RDF.DISPOSITION.PASS; ret.matched(rule, t); }
-                    return ret;
-                }
+                var ret1 = this.values[i].validate(schema, rule, t, point, db, validatorStuff);
+                if (ret1.status == RDF.DISPOSITION.PASS)
+                    return ret1;
             }
-            var ret = new RDF.ValRes();
-            { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatch(rule, t); }
-            return ret;
+            var ret2 = new RDF.ValRes();
+            { ret2.status = RDF.DISPOSITION.FAIL; ret2.error_noMatch(rule, t); }
+            return ret2;
         },
         this.SPARQLobject = function (prefixes) {
             return "?o";
         },
         this.SPARQLobjectTest = function (prefixes) {
             return "(" + this.values.map(function (v) {
-                return "?o = " + defix(v.type, prefixes);
+                return "?o = " + defix(v.term, prefixes);
             }).join(" || ") + ")";
-        }
+        },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
             return RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
-        }
+        },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
-        }
+        },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
             return RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
-        }
+        },
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             var lead = pad(depth, '    ');
             var seFix = lead + sePrefix + ":";
             var rsFix = lead + rsPrefix + ":";
             return rsFix + "allowedValue " + this.values.map(function (v) {
-                return defix(v, prefixes)
+                return defix(v, prefixes);
             }).join(' , ') + " ;\n";
-        }
+        },
         this.toSExpression = function (depth) {
             return "(ValueSet "+(this.values.map(function(ex){return ex.toString();}).join(' '))+")";
-        }
+        },
         this.toHaskell = function (depth) {
             return "(ValueSet "+(this.values.map(function(ex){return ex.toString();}).join(' '))+")";
-        }
+        };
     },
 
     // . - <foo> - <bar>~
-    ValueWild: function (line, column, offset, width, exclusions) {
-        this._ = 'ValueWild'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.exclusions = exclusions;
-        this.toString = function () {
-            var x = exclusions.map(function (t) { return t.toString(); });
+    ValueWild: function (exclusions, _pos) {
+        this._ = 'ValueWild'; this.exclusions = exclusions; this._pos = _pos;
+        this.toString = function (orig, schema) {
+            var x = exclusions.map(function (t) { return t.toString(orig); });
             x.unshift('.');
             return x.join(' ');
-        }
-        this.validate = function (schema, rule, t, db) {
+        },
+        this.validate = function (schema, rule, t, point, db, validatorStuff) {
             for (var i = 0; i < this.exclusions.length; ++i) {
-                if (this.exclusions[i].matches(t.o)) {
-                    var ret = new RDF.ValRes();
-                    { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatch(rule, t); }
-                    return ret;
+                if (this.exclusions[i].matches(point)) {
+                    var ret1 = new RDF.ValRes();
+                    { ret1.status = RDF.DISPOSITION.FAIL; ret1.error_noMatch(rule, t); }
+                    return ret1;
                 }
             }
-            var ret = new RDF.ValRes();
-            { ret.status = RDF.DISPOSITION.PASS; ret.matched(rule, t); }
-            return ret;
+            var ret2 = new RDF.ValRes();
+            { ret2.status = RDF.DISPOSITION.PASS; ret2.matched(rule, t); }
+            return ret2;
         },
         this.SPARQLobject = function (prefixes) {
             return "?o";
@@ -869,146 +1127,192 @@ RDF = {
             return "(" + this.exclusions.map(function (v) {
                 return "?o !" + v.asSPARQLfilter(prefixes);
             }).join(" && ") + ")";
-        }
+        },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
             return RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
-        }
+        },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
-        }
+        },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
             return RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
-        }
+        },
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             return "# haven't made up some schema for ValueWild yet.\n";
-        }
+        },
         this.toSExpression = function (depth) {
             return "(ValueWild "+(this.exclusions.map(function(ex){return ex.toString();}).join(' '))+")";
-        }
+        },
         this.toHaskell = function (depth) {
             return "(ValueWild "+(this.exclusions.map(function(ex){return ex.toString();}).join(' '))+")";
-        }
+        };
     },
 
     // <foo>~
-    ValuePattern: function (line, column, offset, width, term) {
-        this._ = 'ValuePattern'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.term = term;
-        this.toString = function () {
-            return this.term.toString() + '~';
-        }
-        this.validate = function (schema, rule, t, db) {
-            if (t.o.lex.substr(0,this.term.lex.length) !== this.term.lex) {
-                var ret = new RDF.ValRes();
-                { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatch(rule, t); }
-                return ret;
+    ValuePattern: function (term, exclusions, _pos) {
+        this._ = 'ValuePattern'; this.term = term; this.exclusions = exclusions; this._pos = _pos;
+        this.toString = function (orig, schema) {
+            return this.term.toString(orig) + '~' + this.exclusions.map(function (ex) { return ' - ' + ex.toString(orig); }).join('');
+        },
+        this.validate = function (schema, rule, t, point, db, validatorStuff) {
+            for (var i = 0; i < this.exclusions.length; ++i) {
+                if (this.exclusions[i].toString() === point.toString()) {
+                    var ret1 = new RDF.ValRes();
+                    { ret1.status = RDF.DISPOSITION.FAIL; ret1.error_noMatch(rule, t); }
+                    return ret1;
+                }
             }
-            var ret = new RDF.ValRes();
-            { ret.status = RDF.DISPOSITION.PASS; ret.matched(rule, t); }
-            return ret;
+            if (point.lex.substr(0,this.term.lex.length) !== this.term.lex) {
+                var ret2 = new RDF.ValRes();
+                { ret2.status = RDF.DISPOSITION.FAIL; ret2.error_noMatch(rule, t); }
+                return ret2;
+            }
+            var ret3 = new RDF.ValRes();
+            { ret3.status = RDF.DISPOSITION.PASS; ret3.matched(rule, t); }
+            return ret3;
         },
         this.SPARQLobject = function (prefixes) {
             return "?o";
         },
         this.SPARQLobjectTest = function (prefixes) {
-            return "(regex(STR(?o), \"^" + this.term.lex + "\"))";
-        }
+            var ret = '';
+            ret += "(regex(STR(?o), \"^" + this.term.lex + "\"))";
+            if (this.exclusions.length > 0)
+                ret += "(" + this.exclusions.map(function (v) {
+                    return "?o !" + v.asSPARQLfilter(prefixes);
+                }).join(" && ") + ")";
+            return ret;
+        },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
             // throw "SPARQLobjectJoin of ValuePattern " + this.toString() + " needs attention.";
             return RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
-        }
+        },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             // throw "SPARQLobjectJoin of ValuePattern " + this.toString() + " needs attention.";
             return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), code);
-        }
+        },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
             // throw "SPARQLobjectSelect of ValuePattern " + this.toString() + " needs attention.";
             return RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
-        }
+        },
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             return "# haven't made up some schema for ValuePattern yet (POWDER?).\n";
-        }
+        },
         this.toSExpression = function (depth) {
             return "(ValuePattern "+this.term.toString()+")";
-        }
+        },
         this.toHaskell = function (depth) {
             return "(ValuePattern "+this.term.toString()+")";
-        }
+        };
     },
 
-    AtomicRule: function (line, column, offset, width, reversed, nameClass, valueClass, min, max, codes) {
-        this._ = 'AtomicRule'; this.line = line; this.column = column; this.offset = offset; this.width = width; this.reversed = reversed; this.nameClass = nameClass; this.valueClass = valueClass; this.min = min; this.max = max; this.codes = codes;
+    AtomicRule: function (negated, reversed, nameClass, valueClass, min, max, codes, _pos) {
+        this._ = 'AtomicRule'; this.negated = negated; this.reversed = reversed; this.nameClass = nameClass; this.valueClass = valueClass; this.min = min; this.max = max; this.codes = codes; this._pos = _pos;
         this.ruleID = undefined;
-        this.setRuleID = function (ruleID) { this.ruleID = ruleID; }
+        this.setRuleID = function (ruleID) { this.ruleID = ruleID; };
         this.label = undefined;
-        this.setLabel = function (label) { this.label = label; }
-        this.toKey = function () { return this.label.toString() + ' ' + this.toString(); }
-        this.toString = function () {
+        this.setLabel = function (label) { this.label = label; };
+        this.toKey = function () { return this.label.toString() + ' ' + this.toString(); };
+        this.toString = function (orig, schema) {
             var ret = '';
             if (reversed) ret += '^';
-            ret += nameClass.toString() + ' ';
-            ret += valueClass.toString();
-            if (min == 1 && max == 1) {
-            } else if (min == 0 && max == 1) {
+            ret += nameClass.toString(orig) + ' ';
+            ret += valueClass.toString(orig, schema);
+            if (min === 1 && max === 1) {
+            } else if (min === 0 && max === 1) {
                 ret += '?';
-            }  else if (min == 0 && max == undefined) {
+            }  else if (min === 0 && max === undefined) {
                 ret += '*';
-            }  else if (min == 1 && max == undefined) {
+            }  else if (min === 1 && max === undefined) {
                 ret += '+';
             } else {
                 ret += '{' + min;
-                if (max != undefined) { ret += ', ' + max; }
+                if (max !== undefined) { ret += ', ' + max; }
                 ret += '}';
             }
             var AtomicRule = this;
-            Object.keys(this.codes).map(function (k) { ret += " " + AtomicRule.codes[k].toString(); })
+            Object.keys(this.codes).map(function (k) { ret += " " + AtomicRule.codes[k].toString(); });
             return ret;
         };
-        this.colorize = function (charmap, idMap) {
+        this.colorize = function (charmap, idMap, termStringToIds) {
             var ruleId = "r" + idMap.add(this.toKey());
             this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
-            charmap.insertBefore(this.offset, "<span id='"+ruleId+"' class='rule'>", 0);
-            charmap.insertAfter(this.offset+this.width, "</span>", 0);
+            if (this.valueClass._ == 'ValueReference') { // not very OO
+                this.valueClass.label.assignId(charmap, ruleId+"_ref");
+                termStringToIds.add(this.valueClass.label.toString(true), this.valueClass.label.id);
+            }
+            charmap.insertBefore(this._pos.offset, "<span id='"+ruleId+"' class='rule'>", 0);
+            charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
             var AtomicRule = this;
             Object.keys(this.codes).map(function (k) {
-                charmap.insertBefore(AtomicRule.codes[k].offset, "<span id='"+ruleId+"_"+k+"' class='code'>", 0);
-                charmap.insertAfter(AtomicRule.codes[k].offset+codes[k].width, "</span>", 0);
+                var code = AtomicRule.codes[k];
+                charmap.insertBefore(code._pos.offset, "<span id='"+ruleId+"_"+k+"' class='code'>", 0);
+                charmap.insertAfter(code._pos.offset+code._pos.width, "</span>", 0);
             });
         };
         // only returns ∅|𝜃 if inOpt
         // ArcRule: if (inOpt ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
         // if(SIZE(matchName)<min|>max) return 𝕗;
         // vs=matchName.map(valueClass(v,_,g,false)); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
-        this.validate = function (schema, point, inOpt, db) {
+        this.validate = function (schema, point, inOpt, db, validatorStuff) {
             var matched = 0;
             var ret = new RDF.ValRes();
             ret.status = RDF.DISPOSITION.PASS;
             var _AtomicRule = this;
-            var matchName = [];
-            for (var i = 0; i < db.triples.length; ++i) {
-                var t = db.triples[i];
-                if (point.toString() == t.s.toString() && this.nameClass.match(t.p))
-                    matchName.push(t);
-            }
-            if (inOpt && matchName.length == 0)
-                { ret.status = min == 0 ? RDF.DISPOSITION.INDEFINITE : RDF.DISPOSITION.EMPTY; ret.matchedEmpty(this); }
+            var matchName = db.triplesMatching(this.reversed ? null : point, 
+                                               this.nameClass._ === 'NameTerm' ? this.nameClass.term : null,
+                                               this.reversed ? point : null).filter(function (t) {
+                                                   return _AtomicRule.nameClass.match(t.p);
+                                               });
+            if (inOpt && matchName.length === 0)
+                { ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE; ret.matchedEmpty(this); }
             else if (matchName.length < this.min)
                 { ret.status = RDF.DISPOSITION.FAIL; ret.error_belowMin(this.min, this); }
-            else if (matchName.length > this.max)
-                { ret.status = RDF.DISPOSITION.FAIL; ret.error_aboveMax(this.max, this, matchName[this.max]); }
+//             else if (matchName.length > this.max)
+//                 { ret.status = RDF.DISPOSITION.FAIL; ret.error_aboveMax(this.max, this, matchName[this.max]); }
             else {
+                var passes = [];
+                var fails = [];
                 for (var i = 0; i < matchName.length; ++i) {
                     var t = matchName[i];
-                    var r = this.valueClass.validate(schema, this, t, db);
+                    if (this.valueClass._ == 'ValueReference')
+                        schema.dispatch('link', this.codes, r, t);
+                    var r = this.valueClass.validate(schema, this, t, this.reversed ? t.s : t.o, db, validatorStuff);
                     if (this.valueClass._ != 'ValueReference')
                         schema.dispatch('visit', this.codes, r, t);
-                    if (!r.passed()) {
-                        ret.status = RDF.DISPOSITION.FAIL;
-                        ret.add(r);
-                    } else {
-                        if (schema.dispatch('post', this.codes, r, t) == RDF.DISPOSITION.FAIL)
-                            ret.status = RDF.DISPOSITION.FAIL;
-                        ret.add(r);
-                    }
+                    if (!r.passed() ||
+                        schema.dispatch('post', this.codes, r, t) == RDF.DISPOSITION.FAIL)
+                        fails.push({t:t, r:r});
+                    else
+                        passes.push({t:t, r:r});
+                }
+                if (inOpt && passes.length === 0) {
+                    ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
+                    ret.matchedEmpty(this);
+                } else if (passes.length < this.min) {
+                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.error_belowMin(this.min, this);
+                } else if (this.max !== null && passes.length > this.max) {
+                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.error_aboveMax(this.max, this, passes[this.max].r);
+                }
+                if (ret.status == RDF.DISPOSITION.FAIL)
+                    for (var iFails1 = 0; iFails1 < fails.length; ++iFails1)
+                        ret.add(fails[iFails1].r);
+                else {
+                    for (var iPasses = 0; iPasses < passes.length; ++iPasses)
+                        ret.add(passes[iPasses].r);
+                    for (var iFails2 = 0; iFails2 < fails.length; ++iFails2)
+                        ret.missed(fails[iFails2].r);
+                }
+            }
+            if (this.negated) {
+                if (ret.status == RDF.DISPOSITION.FAIL) {
+                    ret.status = RDF.DISPOSITION.PASS;
+                    ret.errors = [];
+                } else if (ret.status == RDF.DISPOSITION.PASS) {
+                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.error_aboveMax(0, this, matchName[0]); // !! take a triple from passes
                 }
             }
             return ret;
@@ -1021,7 +1325,7 @@ RDF = {
                                                  this.nameClass.SPARQLpredicateTest(prefixes),
                                                  // if we are in an optional, we mustn't test card constraints.
                                                  inOpt ? undefined : {min:this.min, max:this.max},
-                                                 this.codes["sparql"]);
+                                                 this.codes.sparql);
             ret.min = this.min;
             ret.max = this.max;
             return ret;
@@ -1031,11 +1335,11 @@ RDF = {
             if (this.nameClass._ != 'NameTerm')
                 throw "unable to dump data in non-constant nameClass " + this.nameClass.toString();
             var ret =
-                this.valueClass.SPARQLobjectDump(schema, label, prefixes, this.min == 0 ? depth + 1 : depth, variables,
+                this.valueClass.SPARQLobjectDump(schema, label, prefixes, this.min === 0 ? depth + 1 : depth, variables,
                                                  this.nameClass.term,
                                                  this.nameClass.SPARQLpredicateTest(prefixes), // ignored for now.
-                                                 {min:this.min, max:this.max}, this.codes["GenX"]);
-            if (this.min == 0) {
+                                                 {min:this.min, max:this.max}, this.codes.sparql);
+            if (this.min === 0) {
                 ret.prepend(lead + "OPTIONAL {\n");
                 ret.append(lead + "}\n");
             }
@@ -1046,7 +1350,7 @@ RDF = {
             var ret =
                 this.valueClass.SPARQLobjectSelect(schema, label, as, prefixes, depth, counters,
                                                    this.nameClass.SPARQLpredicate(prefixes),
-                                                   this.nameClass.SPARQLpredicateTest(prefixes))
+                                                   this.nameClass.SPARQLpredicateTest(prefixes));
             return ret;
         };
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
@@ -1069,13 +1373,13 @@ RDF = {
             var AtomicRule = this;
             Object.keys(this.codes).map(function (k) {
                 ret += AtomicRule.codes[k].toResourceShapes(db, prefixes, sePrefix, rsPrefix, depth);
-            })
+            });
             return ret;
         };
         this.toResourceShapes_inline = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
-            if (this.ruleID
-                && (this.ruleID._ !== 'BNode'
-                    || db.triplesMatching(undefined, undefined, this.ruleID).length !== 0))
+            if (this.ruleID &&
+                (this.ruleID._ !== 'BNode' ||
+                 db.triplesMatching(undefined, undefined, this.ruleID).length !== 0))
                 return rsPrefix + ":property " + this.ruleID.toString();
             var lead = pad(depth, '    ');
             var seFix = lead + sePrefix + ":";
@@ -1087,9 +1391,9 @@ RDF = {
             return ret;
         };
         this.toResourceShapes_standalone = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
-            if (!this.ruleID
-                || (this.ruleID._ === 'BNode'
-                    && db.triplesMatching(undefined, undefined, this.ruleID).length === 0))
+            if (!this.ruleID ||
+                (this.ruleID._ === 'BNode' &&
+                 db.triplesMatching(undefined, undefined, this.ruleID).length === 0))
                 return '';
             var lead = pad(depth, '    ');
             var seFix = lead + sePrefix + ":";
@@ -1102,38 +1406,236 @@ RDF = {
         };
         this.toSExpression = function (depth) {
             var lead = pad(depth, '    ');
-            return lead + "(ArcRule " + this.min + " " + this.max +" "
-                + this.nameClass.toSExpression(depth+1) +" "
-                + this.valueClass.toSExpression(depth+1)
-                + codesToSExpression(this.codes, depth+1) + ")\n";
+            return lead + "(ArcRule " + this.min + " " + this.max +" " +
+                this.nameClass.toSExpression(depth+1) +" " +
+                this.valueClass.toSExpression(depth+1) +
+                codesToSExpression(this.codes, depth+1) + ")\n";
         };
         this.toHaskell = function (depth) {
             var lead = pad(depth, '    ');
-            return lead + "(Arcrule " + this.min + " " + this.max +" "
-                + this.nameClass.toHaskell(depth+1) +" "
-                + this.valueClass.toHaskell(depth+1)
-                + codesToHaskell(this.codes, depth+1) + ")\n";
+            return lead + "(Arcrule " + this.min + " " + this.max +" " +
+                this.nameClass.toHaskell(depth+1) +" " +
+                this.valueClass.toHaskell(depth+1) +
+                codesToHaskell(this.codes, depth+1) + ")\n";
         };
     },
 
-    UnaryRule: function (line, column, rule, opt, codes) {
-        this._ = 'UnaryRule'; this.line = line; this.column = column; this.rule = rule; this.opt = opt; this.codes = codes;
+    ConcomitantRule: function (valueClass, min, max, codes, _pos) {
+        this._ = 'ConcomitantRule'; this.valueClass = valueClass; this.min = min; this.max = max; this.codes = codes; this._pos = _pos;
         this.ruleID = undefined;
-        this.setRuleID = function (ruleID) { this.ruleID = ruleID; }
+        this.setRuleID = function (ruleID) { this.ruleID = ruleID; };
         this.label = undefined;
-        this.setLabel = function (label) { this.label = label; this.rule.setLabel(label); }
-        this.toKey = function () { return this.label.toString() + ' ' + this.toString(); }
-        this.toString = function () {
-            var ret = "(" + rule.toString() + ")";
+        this.setLabel = function (label) { this.label = label; };
+        this.toKey = function () { return this.label.toString() + ' ' + this.toString(); };
+        this.toString = function (orig, schema) {
+            var ret = '';
+//            if (reversed) ret += '^';
+//            ret += nameClass.toString(orig) + ' ';
+            ret += "CONCOMITANT ";
+            ret += valueClass.toString(orig, schema);
+            if (min === 1 && max === 1) {
+            } else if (min === 0 && max === 1) {
+                ret += '?';
+            }  else if (min === 0 && max === undefined) {
+                ret += '*';
+            }  else if (min === 1 && max === undefined) {
+                ret += '+';
+            } else {
+                ret += '{' + min;
+                if (max !== undefined) { ret += ', ' + max; }
+                ret += '}';
+            }
+            var ConcomitantRule = this;
+            Object.keys(this.codes).map(function (k) { ret += " " + ConcomitantRule.codes[k].toString(); });
+            return ret;
+        };
+        this.colorize = function (charmap, idMap, termStringToIds) {
+            var ruleId = "r" + idMap.add(this.toKey());
+            this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
+            if (this.valueClass._ == 'ValueReference') { // not very OO
+                this.valueClass.label.assignId(charmap, ruleId+"_ref");
+                termStringToIds.add(this.valueClass.label.toString(true), this.valueClass.label.id);
+            }
+            charmap.insertBefore(this._pos.offset, "<span id='"+ruleId+"' class='rule'>", 0);
+            charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
+            var ConcomitantRule = this;
+            Object.keys(this.codes).map(function (k) {
+                var code = ConcomitantRule.codes[k];
+                charmap.insertBefore(code._pos.offset, "<span id='"+ruleId+"_"+k+"' class='code'>", 0);
+                charmap.insertAfter(code._pos.offset+code._pos.width, "</span>", 0);
+            });
+        };
+        // only returns ∅|𝜃 if inOpt
+        // ArcRule: if (inOpt ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
+        // if(SIZE(matchName)<min|>max) return 𝕗;
+        // vs=matchName.map(valueClass(v,_,g,false)); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
+        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+            var matched = 0;
+            var ret = new RDF.ValRes();
+            ret.status = RDF.DISPOSITION.PASS;
+            var _ConcomitantRule = this;
+            var seen = {};
+            var matchName = db.uniqueSubjects();
+            if (inOpt && matchName.length === 0)
+                { ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE; ret.matchedEmpty(this); }
+            else if (matchName.length < this.min)
+                { ret.status = RDF.DISPOSITION.FAIL; ret.error_belowMin(this.min, this); }
+//             else if (matchName.length > this.max)
+//                 { ret.status = RDF.DISPOSITION.FAIL; ret.error_aboveMax(this.max, this, matchName[this.max]); }
+            else {
+                var passes = [];
+                for (var iMatches = 0; iMatches < matchName.length; ++iMatches) {
+                    var s = matchName[iMatches];
+                    var p = RDF.IRI("http://www.w3.org/2013/ShEx/Definition#concomitantRelation");
+                    var t = RDF.Triple(point, p, s); // make up connecting triple for reporting
+                    if (this.valueClass._ == 'ValueReference')
+                        schema.dispatch('link', this.codes, r, t);
+                    var r = this.valueClass.validate(schema, this, t, s, db, validatorStuff);
+                    if (this.valueClass._ != 'ValueReference')
+                        schema.dispatch('visit', this.codes, r, t);
+                    if (r.passed() &&
+                        schema.dispatch('post', this.codes, r, t) != RDF.DISPOSITION.FAIL)
+                        passes.push({t:t, r:r});
+                }
+                if (inOpt && passes.length === 0) {
+                    ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
+                    ret.matchedEmpty(this);
+                } else if (passes.length < this.min) {
+                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.error_belowMin(this.min, this);
+                } else if (this.max !== null && passes.length > this.max) {
+                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.error_aboveMax(this.max, this, passes[this.max].r);
+                }
+                if (ret.status != RDF.DISPOSITION.FAIL)
+                    for (var iPasses = 0; iPasses < passes.length; ++iPasses)
+                        ret.add(passes[iPasses].r);
+            }
+            return ret;
+        };
+        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
+            var lead = pad(depth, '    ');
+            var ret =
+                this.valueClass.SPARQLobjectJoin(schema, label, prefixes, depth, counters, inOpt,
+                                                 "?p",
+                                                 "true",
+                                                 // if we are in an optional, we mustn't test card constraints.
+                                                 {min:this.min, max:this.max},
+                                                 this.codes.sparql);
+            ret.min = this.min;
+            ret.max = this.max;
+            return ret;
+        };
+        this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
+            var lead = pad(depth, '    ');
+            if (true)
+                throw "unable to dump data in concomitant nameClass";
+            var ret =
+                this.valueClass.SPARQLobjectDump(schema, label, prefixes, this.min === 0 ? depth + 1 : depth, variables,
+                                                 this.nameClass.term,
+                                                 this.nameClass.SPARQLpredicateTest(prefixes), // ignored for now.
+                                                 {min:this.min, max:this.max}, this.codes.sparql);
+            if (this.min === 0) {
+                ret.prepend(lead + "OPTIONAL {\n");
+                ret.append(lead + "}\n");
+            }
+            return ret;
+        };
+        this.SPARQLremainingTriples = function (schema, label, as, prefixes, depth, counters) {
+            var lead = pad(depth, '    ');
+            var ret =
+                this.valueClass.SPARQLobjectSelect(schema, label, as, prefixes, depth, counters,
+                                                   "?p",
+                                                   "true");
+            return ret;
+        };
+        this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
+            var lead = pad(depth, '    ');
+            var seFix = lead + sePrefix + ":";
+            var rsFix = lead + rsPrefix + ":";
+            var ret = '';
+            ret += rsFix + "name \"" + "???" + "\" ;\n" +
+                seFix + "concomitantShape true ;\n";
+            //ret += this.nameClass.toResourceShapes(db, prefixes, sePrefix, rsPrefix, depth);
+            ret += this.valueClass.toResourceShapes(db, prefixes, sePrefix, rsPrefix, depth);
+            ret += ResourceShapeCardinality(this.min, this.max, sePrefix, rsPrefix, seFix, rsFix);
+            if (this.ruleID) // !!! some day this will be a bnode
+            for (var i = 0; i < db.triples.length; ++i) {
+                var t = db.triples[i];
+                if (t.s.toString() == this.ruleID.toString()) {
+                    ret += lead + defix(t.p, prefixes) + " " + defix(t.o, prefixes) + " ;\n";
+                    db.triples.splice(i, 1);
+                    --i;
+                }
+            }
+            var ConcomitantRule = this;
+            Object.keys(this.codes).map(function (k) {
+                ret += ConcomitantRule.codes[k].toResourceShapes(db, prefixes, sePrefix, rsPrefix, depth);
+            });
+            return ret;
+        };
+        this.toResourceShapes_inline = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
+            if (this.ruleID &&
+                (this.ruleID._ !== 'BNode' ||
+                 db.triplesMatching(undefined, undefined, this.ruleID).length !== 0))
+                return rsPrefix + ":property " + this.ruleID.toString();
+            var lead = pad(depth, '    ');
+            var seFix = lead + sePrefix + ":";
+            var rsFix = lead + rsPrefix + ":";
+            var ret = '';
+                ret += rsPrefix + ":property " + "[\n";
+                ret += this.toResourceShapes(db, prefixes, sePrefix, rsPrefix, depth+1);
+                ret += lead + "]";
+            return ret;
+        };
+        this.toResourceShapes_standalone = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
+            if (!this.ruleID ||
+                (this.ruleID._ === 'BNode' &&
+                 db.triplesMatching(undefined, undefined, this.ruleID).length === 0))
+                return '';
+            var lead = pad(depth, '    ');
+            var seFix = lead + sePrefix + ":";
+            var rsFix = lead + rsPrefix + ":";
+            var ret = '';
+            ret += this.ruleID.toString() + "\n";
+            ret += this.toResourceShapes(db, prefixes, sePrefix, rsPrefix, depth);
+            ret += ".\n";
+            return ret;
+        };
+        this.toSExpression = function (depth) {
+            var lead = pad(depth, '    ');
+            return lead + "(ArcRule " + this.min + " " + this.max +" " +
+//                this.nameClass.toSExpression(depth+1) +" " +
+                this.valueClass.toSExpression(depth+1) +
+                codesToSExpression(this.codes, depth+1) + ")\n";
+        };
+        this.toHaskell = function (depth) {
+            var lead = pad(depth, '    ');
+            return lead + "(Arcrule " + this.min + " " + this.max +" " +
+//                this.nameClass.toHaskell(depth+1) +" " +
+                this.valueClass.toHaskell(depth+1) +
+                codesToHaskell(this.codes, depth+1) + ")\n";
+        };
+    },
+
+    UnaryRule: function (rule, opt, codes, _pos) {
+        this._ = 'UnaryRule'; this.rule = rule; this.opt = opt; this.codes = codes; this._pos = _pos;
+        this.ruleID = undefined;
+        this.setRuleID = function (ruleID) { this.ruleID = ruleID; };
+        this.label = undefined;
+        this.setLabel = function (label) { this.label = label; this.rule.setLabel(label); };
+        this.toKey = function () { return this.label.toString() + ' ' + this.toString(); };
+        this.toString = function (orig) {
+            var ret = "(" + rule.toString(orig) + ")";
             if (this.opt) {
                 ret += '?';
             }
             var UnaryRule = this;
-            Object.keys(this.codes).map(function (k) { ret += ' %' + k + '{' + UnaryRule.codes[k] + '%}'; })
+            Object.keys(this.codes).map(function (k) { ret += ' %' + k + '{' + UnaryRule.codes[k] + '%}'; });
             return ret;
         };
-        this.colorize = function (charmap, idMap) {
-            this.rule.colorize(charmap, idMap);
+        this.colorize = function (charmap, idMap, termStringToIds) {
+            this.rule.colorize(charmap, idMap, termStringToIds);
             // var ruleId = "r" + idMap.add(this.toKey());
             // // ugh, toString() in order to get offsets for charmap inserts
             // var ret = "(" + rule.toString(); + ")";
@@ -1142,21 +1644,21 @@ RDF = {
             // }
             // if (this.codes)
             //     Object.keys(this.codes).map(function (k) {
-            //         charmap.insertBefore(this.offset, "<span id='"+ruleId+"' class='code'>", ret.length);
+            //         charmap.insertBefore(this._pos.offset, "<span id='"+ruleId+"' class='code'>", ret.length);
             //         ret += ' %' + k + '{' + this.codes[k] + '%}'; 
-            //         charmap.insertBefore(this.offset, "</span>", ret.length);
+            //         charmap.insertBefore(this._pos.offset, "</span>", ret.length);
             //     })
         };
         // GroupRule: v=validity(r,p,g,inOpt|opt); if(𝕗|𝜃) return v;
         // if(∅) {if(inOpt) return ∅ else if (opt) return 𝕡 else return 𝕗}; return dispatch('post', );
-        this.validate = function (schema, point, inOpt, db) {
+        this.validate = function (schema, point, inOpt, db, validatorStuff) {
             schema.dispatch('enter', this.codes, this, {o:point}); // !! lie! it's the *subject*!
-            var v = this.rule.validate(schema, point, inOpt || this.opt, db);
+            var v = this.rule.validate(schema, point, inOpt || this.opt, db, validatorStuff);
             schema.dispatch('exit', this.codes, this, null);
-            if (v.status == RDF.DISPOSITION.FAIL || v.status == RDF.DISPOSITION.INDEFINITE)
+            if (v.status == RDF.DISPOSITION.FAIL || v.status == RDF.DISPOSITION.ZERO)
                 ; // v.status = RDF.DISPOSITION.FAIL; -- avoid dispatch below
-            else if (v.status == RDF.DISPOSITION.EMPTY) {
-                // if (inOpt) v.status = RDF.DISPOSITION.EMPTY; else
+            else if (v.status == RDF.DISPOSITION.NONE) {
+                // if (inOpt) v.status = RDF.DISPOSITION.NONE; else
                 if (this.opt)
                     v.status = RDF.DISPOSITION.PASS;
                 else
@@ -1178,13 +1680,13 @@ RDF = {
             ret.append(lead + "}\n"); // GROUP BY ?" + label.lex;
             // ret += SPARQLCardinality(this.opt ? 0 : 1, 1) + "}\n";
             return ret;
-        }
+        },
         this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
             return this.rule.SPARQLdataDump(schema, label, prefixes, depth, variables);
-        }
+        },
         this.SPARQLremainingTriples = function (schema, label, as, prefixes, depth, counters) {
             return this.rule.SPARQLremainingTriples(schema, label, as, prefixes, depth, counters);
-        }
+        },
         this.toResourceShapes_inline = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
             if (this.ruleID)
                 return sePrefix + ":ruleGroup " + this.ruleID.toString();
@@ -1211,103 +1713,103 @@ RDF = {
             ret += ".\n";
             return ret;
         };
-//    UnaryRule: function (line, column, rule, opt, codes) {
+//    UnaryRule: function (rule, opt, codes, _pos) {
         this.toSExpression = function (depth) {
             var lead = pad(depth, '    ');
-            return lead + "(GroupRule " + (this.opt?":optional":"") +"\n"
-                + this.rule.toSExpression(depth+1)
-                + codesToSExpression(this.codes, depth+1) + lead + ")\n";
+            return lead + "(GroupRule " + (this.opt?":optional":"") +"\n" +
+                this.rule.toSExpression(depth+1) +
+                codesToSExpression(this.codes, depth+1) + lead + ")\n";
         };
         this.toHaskell = function (depth) {
             var lead = pad(depth, '    ');
-            return lead + "(GroupRule " + (this.opt?":optional":"") +"\n"
-                + this.rule.toHaskell(depth+1)
-                + codesToHaskell(this.codes, depth+1) + lead + ")\n";
+            return lead + "(GroupRule " + (this.opt?":optional":"") +"\n" +
+                this.rule.toHaskell(depth+1) +
+                codesToHaskell(this.codes, depth+1) + lead + ")\n";
         };
     },
 
-    IncludeRule: function (line, column, include) {
-        this._ = 'IncludeRule'; this.line = line; this.column = column; this.include = include;
+    IncludeRule: function (include, _pos) {
+        this._ = 'IncludeRule'; this.include = include; this._pos = _pos;
         this.ruleID = undefined;
-        this.setRuleID = function (ruleID) { this.ruleID = ruleID; }
+        this.setRuleID = function (ruleID) { this.ruleID = ruleID; };
         this.label = undefined;
-        this.setLabel = function (label) {  }
-        this.toKey = function () { return this.label.toString() + ' ' + this.toString(); }
-        this.toString = function () {
-            return '& ' + this.include.toString();
+        this.setLabel = function (label) {  };
+        this.toKey = function () { return this.label.toString() + ' ' + this.toString(); };
+        this.toString = function (orig) {
+            return '& ' + this.include.toString(orig);
         };
-        this.colorize = function (charmap, idMap) {
-            // @@@ hilight include this.rule.colorize(charmap, idMap);
+        this.colorize = function (charmap, idMap, termStringToIds) {
+            // @@@ hilight include this.rule.colorize(charmap, idMap, termStringToIds);
         };
-        this.validate = function (schema, point, inOpt, db) {
-            return schema.validatePoint(point, this.include, db, false);
+        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+            return schema.validatePoint(point, this.include, db, validatorStuff, false);
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
             return schema.ruleMap[this.include].SPARQLvalidation(schema, label, prefixes, depth, counters, false);
-        }
+        },
         this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
             return schema.ruleMap[this.include].SPARQLdataDump(schema, label, prefixes, depth, variables);
-        }
+        },
         this.SPARQLremainingTriples = function (schema, label, as, prefixes, depth, counters) {
             return schema.ruleMap[this.include].SPARQLremainingTriples(schema, label, as, prefixes, depth, counters);
-        }
+        },
         this.toResourceShapes_inline = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
             return schema.ruleMap[this.include].toResourceShapes_inline(schema, db, prefixes, sePrefix, rsPrefix, depth);
         };
         this.toResourceShapes_standalone = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
             return schema.ruleMap[this.include].toResourceShapes_standalone(schema, db, prefixes, sePrefix, rsPrefix, depth);
         };
-//    IncludeRule: function (line, column, include) {
+//    IncludeRule: function (include) {
         this.toSExpression = function (depth) {
             var lead = pad(depth, '    ');
-            return lead
-                + "(IncludeRule "
-                + this.parent
-                + ")\n";
+            return lead +
+                "(IncludeRule " +
+                this.parent +
+                ")\n";
         };
         this.toHaskell = function (depth) {
             var lead = pad(depth, '    ');
-            return lead
-                + "(Includerule "
-                + this.parent
-                + ")\n";
+            return lead +
+                "(Includerule " +
+                this.parent +
+                ")\n";
         };
     },
 
     // Place-holder rule for e.g. empty parent classes.
-    EmptyRule: function (line, column) {
-        this._ = 'EmptyRule'; this.line = line; this.column = column;
+    EmptyRule: function (_pos) {
+        this._ = 'EmptyRule'; this._pos = _pos;
         this.ruleID = undefined;
-        this.setRuleID = function (ruleID) { this.ruleID = ruleID; }
+        this.setRuleID = function (ruleID) { this.ruleID = ruleID; };
         this.label = undefined;
-        this.setLabel = function (label) {  }
-        this.toKey = function () { return "@@empty@@"; }
+        this.setLabel = function (label) {  };
+        this.toKey = function () { return "@@empty@@"; };
         this.toString = function () {
             return "";
         };
-        this.colorize = function (charmap, idMap) {
+        this.colorize = function (charmap, idMap, termStringToIds) {
         };
-        this.validate = function (schema, point, inOpt, db) {
+        this.validate = function (schema, point, inOpt, db, validatorStuff) {
             var ret = new RDF.ValRes();
-            ret.status = inOpt ? RDF.DISPOSITION.EMPTY : RDF.DISPOSITION.PASS; // nod agreeably
+            ret.status = inOpt ? RDF.DISPOSITION.NONE : RDF.DISPOSITION.PASS; // nod agreeably
             return ret;
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
             return new RDF.QueryClause(undefined, "");
-        }
+        },
         this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
             return new RDF.QueryClause(undefined, "");
-        }
+        },
         this.SPARQLremainingTriples = function (schema, label, as, prefixes, depth, counters) {
             return new RDF.QueryClause(undefined, "");
-        }
+        },
         this.toResourceShapes_inline = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
             return "";
         };
         this.toResourceShapes_standalone = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
             return "";
         };
-//    EmptyRule: function (line, column) {
+//    EmptyRule: function () {
         this.toSExpression = function (depth) {
             var lead = pad(depth, '    ');
             return lead + "(EmptyRule)";
@@ -1318,28 +1820,30 @@ RDF = {
         };
     },
 
-    AndRule: function (line, column, conjoints) {
-        this._ = 'AndRule'; this.line = line; this.column = column; this.conjoints = conjoints;
+    AndRule: function (conjoints, _pos) {
+        this._ = 'AndRule'; this.conjoints = conjoints; this._pos = _pos;
         this.ruleID = undefined;
-        this.setRuleID = function (ruleID) { this.ruleID = ruleID; }
+        this.setRuleID = function (ruleID) { this.ruleID = ruleID; };
         this.label = undefined;
-        this.setLabel = function (label) { this.label = label; this.conjoints.map(function (r) { r.setLabel(label); }) ;}
-        this.toKey = function () { return this.label.toString() + ' ' + this.toString(); }
-        this.toString = function () {
-            return this.conjoints.map(function (conj) { return '    ' + conj.toString()}).join(",\n");
+        this.setLabel = function (label) { this.label = label; this.conjoints.map(function (r) { r.setLabel(label); }) ;};
+        this.toKey = function () { return this.label.toString() + ' ' + this.toString(); };
+        this.toString = function (orig) {
+            return this.conjoints.map(function (conj) {
+                return '    ' + conj.toString(orig);
+            }).join(",\n");
         };
-        this.colorize = function (charmap, idMap) {
+        this.colorize = function (charmap, idMap, termStringToIds) {
             // var ruleId = "r" + idMap.add(this.toKey());
             for (var i = 0; i < this.conjoints.length; ++i) {
                 var conj = this.conjoints[i];
-                conj.colorize(charmap, idMap);
+                conj.colorize(charmap, idMap, termStringToIds);
             }
         };
 
         // AndRule: vs=conjoints.map(validity(_,p,g,o)); if(∃𝕗) return 𝕗;
         // if(∃𝕡∧∃∅) return 𝕗; if(∄𝕡∧∄∅) return 𝜃 else if(∃𝕡) return 𝕡 else return ∅
         // Note, this FAILs an empty disjunction.
-        this.validate = function (schema, point, inOpt, db) {
+        this.validate = function (schema, point, inOpt, db, validatorStuff) {
             var ret = new RDF.ValRes();
             var seenFail = false;
             var allPass = RDF.DISPOSITION.PASS;
@@ -1347,7 +1851,7 @@ RDF = {
             var empties = [];
             for (var i = 0; i < this.conjoints.length; ++i) {
                 var conj = this.conjoints[i];
-                var r = conj.validate(schema, point, inOpt, db);
+                var r = conj.validate(schema, point, inOpt, db, validatorStuff);
                 ret.add(r);
                 if (r.status == RDF.DISPOSITION.FAIL)
                     seenFail = true;
@@ -1355,17 +1859,17 @@ RDF = {
                     // seenPass = true;
                     passes.push(r);
                 else
-                    allPass = RDF.DISPOSITION.EMPTY;
-                if (r.status == RDF.DISPOSITION.EMPTY)
+                    allPass = RDF.DISPOSITION.NONE;
+                if (r.status == RDF.DISPOSITION.NONE)
                     // seenEmpty = true;
                     empties.push(r);
             }
             if (passes.length && empties.length) // 
             { ret.status = RDF.DISPOSITION.FAIL; ret.error_mixedOpt(passes, empties, this); }
             else if (seenFail)
-                ret.status = RDF.DISPOSITION.FAIL
+                ret.status = RDF.DISPOSITION.FAIL;
             else if (!passes.length && !empties.length)
-                ret.status = RDF.DISPOSITION.INDEFINITE;
+                ret.status = RDF.DISPOSITION.ZERO;
             else
                 ret.status = allPass;
             return ret;
@@ -1379,7 +1883,7 @@ RDF = {
                 ret += sub.sparql;
                 if (inOpt) {
                     subs.push(sub);
-                    if (firstNonZero === undefined && sub.min != 0)
+                    if (firstNonZero === undefined && sub.min !== 0)
                         firstNonZero = i;
                 }
             }
@@ -1400,11 +1904,11 @@ RDF = {
             if (inOpt) {
                 qc = new RDF.QueryClause(subs[firstNonZero].variable, ret);
                 qc.min = subs[firstNonZero].min;
-                qc.max = subs[firstNonZero].max
+                qc.max = subs[firstNonZero].max;
             } else
                 qc = new RDF.QueryClause(undefined, ret);
             return qc;
-        }
+        },
         this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
             var ret = '';
             var subs = [];
@@ -1414,7 +1918,7 @@ RDF = {
                 ret += sub.sparql;
             }
             return new RDF.QueryClause(undefined, ret);
-        }
+        },
         this.SPARQLremainingTriples = function (schema, label, as, prefixes, depth, counters) {
             var ret = '';
             for (var i = 0; i < this.conjoints.length; ++i) {
@@ -1424,7 +1928,7 @@ RDF = {
                     ret += " UNION\n";
             }
             return new RDF.QueryClause(undefined, ret);
-        }
+        },
         this.toResourceShapes_inline = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
             if (this.ruleID)
                 return rsPrefix + ":conjoint " + this.ruleID.toString();
@@ -1451,46 +1955,48 @@ RDF = {
         };
         this.toSExpression = function (depth) {
             var lead = pad(depth, '    ');
-            return lead + "(AndRule\n"
-                + this.conjoints.map(function(conj) {
+            return lead + "(AndRule\n" +
+                this.conjoints.map(function(conj) {
                     return conj.toSExpression(depth+1); 
-                }).join("")
-                + lead + ")\n";
+                }).join("") +
+                lead + ")\n";
         };
         this.toHaskell = function (depth) {
             var lead = pad(depth, '    ');
-            return lead + "(And\n"
-                + this.conjoints.map(function(conj) {
+            return lead + "(And\n" +
+                this.conjoints.map(function(conj) {
                     return conj.toHaskell(depth+1); 
-                }).join("")
-                + lead + ")\n";
+                }).join("") +
+                lead + ")\n";
         };
         this.prepend = function (elts) {
             this.conjoints = elts.concat(this.conjoints);
-        }
+        };
     },
 
-    OrRule: function (line, column, disjoints) {
-        this._ = 'OrRule'; this.line = line; this.column = column; this.disjoints = disjoints;
+    OrRule: function (disjoints, _pos) {
+        this._ = 'OrRule'; this.disjoints = disjoints; this._pos = _pos;
         this.ruleID = undefined;
-        this.setRuleID = function (ruleID) { this.ruleID = ruleID; }
+        this.setRuleID = function (ruleID) { this.ruleID = ruleID; };
         this.label = undefined;
-        this.setLabel = function (label) { this.label = label; this.disjoints.map(function (r) { r.setLabel(label); }) ;}
-        this.toKey = function () { return (this.label ? this.label.toString() + ' ' : '') + this.toString(); }
-        this.toString = function () {
-            return '(' + this.disjoints.map(function (disj) { return '(' + disj.toString() + ')'}).join("|\n") + ')';
-        }
-        this.colorize = function (charmap, idMap) {
+        this.setLabel = function (label) { this.label = label; this.disjoints.map(function (r) { r.setLabel(label); }) ;};
+        this.toKey = function () { return (this.label ? this.label.toString() + ' ' : '') + this.toString(); };
+        this.toString = function (orig) {
+            return '(' + this.disjoints.map(function (disj) {
+                return '(' + disj.toString(orig) + ')';
+            }).join("|\n") + ')';
+        },
+        this.colorize = function (charmap, idMap, termStringToIds) {
             // var ruleId = "r" + idMap.add(this.toKey());
             for (var i = 0; i < this.disjoints.length; ++i) {
                 var disj = this.disjoints[i];
-                disj.colorize(charmap, idMap);
+                disj.colorize(charmap, idMap, termStringToIds);
             }
         };
         // ∃!x -> true if there's exactly one x in vs
         // OrRule: vs=disjoints.map(validity(_,p,g,o)); if(∄𝕡∧∄∅∧∄𝜃) return 𝕗;
         // if(∃!𝕡) return 𝕡; if(∃!𝜃) return 𝜃 else return 𝕗;
-        this.validate = function (schema, point, inOpt, db) {
+        this.validate = function (schema, point, inOpt, db, validatorStuff) {
             var ret = new RDF.ValRes();
             var allErrors = true;
             var passCount = 0;
@@ -1498,7 +2004,7 @@ RDF = {
             var failures = [];
             for (var i = 0; i < this.disjoints.length; ++i) {
                 var disj = this.disjoints[i];
-                var r = disj.validate(schema, point, inOpt, db);
+                var r = disj.validate(schema, point, inOpt, db, validatorStuff);
                 if (r.status == RDF.DISPOSITION.FAIL)
                     failures.push(r);
                 else {
@@ -1506,16 +2012,16 @@ RDF = {
                     ret.add(r);
                     if (r.status == RDF.DISPOSITION.PASS)
                         ++passCount;
-                    else if (r.status == RDF.DISPOSITION.INDEFINITE)
+                    else if (r.status == RDF.DISPOSITION.ZERO)
                         ++indefCount;
                 }
             }
-            if (allErrors)
+            if (allErrors || passCount > 1)
                 ret.status = RDF.DISPOSITION.FAIL;
             else if (passCount)
-                ret.status = RDF.DISPOSITION.PASS
+                ret.status = RDF.DISPOSITION.PASS;
             else if (indefCount)
-                ret.status = RDF.DISPOSITION.INDEFINITE
+                ret.status = RDF.DISPOSITION.ZERO;
             else 
                 ret.status = RDF.DISPOSITION.FAIL;
             if (ret.status === RDF.DISPOSITION.FAIL)
@@ -1533,24 +2039,24 @@ RDF = {
         }
             var ret = lead1 + "{ SELECT ?" + label.lex + countSelect + " WHERE {\n" + lead2 + "{\n";
             for (var i = 0; i < this.disjoints.length; ++i) {
-                if (i != 0)
-                    ret += lead2 + "} UNION {\n"
-                ret += this.disjoints[i].SPARQLvalidation(schema, label, prefixes, depth+2, counters, inOpt).sparql
+                if (i !== 0)
+                    ret += lead2 + "} UNION {\n";
+                ret += this.disjoints[i].SPARQLvalidation(schema, label, prefixes, depth+2, counters, inOpt).sparql;
             }
-            ret += lead2 + "}\n"
-                + lead1 + "} GROUP BY ?" + label.lex + " HAVING (COUNT(*) = 1)}\n"; // make sure we pass only one side of the union
+            ret += lead2 + "}\n" +
+                lead1 + "} GROUP BY ?" + label.lex + " HAVING (COUNT(*) = 1)}\n"; // make sure we pass only one side of the union
             return new RDF.QueryClause(counter, ret);
         };
         this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
             var lead1 = pad(depth, '    ');
             var ret = lead1 + "OPTIONAL {\n";
             for (var i = 0; i < this.disjoints.length; ++i) {
-                if (i != 0)
-                    ret += lead1 + "} OPTIONAL {\n"
-                ret += this.disjoints[i].SPARQLdataDump(schema, label, prefixes, depth+1, variables).sparql
+                if (i !== 0)
+                    ret += lead1 + "} OPTIONAL {\n";
+                ret += this.disjoints[i].SPARQLdataDump(schema, label, prefixes, depth+1, variables).sparql;
             }
             ret += lead1 + "}\n";
-            return new RDF.QueryClause(counter, ret);
+            return new RDF.QueryClause(undefined, ret);
         };
         this.SPARQLremainingTriples = function (schema, label, as, prefixes, depth, counters) {
             var ret = '';
@@ -1561,7 +2067,7 @@ RDF = {
                     ret += " UNION\n";
             }
             return new RDF.QueryClause(undefined, ret);
-        }
+        },
         this.toResourceShapes_inline = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
             if (this.ruleID)
                 return rsPrefix + ":disjoint " + this.ruleID.toString();
@@ -1569,7 +2075,7 @@ RDF = {
             var seFix = lead + sePrefix + ":";
             var rsFix = lead + rsPrefix + ":";
             var ret = '';
-            ret += rsPrefix + ":choice " + "[\n";
+            ret += sePrefix + ":choice " + "[\n";
             for (var i = 0; i < this.disjoints.length; ++i) {
                 if (i > 0)
                     ret += "\n";
@@ -1597,19 +2103,19 @@ RDF = {
         };
         this.toSExpression = function (depth) {
             var lead = pad(depth, '    ');
-            return lead + "(OrRule\n"
-                + this.disjoints.map(function(disj) {
+            return lead + "(OrRule\n" +
+                this.disjoints.map(function(disj) {
                     return disj.toSExpression(depth+1); 
-                }).join("")
-                + lead + ")\n";
+                }).join("") +
+                lead + ")\n";
         };
         this.toHaskell = function (depth) {
             var lead = pad(depth, '    ');
-            return lead + "(Or\n"
-                + this.disjoints.map(function(disj) {
+            return lead + "(Or\n" +
+                this.disjoints.map(function(disj) {
                     return disj.toHaskell(depth+1); 
-                }).join("")
-                + lead + ")\n";
+                }).join("") +
+                lead + ")\n";
         };
     },
 
@@ -1675,7 +2181,7 @@ RDF = {
                             eval(pr + m2[1] + po);
                         else if ((m2 = m[i+1].match(/^substr\(([0-9]+),([0-9]+)\)$/)))
                             eval(pr + m2[1] + ", " + m2[2] + po);
-                        else if (m[i+1] == '')
+                        else if (m[i+1] === '')
                             eval("val = function (v) { return ''; };");
                         else
                             throw "\"" + m[i+1] + "\" is unsupported";
@@ -1689,7 +2195,7 @@ RDF = {
                 for (var i = 0; i < p.parents.length; ++i) {
                     var newEl = this._createElement(p.ns, p.parents[i]);
                     parents.push(newEl);
-                    now.appendChild(newEl)
+                    now.appendChild(newEl);
                     now = newEl;
                 }
                 val = p.val(val);
@@ -1702,7 +2208,7 @@ RDF = {
                     return null;
                 } else {
                     element = this._createElement(p.ns, p.name);
-                    if (val != '')
+                    if (val !== '')
                         element.appendChild(this._doc.createTextNode(val));
                     if (parents.length) {
                         now.appendChild(element);
@@ -1724,21 +2230,31 @@ RDF = {
                 }
                 return newEl;
             },
+            _ensureRoot: function (code) {
+                if (this._stack.length === 0) {
+                    throw "GenX directive \""+code+"\" requires a GenX begin action before the start, e.g. %GenX{ MyRootElement $http://a.example/ %}\nstart = ...";
+                }
+            },
+            // Begin and End FindTypes functions are called without a
+            // corresponding code in the schema.
             beginFindTypes: function () {
                 var el = this._createElement("http://www.w3.org/2013/ShEx/", "findTypesRoot");
+                // Unconditionally push a findTypesRoot element.
                 this._stack.push({top:el, bottom:el});
             },
             endFindTypes: function () {
                 var now = this._stack[this._stack.length-1];
-                console.dir(this._doc);
-                this.text = this._XMLSerializer.serializeToString(this._doc);
+                // See if there's anything but a findTypesRoot.
+                if (this._doc.children[0].children.length !== 0)
+                    this.text = this._XMLSerializer.serializeToString(this._doc);
             },
+
             begin: function (code, valRes, context) {
                 var p = this._parse(code);
                 if (this._stack.length) { // in a findtypes container
                     var now = this._stack[this._stack.length-1];
                     var elements = this._assign(now.bottom, p, '');
-                    this._stack.push(elements)
+                    this._stack.push(elements);
                 } else {
                     var el = this._createElement(p.ns, p.name);
                     this._stack.push({top:el, bottom:el});
@@ -1746,7 +2262,7 @@ RDF = {
             },
             end: function (code, valRes, context) {
                 var now = this._stack.pop();
-                console.dir(this._doc);
+                RDF.message(this._doc);
                 if (this._stack.length) { // in a findtypes container
                     if (context.status == RDF.DISPOSITION.PASS)
                         this._stack[this._stack.length-1].bottom.appendChild(now.top);
@@ -1755,13 +2271,14 @@ RDF = {
                 }
             },
             enter: function (code, valRes, context) {
+                this._ensureRoot(code);
                 var now = this._stack[this._stack.length-1];
                 var p = this._parse(code);
                 if (p.attr) {
                     now.bottom.setAttribute(p.name, context.o.lex);
                 } else {
                     var elements = this._assign(now.bottom, p, context.o.lex);
-                    this._stack.push(elements)
+                    this._stack.push(elements);
                 }
             },
             exit: function (code, valRes, context) {
@@ -1779,6 +2296,7 @@ RDF = {
                 }
             },
             visit: function (code, valRes, context) {
+                this._ensureRoot(code);
                 var now = this._stack[this._stack.length-1];
                 var p = this._parse(code);
                 var elements = this._assign(now.bottom, p, context.o.lex);
@@ -1823,7 +2341,7 @@ RDF = {
                 if (ns in this._nsToPrefix) {
                     return this._nsToPrefix[ns]+':'+lname;
                 } else {
-                    var prefix = 'ns'+Object.keys(this._nsToPrefix).length
+                    var prefix = 'ns'+Object.keys(this._nsToPrefix).length;
                     this._nsToPrefix[ns] = prefix;
                     this._context[prefix] = ns;
                     return prefix+':'+lname;
@@ -1856,7 +2374,7 @@ RDF = {
                 this._stack.push(this._doc);
             },
             end: function (code, valRes, context) {
-                console.dir(this._doc);
+                RDF.message(this._doc);
                 this.text = JSON.stringify(this._doc);
             },
             enter: function (code, valRes, context) {
@@ -1867,7 +2385,7 @@ RDF = {
                 this._assign(now, p.name, element);
                 if (p.subjId)
                     this._needId = true;
-                this._stack.push(element)
+                this._stack.push(element);
             },
             exit: function (code, valRes, context) {
                 var now = this._stack.pop();
@@ -1882,15 +2400,511 @@ RDF = {
                 this._assign(now, p.name, context.o.lex);
                 this._registerPredicate(p.name, context.p.lex,
                                         context.o._ == 'RDFLiteral' && context.o.datatype &&
-                                        context.o.datatype.lex != 'http://www.w3.org/2001/XMLSchema#string'
-                                        ? context.o.datatype.lex
-                                        : null);
+                                        context.o.datatype.lex != 'http://www.w3.org/2001/XMLSchema#string' ?
+                                        context.o.datatype.lex :
+                                        null);
             }
         };
     },
 
-    Schema: function (line, column) {
-        this._ = 'Schema'; this.line = line; this.column = column;
+    // Simple normalizer.
+    // Can be used like:
+    //   schema.eventHandlers = {GenN: RDF.GenNHandler()};
+    // invoke with
+    //   %GenN{ %}
+    GenNHandler: function () {
+        function _add (code, valRes, context) {
+            this._doc.push(RDF.Triple(context.s, context.p, context.o));
+        }
+        return {
+            text: null,
+            _doc: null,
+            begin: function (code, valRes, context) {
+                context.register(["visit", "link"]);
+                this._doc = [];
+            },
+            end: function (code, valRes, context) {
+                this.text = this._doc.map(function (t) {
+                    return t.toString()+"\n";
+                }).join('');
+            },
+            link: _add,
+            visit: _add
+        };
+    },
+
+    // RDF rewriter.
+    // Can be used like:
+    //   schema.eventHandlers = {GenR: RDF.GenRHandler()};
+    // invoke with
+    //   %GenR{"always":true%}
+    //  always: whether to default to outputing a triple if there's no code.
+    GenRHandler: function () {
+        return {
+            text: null,
+            begin: function (code, valRes, context) {
+
+                var conf = {};
+                try {
+                    var ob = JSON.parse('{'+code+'}');
+                    conf = ob;
+                } catch (e) {}
+
+                function Var (lex) {
+                    this._ = 'Var'; this.lex = lex;
+                }
+                var varMap = {};
+                function resolveVar (term) {
+                    if (term._ == 'Var')
+                        return term.lex in varMap ?
+                        varMap[term.lex] :
+                        null;
+                    return term;
+                }
+
+                var doc = [];
+                var iriResolver = context.iriResolver;
+
+                var _add = function (code, valRes, context) {
+                        var i;
+                                var RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+                                var XSD_NS = 'http://www.w3.org/2001/XMLSchema#'
+                        var skipSpace = function () {
+                            var Space = /^[ \t\n\r\v]+/;
+                            var s = code.substr(i).match(Space);
+                            if (s)
+                                i += s[0].length;
+                        };
+                    function getToken () {
+                        var Token = /^[a-zA-Z_][a-zA-Z0-9_.-]*/;
+                        var Double = /^[+-]?(?:[0-9]+\.[0-9]*[eE][+-]?[0-9]+|\.[0-9]+[eE][+-]?[0-9]+|[0-9]+[eE][+-]?[0-9]+)/;
+                        var Decimal = /^[+-]?[0-9]*\.[0-9]+/;
+                        var Integer = /^[+-]?[0-9]+/;
+                        var ch = code[i];
+                        var token = null;
+                        if (ch == '\'' || ch == '"') {
+                            var delim = ch;
+                            var end1 = code.indexOf(delim, i+1);
+                            while (code[end1-1] == '/' && end1 < code.length)
+                                end1 = code.indexIf(delim, end1+1);
+                            if (end1 == -1)
+                                throw code.substr(i);
+                            var ret1 = RDF.RDFLiteral(code.substr(i+1, end1-i-1), undefined, undefined, RDF.Position0());
+                            i = end1+1;
+                            return ret1;
+                        } else if (ch.match(Integer)) {
+                            var val = code.substr(i).match(Integer);
+                            val = val[0]; // guaranteed to match at least one char.
+                            i += val.length;
+                            var ret2 = RDF.RDFLiteral(val, undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+                            return ret2;
+                        } else if (ch == '_' && code[i+1] == ':') {
+                            var s1 = code.substr(i+2).match(Token)[0];
+                            i += 2+s1.length;
+                            return RDF.BNode(s1, RDF.Position0());
+                        } else if (ch == '<') {
+                            var end2 = code.indexOf('>', i);
+                            if (end2 == -1)
+                                throw code.substr(i);
+                            var s2 = code.substr(i+1, end2-i-1);
+                            i = end2+1;
+                            return RDF.IRI(iriResolver.getAbsoluteIRI(s2), RDF.Position0());
+                        } else if (ch == 'a' && !code[i+1].match(/[a-zA-Z_0-9]/)) {
+                            ++i;
+                            return RDF.IRI(iriResolver.getAbsoluteIRI(RDF_NS+"type"), RDF.Position0());
+                        } else if (ch == '||') { // maybe "a" || "b" is close to EBV("a") || EBV("b")
+                            ++i;
+                            return {_:'Op', f: function (l, r) {
+                                return RDF.RDFLiteral(l.lex || r.lex, undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()))
+                            }};
+                        } else if (ch == '&&') { // maybe "a" && "b" is close to EBV("a") && EBV("b")
+                            ++i;
+                            return {_:'Op', f: function (l, r) {
+                                return RDF.RDFLiteral(l.lex && r.lex, undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()))
+                            }};
+                        } else if (ch == '+') {
+                            ++i;
+                            return {_:'Op', f: function (l, r) {
+                                return RDF.RDFLiteral(l.lex + (+r.lex), undefined, l.datatype)
+                            }};
+                        } else if (ch == '-') {
+                            ++i;
+                            return {_:'Op', f: function (l, r) {
+                                return RDF.RDFLiteral(l.lex - (+r.lex), undefined, l.datatype)
+                            }};
+                        } else if (ch == '*') {
+                            ++i;
+                            return {_:'Op', f: function (l, r) {
+                                return RDF.RDFLiteral(l.lex * (+r.lex), undefined, l.datatype)
+                            }};
+                        } else if (ch == '/') {
+                            ++i;
+                            return {_:'Op', f: function (l, r) {
+                                return RDF.RDFLiteral(l.lex / (+r.lex), undefined, l.datatype)
+                            }};
+                        } else if (ch == ':') {
+                            var lname = code.substr(++i).match(Token);
+                            i += lname[0].length;
+                            return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix("")+lname[0]), RDF.Position0());
+                        } else if (ch.match(Token)) {
+                            var first = code.substr(i).match(Token);
+                            first = first[0]; // guaranteed to match at least one char.
+                            i += first.length;
+                            // A token might start
+                            if (code[i] == ':') {
+                                // a pname,
+                                var lname = code.substr(++i).match(Token);
+                                lname = lname ? lname[0] : '';
+                                i += lname.length;
+                                return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(first)+lname), RDF.Position0());
+                            } else if (code[i] == '(') {
+                                // a function,
+                                first = first.toUpperCase();
+                                ++i;
+                                skipSpace();
+                                var params = [];
+                                while (code[i] != ')') {
+                                    var t = getToken();
+                                    if (t._ === 'Op')
+                                        params[params.length-1] = t.f(params[params.length-1], getToken());
+                                    else
+                                        params.push(resolveVar(t));
+                                    skipSpace();
+                                    if (code[i] == ',') {
+                                        ++i;
+                                        skipSpace();
+                                    }
+                                }
+                                ++i;
+                                skipSpace();
+
+                                var guid = (function() { // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript#answer-105074
+                                    function s4() {
+                                        return Math.floor((1 + Math.random()) * 0x10000)
+                                            .toString(16)
+                                            .substring(1);
+                                    }
+                                    return function() {
+                                        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+                                            s4() + '-' + s4() + s4() + s4();
+                                    };
+                                })();
+                                var numerics = [
+                                    XSD_NS+"integer", 
+                                    XSD_NS+"decimal", 
+                                    XSD_NS+"float", 
+                                    XSD_NS+"double", 
+                                    XSD_NS+"nonPositiveInteger", 
+                                    XSD_NS+"negativeInteger", 
+                                    XSD_NS+"long", 
+                                    XSD_NS+"int", 
+                                    XSD_NS+"short", 
+                                    XSD_NS+"byte", 
+                                    XSD_NS+"nonNegativeInteger", 
+                                    XSD_NS+"unsignedLong", 
+                                    XSD_NS+"unsignedInt", 
+                                    XSD_NS+"unsignedShort", 
+                                    XSD_NS+"unsignedByte", 
+                                    XSD_NS+"positiveInteger"
+                                ];
+                                // http://stackoverflow.com/questions/2731579/convert-an-xml-schema-date-string-to-a-javascript-date#question
+                                var xmlDateToJavascriptDate = function(xmlDate) {
+                                    // It's times like these you wish Javascript supported multiline regex specs
+                                    var re = /^([0-9]{4,})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(\.[0-9]+)?(Z|([+-])([0-9]{2}):([0-9]{2}))?$/;
+                                    var match = xmlDate.match(re);
+                                    if (!match)
+                                        return null;
+
+                                    var all = match[0];
+                                    var year = match[1];  var month = match[2];  var day = match[3];
+                                    var hour = match[4];  var minute = match[5]; var second = match[6];
+                                    var milli = match[7]; 
+                                    var z_or_offset = match[8];  var offset_sign = match[9]; 
+                                    var offset_hour = match[10]; var offset_minute = match[11];
+
+                                    if (offset_sign) { // ended with +xx:xx or -xx:xx as opposed to Z or nothing
+                                        var direction = (offset_sign == "+" ? 1 : -1);
+                                        hour =   parseInt(hour)   + parseInt(offset_hour)   * direction;
+                                        minute = parseInt(minute) + parseInt(offset_minute) * direction;
+                                    }
+                                    var utcDate = Date.UTC(year, Number(month)-1, day, hour, minute, second, (milli || 0));
+                                    return new Date(utcDate);
+                                }
+                                if (false) {
+// Functions on RDF Terms 17.4.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-rdfTerms
+//     isIRI 17.4.2.1 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-isIRI
+                                } else if (first == "ISIRI") {
+                                    return RDF.RDFLiteral(params[0]._ == 'IRI' ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+//     isBlank 17.4.2.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-isBlank
+                                } else if (first == "ISBLANK") {
+                                    return RDF.RDFLiteral(params[0]._ == 'BNode' ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+//     isLiteral 17.4.2.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-isLiteral
+                                } else if (first == "ISLITERAL") {
+                                    return RDF.RDFLiteral(params[0]._ == 'RDFLiteral' ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+//     isNumeric 17.4.2.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-isNumeric
+                                } else if (first == "ISNUMERIC") {
+                                    return RDF.RDFLiteral(numerics.indexOf(params[0].datatype.lex) == -1 ? 'false' : 'true', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+//     str 17.4.2.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-str
+                                } else if (first == "STR") {
+                                    return RDF.RDFLiteral(params[0].lex, undefined, undefined, RDF.Position0());
+//     lang 17.4.2.6 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-lang
+                                } else if (first == "LANG") {
+                                    return RDF.RDFLiteral(params[0].langtag, undefined, undefined, RDF.Position0());
+//     datatype 17.4.2.7 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-datatype
+                                } else if (first == "DATATYPE") {
+                                    return RDF.IRI(params[0].datatype, RDF.Position0());
+//     IRI 17.4.2.8 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-iri
+                                } else if (first == "IRI") {
+                                    return RDF.IRI(iriResolver.getAbsoluteIRI(params[0].lex), RDF.Position0());
+//     BNODE 17.4.2.9 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-bnode
+                                } else if (first == "BNODE") {
+                                    return RDF.BNode(params[0].lex, RDF.Position0());
+//     STRDT 17.4.2.10 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strdt
+                                } else if (first == "STRDT") {
+                                    function pad (str, max) {
+                                        return str.length < max ? pad("0" + str, max) : str;
+                                    }
+                                    var lex = params[0].lex;
+                                    var target = params[1];
+                                    if (target.lex === "http://www.w3.org/2001/XMLSchema#time") {
+                                        var m = lex.match(/^([0-9]+):([0-9]+):([0-9]+)(.*)$/);
+                                        if (m)
+                                            lex = ""+pad(m[1], 2)+":"+pad(m[2], 2)+":"+pad(m[3], 2)+m[4];
+                                    }
+                                    else if (target.lex === "http://www.w3.org/2001/XMLSchema#date") {
+                                        var m = lex.match(/^([0-9]+)-([0-9]+)-([0-9]+)(.*)$/);
+                                        if (m)
+                                            lex = ""+m[1]+"-"+pad(m[2], 2)+"-"+pad(m[3], 2)+m[4];
+                                    }
+
+                                    return RDF.RDFLiteral(lex, undefined, target, RDF.Position0());
+//     STRLANG 17.4.2.11 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strlang
+                                } else if (first == "STRLANG") {
+                                    return RDF.RDFLiteral(params[0].lex, RDF.LangTag(params[1].lex, RDF.Position0()), undefined, RDF.Position0());
+//     UUID 17.4.2.12 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-uuid
+                                } else if (first == "STRLEN") {
+                                    return RDF.IRI("urn:uuid:"+guid(), RDF.Position0());
+//     STRUUID 17.4.2.13 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-struuid
+                                } else if (first == "STRLEN") {
+                                    return RDF.RDFLiteral(guid(), undefined, undefined, RDF.Position0());
+// Functions on Strings 17.4.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strings
+//     STRLEN 17.4.3.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strlen
+                                } else if (first == "STRLEN") {
+                                    return RDF.RDFLiteral(params[0].lex.length, undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+//     SUBSTR 17.4.3.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-substr
+                                } else if (first == "SUBSTR") {
+                                    var substring = params.length == 3 ?
+                                        params[0].lex.substr(params[1].lex, params[2].lex) :
+                                        params[0].lex.substr(params[1].lex);
+                                    return RDF.RDFLiteral(substring, undefined, undefined, RDF.Position0());
+//     UCASE 17.4.3.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-ucase
+                                } else if (first == "UCASE") {
+                                    return RDF.RDFLiteral(params[0].lex.toUpperCase(), undefined, undefined, RDF.Position0());
+//     LCASE 17.4.3.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-lcase
+                                } else if (first == "LCASE") {
+                                    return RDF.RDFLiteral(params[0].lex.toLowerCase(), undefined, undefined, RDF.Position0());
+//     STRSTARTS 17.4.3.6 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strstarts
+                                } else if (first == "STRSTARTS") {
+                                    return RDF.RDFLiteral(params[0].lex.indexOf(params[1].lex) === 0 ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+//     STRENDS 17.4.3.7 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strends
+                                } else if (first == "STRENDS") {
+                                    return RDF.RDFLiteral(params[0].lex.lastIndexOf(params[1].lex) == params[0].lex.length - params[1].lex.length ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+//     CONTAINS 17.4.3.8 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-contains
+                                } else if (first == "CONTAINS") {
+                                    return RDF.RDFLiteral(params[0].lex.indexOf(params[1].lex) != -1 ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+//     STRBEFORE 17.4.3.9 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strbefore
+                                } else if (first == "STRBEFORE") {
+                                    return RDF.RDFLiteral(params[0].lex.substr(0, params[0].lex.indexOf(params[1].lex)), RDF.Position0());
+//     STRAFTER 17.4.3.10 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strafter
+                                } else if (first == "STRAFTER") {
+                                    return RDF.RDFLiteral(params[0].lex.substr(params[0].lex.indexOf(params[1].lex) + params[1].lex.length), undefined, undefined, RDF.Position0());
+//     ENCODE_FOR_URI 17.4.3.11 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-encode
+                                } else if (first == "ENCODE_FOR_URI") {
+                                    return RDF.RDFLiteral(encodeURIComponent(params[0].lex), undefined, undefined, RDF.Position0());
+//     CONCAT 17.4.3.12 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-concat
+                                } else if (first == "CONCAT") {
+                                    var concat = params.map(function (p) { return p.lex; }).join('');
+                                    return RDF.RDFLiteral(concat, undefined, undefined, RDF.Position0());
+//     langMatches 17.4.3.13 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-langMatches
+                                } else if (first == "LANGMATCHES") {
+                                    var tag = params[0].lex.toUpperCase();
+                                    var pattern = params[1].lex.toUpperCase();
+                                    var val = "false";
+                                    if (tag == pattern)
+                                        val = "true";
+                                    else if (pattern == "*")
+                                        val = tag === '' ? "false" : "true";
+                                    else (tag.substr(0, pattern.length) == pattern && (tag.length == pattern.length || tag[pattern.length] == '-'))
+                                        val == "true";
+                                    return RDF.RDFLiteral(val, undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+//     REGEX 17.4.3.14 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-regex
+                                } else if (first == "REGEX") {
+                                    var re = params.length == 3 ?
+                                        new RegExp(params[1].lex, params[2].lex) :
+                                        new RegExp(params[1].lex);
+                                    return RDF.RDFLiteral(params[0].lex.match(re) != -1 ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+//     REPLACE 17.4.3.15 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-replace
+                                } else if (first == "SUBSTR") {
+                                    var re = params.length == 3 ?
+                                        new RegExp(params[1].lex, params[2].lex) :
+                                        new RegExp(params[1].lex);
+                                    return RDF.RDFLiteral(params[0].lex.replace(re), undefined, undefined, RDF.Position0());
+// Functions on Numerics 17.4.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-numerics
+//     abs 17.4.4.1 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-abs
+                                } else if (first == "ABS") {
+                                    var v = Math.abs(params[0].lex);
+                                    return RDF.RDFLiteral(v, undefined, params[0].datatype, RDF.Position0());
+//     round 17.4.4.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-round
+                                } else if (first == "ROUND") {
+                                    var v = Math.round(params[0].lex);
+                                    return RDF.RDFLiteral(v, undefined, params[0].datatype, RDF.Position0());
+//     ceil 17.4.4.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-ceil
+                                } else if (first == "CEIL") {
+                                    var v = Math.ceil(params[0].lex);
+                                    return RDF.RDFLiteral(v, undefined, params[0].datatype, RDF.Position0());
+//     floor 17.4.4.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-floor
+                                } else if (first == "FLOOR") {
+                                    var v = Math.floor(params[0].lex);
+                                    return RDF.RDFLiteral(v, undefined, params[0].datatype, RDF.Position0());
+//     RAND 17.4.4.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#idp2130040
+                                } else if (first == "RAND") {
+                                    var v = Math.random();
+                                    return RDF.RDFLiteral(v, undefined, RDF.IRI(XSD_NS+"double", RDF.Position0()), RDF.Position0());
+// Functions on Dates and Times 17.4.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-date-time
+//     now 17.4.5.1 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-now
+                                } else if (first == "NOW") {
+                                    var now = new Date();
+                                    function AddZero(num) {
+                                        return (num >= 0 && num < 10) ? "0" + num : num + "";
+                                    }
+                                    var strDateTime = [[now.getUTCFullYear(), AddZero(now.getUTCMonth() + 1), AddZero(now.getUTCDate())].join("-"),
+                                                       [AddZero(now.getUTCHours()), AddZero(now.getUTCMinutes()), AddZero(now.getUTCSeconds())].join(":")]
+                                        .join("T")+"+"+AddZero(Math.floor(now.getUTCTimezoneOffset()/60))+":"+AddZero(now.getUTCTimezoneOffset()%60);
+                                    return RDF.RDFLiteral(strDateTime, undefined, RDF.IRI(XSD_NS+"dateTime"), RDF.Position0());
+//     year 17.4.5.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-year
+                                } else if (first == "YEAR") {
+                                    var d = xmlDateToJavascriptDate(params[0].lex);
+                                    return RDF.RDFLiteral(d.getUTCFullYear(), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+//     month 17.4.5.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-month
+                                } else if (first == "MONTH") {
+                                    var d = xmlDateToJavascriptDate(params[0].lex);
+                                    return RDF.RDFLiteral(d.getUTCMonth()+1, undefined, RDF.IRI(XSD_NS+"integer"), RDF.Position0());
+//     day 17.4.5.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-day
+                                } else if (first == "DAY") {
+                                    var d = xmlDateToJavascriptDate(params[0].lex);
+                                    return RDF.RDFLiteral(d.getUTCDate(), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+//     hours 17.4.5.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-hours
+                                } else if (first == "HOURS") {
+                                    var d = xmlDateToJavascriptDate(params[0].lex);
+                                    return RDF.RDFLiteral(d.getUTCHours(), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+//     minutes 17.4.5.6 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-minutes
+                                } else if (first == "MINUTES") {
+                                    var d = xmlDateToJavascriptDate(params[0].lex);
+                                    return RDF.RDFLiteral(d.getUTCMinutes(), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+//     seconds 17.4.5.7 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-seconds
+                                } else if (first == "SECONDS") {
+                                    var d = xmlDateToJavascriptDate(params[0].lex);
+                                    return RDF.RDFLiteral(d.getUTCSeconds(), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+//     timezone 17.4.5.8 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-timezone
+                                } else if (first == "TIMEZONE") {
+                                    var re = /^([0-9]{4,})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(\.[0-9]+)?(Z|([+-])([0-9]{2}):([0-9]{2}))?$/;
+                                    var match = params[0].lex.match(re);
+                                    var z_or_offset = match[8];  var offset_sign = match[9]; 
+                                    var offset_hour = match[10]; var offset_minute = match[11];
+                                    var lex = "PT0S";
+                                    if (z_or_offset != "Z") {
+                                        lex = (offset_sign == "-" ? "-" : "") + "PT"
+                                            + (offset_hour === 0 ? "" : offset_hour/1+"H")
+                                            + (offset_minute === 0 ? "" : offset_minute/1+"M");
+                                    }
+                                    return RDF.RDFLiteral(lex, undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+//     tz 17.4.5.9 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-tz
+                                } else if (first == "TZ") {
+                                    var re = /^([0-9]{4,})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(\.[0-9]+)?(Z|([+-])([0-9]{2}):([0-9]{2}))?$/;
+                                    var match = params[0].lex.match(re);
+                                    var z_or_offset = match[8];
+                                    return RDF.RDFLiteral((z_or_offset || ""), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+// Hash Functions 17.4.6 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-hash
+//     MD5 17.4.6.1 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-md5
+//     SHA1 17.4.6.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-sha1
+//     SHA256 17.4.6.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-sha256
+//     SHA384 17.4.6.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-sha384
+//     SHA512 17.4.6.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-sha512
+
+                                } else {
+                                    throw first;
+                                }
+                            } else {
+                                // or a variable name
+                                // return new this.Var(s, RDF.Position0());
+                                // js scoping is such a PITA!
+                                return {_: 'Var', lex: first};
+                            }
+                        } else {
+                            throw code.substr(i);
+                        }
+                    }
+                    if (code) {
+
+                        for (i = 0; i < code.length; ) {
+                            var start = i;
+                            varMap['s'] = context.s;
+                            varMap['p'] = context.p;
+                            varMap['o'] = context.o;
+                            skipSpace();
+                            if (i == code.length)
+                                continue;
+                            var lvalue = getToken();
+                            skipSpace();
+                            var ch = code[i];
+                            if (ch == '=') {
+                                ++i;
+                                skipSpace();
+                                if (lvalue._ != 'Var')
+                                    throw (code.substr(i));
+                                var v = resolveVar(getToken());
+                                varMap[lvalue.lex] = v;
+                            } else {
+                                var s = resolveVar(lvalue);
+                                var p = resolveVar(getToken());
+                                skipSpace();
+                                var o = resolveVar(getToken());
+                                    try {
+                                        doc.push(RDF.Triple(s, p, o));
+                                    } catch (e) {
+                                        message("Skipping: \"" + e + "\"\n"
+                                                +"while instantiating \"" + code.substr(start, i-start) + "\".");
+                                    }
+                            }
+                            skipSpace();
+                            if (code[i] == '.') {
+                                ++i;
+                                skipSpace();
+                            }
+                        }
+                    } else if ('always' in conf && conf['always'] == true) {
+                        doc.push(RDF.Triple(context.s, context.p, context.o));
+                    }
+                }
+
+                this.link = _add;
+                this.visit = _add;
+                this.end = function (code, valRes, context) {
+                    RDF.message(doc);
+                    this.text = doc.map(function (t) {
+                        return t.toString()+"\n";
+                    }).join('');
+                }
+                if ('always' in conf && conf['always'] == true)
+                    context.register(["visit", "link"]);
+            },
+            link: null,
+            visit: null
+        };
+    },
+
+    Schema: function (_pos) {
+        this._ = 'Schema'; this._pos = _pos;
         this.ruleMap = {};
         this.ruleLabels = [];
         this.startRule = undefined;
@@ -1898,6 +2912,7 @@ RDF = {
         this.derivedShapes = {}; // Map parent name to array of 1st generation childrens' rules.
         this.isVirtualShape = {};
         this.init = {};
+        this.comments = [];
 
         this.hasDerivedShape = function (parent, child) {
             if (!(parent.toString() in this.derivedShapes))
@@ -1934,7 +2949,7 @@ RDF = {
             });
             if (disjoints.length === 1)
                 return disjoints[0];
-            return new RDF.OrRule(this.ruleMap[key].line, this.ruleMap[key].column, disjoints);
+            return new RDF.OrRule(disjoints, RDF.Position2(this.ruleMap[key].line, this.ruleMap[key].column));
         };
         this.serializeRule = function (label) {
             var ret = '';
@@ -1953,14 +2968,14 @@ RDF = {
             }
             return ret;
         };
-        this.toString = function () {
+        this.toString = function (orig) {
             var ret = '';
 
             var Schema = this;
             if (this.init)
                 Object.keys(this.init).map(function (k) { ret += Schema.init[k] + "\n"; })
             if (this.startRule)
-                ret += "start = " + this.startRule.toString() + "\n\n";
+                ret += "start = " + this.startRule.toString(orig) + "\n\n";
             for (var label in this.ruleMap)
                 ret += this.serializeRule(label);
             return ret;
@@ -1972,64 +2987,116 @@ RDF = {
             this.ruleLabels.push(label);
             this.ruleMap[key] = rule;
         }
+        this.addComment = function (c) {
+            this.comments.push(c);
+        },
         this.colorize = function (charmap) {
-            var idMap = new IntStringMap();
-            for (var i = 0; i < this.ruleLabels.length; ++i)
-                this.ruleMap[this.ruleLabels[i].toString()].colorize(charmap, idMap);
+            var idMap = IntStringMap();
+            var termStringToIds = StringIdMap();
+            var ruleId = "init";
+            //this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
+            var AtomicRule = this;
+            Object.keys(this.init).map(function (k) {
+                var code = AtomicRule.init[k];
+                charmap.insertBefore(code._pos.offset, "<span id='"+ruleId+"_"+k+"' class='code'>", 0);
+                charmap.insertAfter(code._pos.offset+code._pos.width, "</span>", 0);
+            });
+            for (var i = 0; i < this.ruleLabels.length; ++i) {
+                var label = this.ruleLabels[i];
+                this.ruleMap[label.toString()].colorize(charmap, idMap, termStringToIds);
+                // colorizing assigns ids; add to term map after colorizing
+                termStringToIds.add(label.toString(true), label.id);
+            }
+            if (this.startRule) {
+                this.startRule.assignId(charmap, "start");
+                termStringToIds.add(this.startRule.toString(true), this.startRule.id);
+            }
             // for (var label in this.ruleMap)
-            //     this.ruleMap[label].colorize(charmap, idMap);
-            return idMap;
+            //     this.ruleMap[label].colorize(charmap, idMap, termStringToIds);
+            var commentId = "sc";
+            for (var i = 0; i < this.comments.length; ++i) {
+                var comment = this.comments[i];
+                charmap.insertBefore(comment._pos.offset, "<span id='"+commentId+"_"+i+"' class='comment'>", 0);
+                charmap.insertAfter(comment._pos.offset+comment._pos.width, "</span>", 0);
+            };
+            return {idMap:idMap, termStringToIds:termStringToIds};
         };
         this.termResults = {}; // temp cache hack -- makes schema validation non-reentrant
-        this.validatePoint = function (point, as, db, subShapes) {
+        this.validatePoint = function (point, as, db, validatorStuff, subShapes) {
             // cyclic recursion guard says "am i verifying point as an as in this closure mode?"
             // with closure: start=<a> <a> { <p1> @<a> } / <s1> <p1> <s1> .
             //  w/o closure: start={ <p1> @<a> } VIRTUAL <a> { <p2> (1) } <b> & <a> {  } ! <s1> <p1> [ <p2> 2 ] .
-            var key = point.toString() + ' @' + as + "," + subShapes;
+            var asStr = as.toString();
+            if (!(asStr in this.ruleMap))
+                throw "rule " + asStr + " not found in schema";
+            var key = point.toString() + ' @' + asStr + "," + subShapes;
             var ret = this.termResults[key];
-            if (ret == undefined) {
+            if (ret === undefined) {
                 this.termResults[key] = new RDF.ValRes(); // temporary empty solution
-                this.termResults[key].status = RDF.DISPOSITION.PASS; // matchedEmpty(this.ruleMap[as.toString()]);
+                this.termResults[key].status = RDF.DISPOSITION.PASS; // matchedEmpty(this.ruleMap[asStr]);
                 if (subShapes)
-                    ret = this.getRuleMapClosure(as).validate(this, point, false, db);
+                    ret = this.getRuleMapClosure(as).validate(this, point, false, db, validatorStuff);
                 else
-                    ret = this.ruleMap[as.toString()].validate(this, point, false, db);
+                    ret = this.ruleMap[asStr].validate(this, point, false, db, validatorStuff);
                 this.termResults[key] = ret;
             }
             return ret;
         };
 
+        this.closeShapes = function (point, as, db, validatorStuff, subShapes) {
+            var ret = this.validatePoint(point, as, db, validatorStuff, subShapes);
+            if (ret.status == RDF.DISPOSITION.PASS) {
+                var seen = ret.triples();
+                var missed = ret.misses.filter(function (m) { // triplesMatch
+                    return seen.filter(function (t) {
+                        return m.triple.toString() == t.toString();
+                    }).length ? false : true;
+                })
+                if (missed.length) {
+                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.errors = missed;
+                }
+            }
+            return ret;
+        };
+
         // usual interface for validating a pointed graph
-        this.validate = function (point, db) {
-            this.dispatch('begin', this.init, null, null);
-            var ret = this.validatePoint(point, this.startRule, db, true);
-            this.dispatch('end', this.init, null, null); // this.init isn't actually called.
+        this.validate = function (point, as, db, validatorStuff, subShapes) {
+            var callbacksAlwaysInvoked = this.alwaysInvoke;
+            this.dispatch('begin', this.init, null, {
+                iriResolver: validatorStuff.iriResolver,
+                register: function (handlerName, events) {
+                    if (!Array.isArray(events))
+                        events = [events];
+                    for (var i = 0; i < events.length; ++i) {
+                        var event = events[i];
+                        if (!(event in callbacksAlwaysInvoked))
+                            callbacksAlwaysInvoked[event] = [];
+                        callbacksAlwaysInvoked[event].push(handlerName);
+                    }
+                }
+            });
+            var ret = this.closeShapes(point, as, db, subShapes);
+            this.dispatch('end', this.init, null, ret);
             return ret;
         };
 
         // usual interface for finding types in a graph
-        this.findTypes = function (db) {
+        this.findTypes = function (db, validatorStuff) {
             var ret = new RDF.ValRes(); // accumulate validation successes.
             ret.status = RDF.DISPOSITION.PASS;
 
             // Get all of the subject nodes.
-            // Note that this DB has different objects for each
+            // Note that this dataset has different objects for each
             // lexical instantiation of an RDF node so we key on
             // the string (N-Triples) representations.
-            var subjects = {};
-            for (var i = 0; i < db.triples.length; ++i) {
-                var t = db.slice(i)[0].s;
-                var s = t.toString();
-                if (subjects[s] === undefined)
-                    subjects[s] = t;
-            }
-
+            var subjects = db.uniqueSubjects();
             for (var handler in this.handlers)
                 if ('beginFindTypes' in this.handlers[handler])
                     this.handlers[handler]['beginFindTypes']();
             // For each (distinct) subject node s,
-            for (var sStr in subjects) {
-                var s = subjects[sStr];
+            for (var iSubjects = 0; iSubjects < subjects.length; ++ iSubjects) {
+                var s = subjects[iSubjects];
 
                 // for each rule label ruleLabel,
                 for (var ri = 0; ri < this.ruleLabels.length; ++ri) {
@@ -2038,17 +3105,14 @@ RDF = {
                     // if the labeled rule not VIRTUAL,
                     if (!this.isVirtualShape[ruleLabel.toString()]) {
 
-                        // test s against that rule (but not its subshapes).
-                        this.dispatch('begin', this.init, null, null);
-                        var res = this.validatePoint(s, ruleLabel, db, false);
-                        this.dispatch('end', this.init, null, res); // this.init isn't actually called.
+                        var res = this.validate(s, ruleLabel, db, validatorStuff, false);
 
                         // If it passed or is indeterminate,
                         if (res.status !== RDF.DISPOSITION.FAIL) {
 
                             // record the success.
-                            RDF.message(sStr + " is a " + ruleLabel.toString());
-                            var t = new RDF.Triple(s, new RDF.IRI(0,0,0,0,"http://open-services.net/ns/core#instanceShape"), ruleLabel);
+                            RDF.message(s.toString() + " is a " + ruleLabel.toString());
+                            var t = RDF.Triple(s, RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0()), ruleLabel);
                             ret.matchedTree(this.ruleMap[ruleLabel], t, res);
                         }
                     }
@@ -2060,14 +3124,42 @@ RDF = {
             return ret;
         };
         this.dispatch = function (event, codes, valRes, context) {
-            var ret = RDF.DISPOSITION.PASS;
-            for (var key in codes)
-                if (this.handlers[key] && this.handlers[key][event]) {
-                    var ex = this.handlers[key][event](codes[key].code, valRes, context);
-                    if (ex == RDF.DISPOSITION.FAIL)
-                        ret = RDF.DISPOSITION.FAIL;
+            var handlers = this.handlers;
+            function callHandler (handlerName, event, code, valRes, context) {
+                // add handlerName to register closure.
+                var f = null;
+                if (context && "register" in context) {
+                    f = context.register;
+                    context.register = function (events) {
+                        f(handlerName, events);
+                    };                        
                 }
-            return ret;
+
+                // invoke
+                var ret = handlers[handlerName][event](code, valRes, context);
+
+                // restore old register function
+                if (f)
+                    context.register = f;
+
+                return ret;
+            }
+            if (event in this.alwaysInvoke)
+                for (var i = 0; i < this.alwaysInvoke[event].length; ++i) {
+                    var handlerName = this.alwaysInvoke[event][i];
+                    if (!(handlerName in codes)) { // Skip handlers which will be called below.
+                        var ex = callHandler(handlerName, event, null, valRes, context);
+                        if (ex == RDF.DISPOSITION.FAIL)
+                            return RDF.DISPOSITION.FAIL;
+                    }
+                }
+            for (var handlerName in codes)
+                if (this.handlers[handlerName] && this.handlers[handlerName][event]) {
+                    var ex = callHandler(handlerName, event, codes[handlerName].code, valRes, context);
+                    if (ex == RDF.DISPOSITION.FAIL)
+                        return RDF.DISPOSITION.FAIL;
+                }
+            return RDF.DISPOSITION.PASS;
         };
         this.seen = {};
         this.SPARQLvalidation2 = function (func, prefixes, prepend, append) {
@@ -2171,7 +3263,7 @@ SELECT ?s ?p ?o {\n\
                 var rule = this.ruleMap[label];
                 ret += rule.toResourceShapes_standalone(this, dbCopy, prefixes, sePrefix, rsPrefix, 1);
             }
-            if (dbCopy.triples.length != 0)
+            if (dbCopy.length() !== 0)
                 ret += "# remaining triples:\n" + dbCopy.toString();
             return ret;
         };
@@ -2261,7 +3353,7 @@ SELECT ?s ?p ?o {\n\
             }
 
 
-            ret = new RDF.Schema(this.line, this.column);
+            ret = new RDF.Schema(this._pos);
             ret.startRule = this.startRule;
             ret.eventHandlers = this.eventHandlers;
             ret.derivedShapes = {};
@@ -2284,12 +3376,14 @@ SELECT ?s ?p ?o {\n\
     ValRes: function () {
         function renderRule (rule, triple, depth, schemaIdMap, dataIdMap, solutions, classNames) { 
             var sOrdinal = solutions.length;
-            var rs = rule.toString();
+            var rs = rule.toString(true);
             var rOrdinal = schemaIdMap.getInt(rule.toKey());
-            var tOrdinal = '', ts;
+            var tOrdinal = '';
+            var to;
             if (triple) {
-                ts = triple.toString();
-                tOrdinal = dataIdMap.getInt(ts)
+                var ts = triple.toString();
+                tOrdinal = dataIdMap.getInt(ts);
+                var to = triple.s.toString(true) + " " + triple.p.toString(true) + " " + triple.o.toString(true) + " .";
                 solutions.push({rule:rOrdinal, triple:tOrdinal});
             } else {
                 solutions.push({rule:rOrdinal});
@@ -2305,7 +3399,7 @@ SELECT ?s ?p ?o {\n\
             if (triple)
                 ret += " matched by "
                 + "<span class='" + (classNames['data'] || 'data') + "'>"
-                + ts.replace(/</gm, '&lt;').replace(/>/gm, '&gt;')
+                + to.replace(/</gm, '&lt;').replace(/>/gm, '&gt;')
                 + "</span>";
 
             ret += "</span>";
@@ -2392,7 +3486,7 @@ SELECT ?s ?p ?o {\n\
                 return [];
             }
         },
-        this._ = 'ValRes'; this.matches = new Array(); this.errors = new Array(), this.tripleToRules = {};
+        this._ = 'ValRes'; this.matches = []; this.errors = [], this.misses = [], this.tripleToRules = {};
         this.triples = function () {
             var ret = [];
             if (this.status != RDF.DISPOSITION.FAIL)
@@ -2583,10 +3677,15 @@ SELECT ?s ?p ?o {\n\
                 this.errors.push(res.errors[i]);
             if (res.status == RDF.DISPOSITION.FAIL)
                 this.copyMatchedTriples(res);
+            for (var i = 0; i < res.misses.length; ++i)
+                this.misses.push(res.misses[i]);
+        },
+        this.missed = function (res) {
+            this.misses.push.apply(this.misses, res.errors)
         },
         this.passed = function () {
             return this.status == RDF.DISPOSITION.PASS;
-            return this.matches.length > 0 && this.errors.length == 0;
+            return this.matches.length > 0 && this.errors.length === 0;
         },
         this.toString = function (depth) {
             var p = pad(depth);
@@ -2608,3 +3707,9 @@ SELECT ?s ?p ?o {\n\
 
 //    curSchema: new this.Schema()
 };
+
+// enumerate inheritance
+RDF.IRI.prototype.origText = origText;
+RDF.RDFLiteral.prototype.origText = origText;
+RDF.LangTag.prototype.origText = origText;
+RDF.BNode.prototype.origText = origText;
