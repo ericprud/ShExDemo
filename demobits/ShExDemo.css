@@ -1,5 +1,4 @@
 
-
 /* Fancy heading like http://pegjs.majda.cz/online */
 #title h1 {
   float: left;
@@ -42,6 +41,8 @@ h2 { margin: 0; border: none; }
   padding: .28em .5em;
   float:left;
   margin-left: .2em; 
+  margin-top: 0;
+  margin-bottom: 0;
 }
 .message a.view { display: block; float: right; }
 .message .size-and-time { visibility: hidden; float: right; font-size: 70%; margin: .3em 1em; color: #800; }
@@ -83,7 +84,9 @@ h2 { margin: 0; border: none; }
 
 /* Validation results */
 #valResults-header {
-  margin: 1.25em 0 0 0; border: none; padding: .25em 1.2em .25em 1.2em;
+  /*margin: 1.25em 0 0 0;*/
+  border: none;
+  padding: .25em 1.2em .25em 1.2em;
   font-size: 80%;
   background-color: #ccc;
 }
@@ -101,7 +104,7 @@ h2 { margin: 0; border: none; }
 .hilightSolution { background-color: #fea; }
 .hilightRule { border-top: 1px solid #8fc; border-bottom: 1px solid #8fc; border-left: .25em solid #8fc; border-right: .25em solid #8fc; background-color: #fea; }
 .hilightData { border-top: 1px solid #7bf; border-bottom: 1px solid #7bf; border-left: .25em solid #7bf; border-right: .25em solid #7bf; background-color: #fea; }
-.remainingData { background-color: #dae; }
+.remainingData { background-color: #dae; border: thin solid #dae; }
 .schemaflow { border-top: 1px solid #8fc; border-bottom: 1px solid #8fc; border-left: .25em solid #8fc; border-right: .25em solid #8fc; }
 .schemapre { border:.5em solid #7fb; }
 .dataflow { border-top: 1px solid #7bf; border-bottom: 1px solid #7bf; border-left: .25em solid #7bf; border-right: .25em solid #7bf; }
@@ -114,8 +117,32 @@ h2 { margin: 0; border: none; }
 .IRI { color: #00f; }
 .bnode { color: #a3a; }
 .literal { color: #722; }
-.langtag { color: #bb0; }
+.langtag { color: #770; }
 .rule { color: #119; }
 .code { color: #7bb; }
-.comment { color: #191; }
+.comment { color: #911; }
 .error { color: #d00; }
+.success { color: #0d0; }
+
+/* adapted from http://www.menucool.com/tooltip/css-tooltip */
+a.hasToolTip {outline:none; }
+a.hasToolTip strong999 {line-height:3ex;}
+a.hasToolTip:hover {text-decoration:none;} 
+a.hasToolTip .toolTip {
+    z-index:10; display:none; padding:1.4em 2.0ex;
+    margin-top:2em; margin-left:-10em;
+    width: 25em; line-height:2ex;
+}
+a.hasToolTip .wide {
+    width: 80%;
+}
+a.hasToolTip:hover .toolTip {
+    display:inline; position:absolute; color:#111;
+    border:thin solid #DCA; background:#fffAF0;}
+/*CSS3 extras*/
+a.hasToolTip .toolTip {
+    border-radius:1em;
+    box-shadow: .5em .5em .8em #CCC;
+}
+
+.highlightTerms { background-color: #de9; } /* couldn't decide bewteen hover and click for data selection UI. */
