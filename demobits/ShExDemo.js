@@ -89,14 +89,8 @@ ShExDemo = function() {
                 $(id + " pre").text(newValue); // element.innerText = newValue;
         } else {
             ret = $(id + " textarea").val();
-            // deal with itsaltext
-            if (ret === "[object XMLDocument]") {
-                ret = "";
-                $(id + " textarea").val("");
-                // alert($(id + " textarea").val());
-            }
             if (newValue !== undefined)
-                $(id + " textarea").text(newValue);
+                $(id + " textarea").val(newValue);
         }
         return ret;
     }
