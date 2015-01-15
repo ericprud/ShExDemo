@@ -71,6 +71,11 @@
                   <li><a href="FancyShExDemo?schemaURL=test/Issue-inheritance/schema.shex&amp;dataURL=test/Issue-inheritance/pass-user-employee.ttl">issue with base person shape</a></li>
                 </ul>
               </li>
+              <li>controls
+                <ul>
+                  <li>extra triples: <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;colorize=true&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20ex%3AreporterName%20xsd%3Astring%2C%0A%20%20%20%20ex%3AreportedOn%20xsd%3AdateTime%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20ex%3AreportedOn%20%20%20%222013-01-23T10%3A18%3A00%22%5E%5Exsd%3AdateTime%20%3B%0A%20%20%20%20ex%3AreporterName%20%22Bob%22%20%3B%0A%20%20%20%20ex%3Areason%20%22too%20much%20smoke%22%20.%0A%0A">open shape (highlights "fringe")</a> <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;colorize=true&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20ex%3AreporterName%20xsd%3Astring%2C%0A%20%20%20%20ex%3AreportedOn%20xsd%3AdateTime%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20ex%3AreportedOn%20%20%20%222013-01-23T10%3A18%3A00%22%5E%5Exsd%3AdateTime%20%3B%0A%20%20%20%20ex%3AreporterName%20%22Bob%22%20%3B%0A%20%20%20%20ex%3Areason%20%22too%20much%20smoke%22%20.%0A%0A&amp;closedShapes=true">closed shape (fails match)</a></li>
+                </ul>
+              </li>
             </ul>
 		    <!-- ul>
 			    <li><a href="#" onclick="outerLayout.toggle('north')">Toggle North</a></li>
