@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="demobits/ShExDemo.css" type="text/css" />
 
     <style type="text/css">
+.ui-multiselect { font-size: 70%; }
     </style>
     <link rel="shortcut icon" href="shortcut.ico" type="image/x-icon" />
 
@@ -171,14 +172,24 @@
                             </a>
                           </label>
                         </div>
-                        <input type="checkbox" id="opt-disable-js" disabled="disabled"/> <label for="opt-disable-js">
-                        <a href="#" class="hasToolTip">Disable javascript extensions
-                        <span class="toolTip">
-                          When loading schemas from outside of the ShExDemo resource space, javascript extensions are disabled.
-                          Users may explicitly permit javascript extensions if they trust the schema to e.g. update the DOM, manipulate the display, enable RTSP, etc.
-                        </span>
-                        </a>
-                      </label>
+                        <input type="checkbox" id="opt-disable-js" disabled="disabled"/>
+                        <label for="opt-disable-js">
+                          <a href="#" class="hasToolTip">Disable javascript extensions
+                          <span class="toolTip">
+                            When loading schemas from outside of the ShExDemo resource space, javascript extensions are disabled.
+                            Users may explicitly permit javascript extensions if they trust the schema to e.g. update the DOM, manipulate the display, enable RTSP, etc.
+                          </span>
+                          </a>
+                        </label>
+
+                        <input type="checkbox" id="opt-closed-shapes" disabled="disabled"/>
+                        <label for="opt-closed-shapes">
+                          <a href="#" class="hasToolTip">Closed shapes
+                          <span class="toolTip">
+                            The schema must mention all shapes in any visited node in the instance data.
+                          </span>
+                          </a>
+                        </label>
                     </div>
                 </div>
                 </div>

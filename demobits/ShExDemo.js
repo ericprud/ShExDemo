@@ -60,6 +60,7 @@ ShExDemo = function() {
         $("#opt-pre-typed").removeAttr("disabled");
         $("#opt-find-type").removeAttr("disabled");
         $("#opt-disable-js").removeAttr("disabled");
+        $("#opt-closed-shapes").removeAttr("disabled");
 
         // $("#settings input[name='mode']").change(); would trigger handleParameterUpdate() so:
         if ($("#opt-pre-typed").is(":checked"))
@@ -292,6 +293,7 @@ ShExDemo = function() {
                             //contentType: 'text/plain',{turtle,shex}
                             url: list[0],
                             success: function(body, textStatus, jqXHR) {
+                                // Loading non-endorsed links disables javascript extensions.
                                 if (/^([a-z]+:)?\/\//g.test(list[0]))
                                     $('#opt-disable-js').attr('checked', true);
                                 textValue(into, textValue(into)+body);
@@ -338,6 +340,7 @@ ShExDemo = function() {
         loadDirectData: function() {
             if (iface.queryParms['schema'])
                 iface.queryParms['schema'].forEach(function(s) {
+                    // Loading literal schema disables javascript extensions.
                     $('#opt-disable-js').attr('checked', true);
                     textValue("#schema", $("#schema .textInput").val()+s);
                 });
@@ -394,7 +397,7 @@ ShExDemo = function() {
         allDataIsLoaded: function() {
             setHandler($("#schema .textInput"), iface.handleSchemaUpdate);
             setHandler($("#data .textInput"), iface.handleDataUpdate);
-            setHandler($("#ctl-colorize, #starting-node, #opt-pre-typed, #opt-find-type, #opt-disable-js"),
+            setHandler($("#ctl-colorize, #starting-node, #opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes"),
                        iface.handleParameterUpdate);
 
             iface.layoutPanelHeights();
@@ -403,7 +406,7 @@ ShExDemo = function() {
             $("#apology").hide();
             $("#main").show();
             $("#schema .textInput, #data .textInput, #starting-node,"
-              +"#opt-pre-typed, #opt-find-type, #opt-disable-js").removeAttr("disabled");
+              +"#opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes").removeAttr("disabled");
             $("#schema .textInput").focus(); // set focus after removeAttr("disabled").
             if (iface.queryParms['find-types']) { // switch to pre after unhiding.
                 $("#opt-pre-typed").prop( "checked", false );
@@ -429,6 +432,9 @@ ShExDemo = function() {
                     }
                 }
             }
+
+            if (iface.queryParms['closedShapes'] == "true")
+                $("#opt-closed-shapes").prop( "checked", true );
 
             // enablePre parses schema and data and validates if possible.
             if (iface.queryParms['colorize'] == "true") { // switch to pre after unhiding.
@@ -497,12 +503,18 @@ ShExDemo = function() {
             } else {
                 delete iface.queryParms['colorize'];
             }
+            if ($("#opt-closed-shapes").is(":checked")) {
+                iface.queryParms['closedShapes'] = ["true"];
+            } else {
+                delete iface.queryParms['closedShapes'];
+            }
         },
 
         handleParameterUpdate: function() {
             if($("#starting-nodes").val() === last["#starting-nodes"]
                && $("#opt-pre-typed").is(":checked") === last["#opt-pre-typed"]
                && $("#opt-disable-js").is(":checked") === last["#opt-disable-js"]
+               && $("#opt-closed-shapes").is(":checked") === last["#opt-closed-shapes"]
                && $("#ctrl-colorize").is(":checked") === last["#ctrl-colorize"])
                 return;
 
@@ -523,6 +535,7 @@ ShExDemo = function() {
             $("#opt-pre-typed").attr("disabled", "disabled");
             $("#opt-find-type").attr("disabled", "disabled");
             $("#opt-disable-js").attr("disabled", "disabled");
+            $("#opt-closed-shapes").attr("disabled", "disabled");
 
             $("#valResults").addClass("disabled").text("Validation results not available.");
             $("#valResults-header").attr("class", "disabled");
@@ -677,6 +690,7 @@ ShExDemo = function() {
             last["#starting-nodes"]  = $("#starting-nodes").val();
             last["#opt-pre-typed"]  = $("#opt-pre-typed").is(":checked");
             last["#opt-disable-js"] = $("#opt-disable-js").is(":checked");
+            last["#opt-closed-shapes"] = $("#opt-closed-shapes").is(":checked");
             last["#ctrl-colorize"] = $("#ctrl-colorize").is(":checked");
 
             $("#validation-messages").text("");
@@ -733,7 +747,8 @@ ShExDemo = function() {
                                        ? "schema start rule"
                                        : iface.validator.startRule.toString()) + ".");
                         var r = iface.validator.validate(startingNode, iface.validator.startRule, iface.graph,
-                                                         {iriResolver: iface.schema.iriResolver}, true);
+                                                         {iriResolver: iface.schema.iriResolver,
+                                                          closedShapes: $("#opt-closed-shapes").is(":checked")}, true);
                         if (r.passed())
                             $("#validation-messages").append($('<div/>'
                                                                + "<span class='success'>passed</span>"

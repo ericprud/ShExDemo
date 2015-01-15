@@ -1254,7 +1254,7 @@ RDF = {
         // ArcRule: if (inOpt ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
         // if(SIZE(matchName)<min|>max) return 𝕗;
         // vs=matchName.map(valueClass(v,_,g,false)); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        this.validate = function (schema, point, inOpt, db, closedSubGraph, validatorStuff) {
             var matched = 0;
             var ret = new RDF.ValRes();
             ret.status = RDF.DISPOSITION.PASS;
@@ -1296,10 +1296,10 @@ RDF = {
                     ret.status = RDF.DISPOSITION.FAIL;
                     ret.error_aboveMax(this.max, this, passes[this.max].r);
                 }
-                if (ret.status == RDF.DISPOSITION.FAIL)
+                if (ret.status == RDF.DISPOSITION.FAIL) {
                     for (var iFails1 = 0; iFails1 < fails.length; ++iFails1)
                         ret.add(fails[iFails1].r);
-                else {
+                } else {
                     for (var iPasses = 0; iPasses < passes.length; ++iPasses)
                         ret.add(passes[iPasses].r);
                     for (var iFails2 = 0; iFails2 < fails.length; ++iFails2)
@@ -1466,10 +1466,10 @@ RDF = {
             });
         };
         // only returns ∅|𝜃 if inOpt
-        // ArcRule: if (inOpt ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
+        // Concomittant: if (inOpt ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
         // if(SIZE(matchName)<min|>max) return 𝕗;
         // vs=matchName.map(valueClass(v,_,g,false)); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        this.validate = function (schema, point, inOpt, db, closedSubGraph, validatorStuff) {
             var matched = 0;
             var ret = new RDF.ValRes();
             ret.status = RDF.DISPOSITION.PASS;
@@ -1651,9 +1651,9 @@ RDF = {
         };
         // GroupRule: v=validity(r,p,g,inOpt|opt); if(𝕗|𝜃) return v;
         // if(∅) {if(inOpt) return ∅ else if (opt) return 𝕡 else return 𝕗}; return dispatch('post', );
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        this.validate = function (schema, point, inOpt, db, closedSubGraph, validatorStuff) {
             schema.dispatch('enter', this.codes, this, {o:point}); // !! lie! it's the *subject*!
-            var v = this.rule.validate(schema, point, inOpt || this.opt, db, validatorStuff);
+            var v = this.rule.validate(schema, point, inOpt || this.opt, db, closedSubGraph, validatorStuff);
             schema.dispatch('exit', this.codes, this, null);
             if (v.status == RDF.DISPOSITION.FAIL || v.status == RDF.DISPOSITION.ZERO)
                 ; // v.status = RDF.DISPOSITION.FAIL; -- avoid dispatch below
@@ -1741,7 +1741,7 @@ RDF = {
         this.colorize = function (charmap, idMap, termStringToIds) {
             // @@@ hilight include this.rule.colorize(charmap, idMap, termStringToIds);
         };
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        this.validate = function (schema, point, inOpt, db, closedSubGraph, validatorStuff) {
             return schema.validatePoint(point, this.include, db, validatorStuff, false);
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
@@ -1789,7 +1789,7 @@ RDF = {
         };
         this.colorize = function (charmap, idMap, termStringToIds) {
         };
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        this.validate = function (schema, point, inOpt, db, closedSubGraph, validatorStuff) {
             var ret = new RDF.ValRes();
             ret.status = inOpt ? RDF.DISPOSITION.NONE : RDF.DISPOSITION.PASS; // nod agreeably
             return ret;
@@ -1843,7 +1843,7 @@ RDF = {
         // AndRule: vs=conjoints.map(validity(_,p,g,o)); if(∃𝕗) return 𝕗;
         // if(∃𝕡∧∃∅) return 𝕗; if(∄𝕡∧∄∅) return 𝜃 else if(∃𝕡) return 𝕡 else return ∅
         // Note, this FAILs an empty disjunction.
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        this.validate = function (schema, point, inOpt, db, closedSubGraph, validatorStuff) {
             var ret = new RDF.ValRes();
             var seenFail = false;
             var allPass = RDF.DISPOSITION.PASS;
@@ -1851,7 +1851,7 @@ RDF = {
             var empties = [];
             for (var i = 0; i < this.conjoints.length; ++i) {
                 var conj = this.conjoints[i];
-                var r = conj.validate(schema, point, inOpt, db, validatorStuff);
+                var r = conj.validate(schema, point, inOpt, db, closedSubGraph, validatorStuff);
                 ret.add(r);
                 if (r.status == RDF.DISPOSITION.FAIL)
                     seenFail = true;
@@ -1996,7 +1996,7 @@ RDF = {
         // ∃!x -> true if there's exactly one x in vs
         // OrRule: vs=disjoints.map(validity(_,p,g,o)); if(∄𝕡∧∄∅∧∄𝜃) return 𝕗;
         // if(∃!𝕡) return 𝕡; if(∃!𝜃) return 𝜃 else return 𝕗;
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        this.validate = function (schema, point, inOpt, db, closedSubGraph, validatorStuff) {
             var ret = new RDF.ValRes();
             var allErrors = true;
             var passCount = 0;
@@ -2004,7 +2004,7 @@ RDF = {
             var failures = [];
             for (var i = 0; i < this.disjoints.length; ++i) {
                 var disj = this.disjoints[i];
-                var r = disj.validate(schema, point, inOpt, db, validatorStuff);
+                var r = disj.validate(schema, point, inOpt, db, closedSubGraph, validatorStuff);
                 if (r.status == RDF.DISPOSITION.FAIL)
                     failures.push(r);
                 else {
@@ -3034,10 +3034,27 @@ RDF = {
             if (ret === undefined) {
                 this.termResults[key] = new RDF.ValRes(); // temporary empty solution
                 this.termResults[key].status = RDF.DISPOSITION.PASS; // matchedEmpty(this.ruleMap[asStr]);
-                if (subShapes)
-                    ret = this.getRuleMapClosure(as).validate(this, point, false, db, validatorStuff);
-                else
-                    ret = this.ruleMap[asStr].validate(this, point, false, db, validatorStuff);
+
+                var closedSubGraph;
+                if (validatorStuff.closedShapes)
+                    closedSubGraph = db.triplesMatching(point, null, null);
+
+                var rule = subShapes ? this.getRuleMapClosure(as) : this.ruleMap[asStr];
+
+                ret = rule.validate(this, point, false, db, closedSubGraph, validatorStuff);
+
+                // Make sure we used all of the closedSubGraph.
+                if (validatorStuff.closedShapes && ret.passed()) {
+                    var remaining = closedSubGraph.filter(function (t) {
+                        var r = ret.triples();
+                        for (var i = 0; i < r.length; ++i)
+                            if (r[i] === t)
+                                return false;
+                        return true;
+                    });
+                    if (remaining.length)
+                    { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatchExtra(rule, remaining); }
+                }
                 this.termResults[key] = ret;
             }
             return ret;
@@ -3076,7 +3093,7 @@ RDF = {
                     }
                 }
             });
-            var ret = this.closeShapes(point, as, db, subShapes);
+            var ret = this.closeShapes(point, as, db, validatorStuff, subShapes);
             this.dispatch('end', this.init, null, ret);
             return ret;
         };
@@ -3105,7 +3122,8 @@ RDF = {
                     // if the labeled rule not VIRTUAL,
                     if (!this.isVirtualShape[ruleLabel.toString()]) {
 
-                        var res = this.validate(s, ruleLabel, db, validatorStuff, false);
+                        var closedSubGraph = db.triplesMatching(s, null, null);
+                        var res = this.validate(s, ruleLabel, false, db, closedSubGraph, validatorStuff);
 
                         // If it passed or is indeterminate,
                         if (res.status !== RDF.DISPOSITION.FAIL) {
@@ -3561,6 +3579,21 @@ SELECT ?s ?p ?o {\n\
         this.error_noMatchTree = function (rule, triple, r)  {
             this.errors.push(new RuleFailTree(rule, triple, r));
         },
+
+        RuleFailExtra = function (rule, triples) {
+            this._ = 'RuleFailExtra'; this.status = RDF.DISPOSITION.FAIL; this.rule = rule; this.triples = triples;
+            this.toString = function (depth) {
+                return pad(depth) + "expected " + this.triples.toString()
+                    + " to be covered by " + this.rule.toString();
+            };
+            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
+                return renderFailure(this.rule, this.triples[0], depth, schemaIdMap, dataIdMap, solutions, classNames, "expected ", " to be covered by ");
+            }
+        },
+        this.error_noMatchExtra = function (rule, triples, r)  {
+            this.errors.push(new RuleFailExtra(rule, triples, r));
+        },
+
         RuleFailValue = function (rule, triple) {
             this._ = 'RuleFailValue'; this.status = RDF.DISPOSITION.FAIL; this.rule = rule; this.triple = triple;
             this.toString = function (depth) {
