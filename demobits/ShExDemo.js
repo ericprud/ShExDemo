@@ -769,7 +769,8 @@ ShExDemo = function() {
                     }
                 } else {
                     iface.message("looking for types");
-                    validationResult = iface.validator.findTypes(iface.graph, {iriResolver: iface.schema.iriResolver});
+                    validationResult = iface.validator.findTypes(iface.graph, {iriResolver: iface.schema.iriResolver,
+                                                                               closedShapes: $("#opt-closed-shapes").is(":checked")});
                 }
 
                 var timeAfter = (new Date).getTime();
@@ -783,7 +784,8 @@ ShExDemo = function() {
                     ));
                 iface.message("Validation complete.");
 
-                { // replace with an encapsulating object with remaining triples.
+                if (validationResult.passed()) {
+                    // replace with an encapsulating object with remaining triples.
                     var triplesEncountered = validationResult.triples();
                     validationResult = {
                         origResults: validationResult,
@@ -884,7 +886,7 @@ ShExDemo = function() {
                                             }}) + "\n";
             {
                 // mark up all of the remaining triples.
-                if (validationResult.remainingTriples.length) {
+                if (validationResult.remainingTriples && validationResult.remainingTriples.length) {
                     valResultsElement.append($("<br/><strong>Remaining triples:</strong>\n\n"));
                     var pre = $("<pre>");
 
