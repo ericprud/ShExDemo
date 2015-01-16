@@ -3581,7 +3581,7 @@ TurtleParser = (function() {
 
         function _literalHere (value, type) {
     	var dt = RDF.IRI(XSD_NS+type, RDF.Position5(text(), line(), column(), offset(), value.length));
-    	var pos = RDF.Position5(text(), line(), column(), offset(), value.length+2);
+    	var pos = RDF.Position5(text(), line(), column(), offset(), value.length);
     	return RDF.RDFLiteral(value, undefined, dt, pos);
         }
 
