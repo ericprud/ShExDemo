@@ -73,6 +73,12 @@
               </li>
               <li>controls
                 <ul>
+                  <li>
+                    <a href="FancyShExDemo?starting-nodes=_%3A0&amp;schema=PREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%3CPerson%3E%0A%3CPerson%3E%20%7B%0A%20%20%20%20foaf%3Aname%20xsd%3Astring%2C%0A%20%20%20%20foaf%3Aknows%20%40%3CPerson%3E*%0A%7D&amp;data=PREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0A%0A%5B%20foaf%3Aname%20%22Alice%22%20%3B%0A%20%20foaf%3Aknows%0A%20%20%20%20%5B%20foaf%3Aname%20%22Bob%22%20%5D%2C%0A%20%20%20%20%5B%20foaf%3Aname%20%22Eve%22%20%3B%0A%20%20%20%20%20%20foaf%3Aknows%0A%20%20%20%20%20%20%20%20%5B%20foaf%3Aname%20%22Eve2%22%20%5D%2C%0A%20%20%20%20%20%20%20%20%5B%20foaf%3Aname%20%22Eve3%22%20%5D%0A%20%20%20%20%5D%0A%5D%20.%0A&amp;colorize=true" class="hasToolTip">
+                      blank node highlighting
+                      <span class="toolTip">Entries in the select list under <strong>Validation:</strong> highlight the corresponding terms in the data.</span>
+                    </a><!-- http://w3.org/brief/NDMw -->
+                  </li>
                   <li>extra triples: <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;colorize=true&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20ex%3AreporterName%20xsd%3Astring%2C%0A%20%20%20%20ex%3AreportedOn%20xsd%3AdateTime%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20ex%3AreportedOn%20%20%20%222013-01-23T10%3A18%3A00%22%5E%5Exsd%3AdateTime%20%3B%0A%20%20%20%20ex%3AreporterName%20%22Bob%22%20%3B%0A%20%20%20%20ex%3Areason%20%22too%20much%20smoke%22%20.%0A%0A">open shape (highlights "fringe")</a> <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;colorize=true&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20ex%3AreporterName%20xsd%3Astring%2C%0A%20%20%20%20ex%3AreportedOn%20xsd%3AdateTime%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20ex%3AreportedOn%20%20%20%222013-01-23T10%3A18%3A00%22%5E%5Exsd%3AdateTime%20%3B%0A%20%20%20%20ex%3AreporterName%20%22Bob%22%20%3B%0A%20%20%20%20ex%3Areason%20%22too%20much%20smoke%22%20.%0A%0A&amp;closedShapes=true">closed shape (fails match)</a></li>
                 </ul>
               </li>
@@ -129,7 +135,7 @@
               <div>
                 <div id="colorize">
                     <input type="checkbox" id="ctl-colorize" tabindex="9"/> <label for="ctl-colorize">
-                    <a href="#" class="hasToolTip">
+                    <span class="hasToolTip">
                       <span style="color: #700;">c</span><span style="color: #510;">o</span><span style="color: #330;">l</span><span style="color: #150;">o</span><span style="color: #070;">r</span><span style="color: #051;">i</span><span style="color: #033;">z</span><span style="color: #015;">e</span><span style="color: #007;">d</span>
                       <span class="toolTip">
                         This syntax-highlights the schema and data.
@@ -138,7 +144,7 @@
                         For the moment, "colorizing" makes editing a bit of a pain as the cursor hops backwards to the previous syntax element.
                         Hopefully bugfixes in chrome will allow one to preserve the cursor position.
                       </span>
-                    </a>
+                    </span>
                   </label>
                 </div>
                     <div id="permalink">
@@ -155,12 +161,12 @@
                         <div id="options">
                             <input type="radio" name="mode" id="opt-pre-typed" value="pre-typed" checked="checked" />
                             <label for="opt-pre-typed">
-                              <a href="#" class="hasToolTip">Validate
+                              <span class="hasToolTip">Validate
                               <span class="toolTip">
                                 <strong>Validation</strong> tests selected starting nodes for conformance with the <strong>start rule</strong> in a schema.<br/>
                                 This demo may also be used in <strong>Find-types</strong> mode.
                               </span>
-                              </a>
+                              </span>
                             </label>
                             <!-- label for="starting-nodes">graph node</label -->
                             <select id="starting-nodes" name="select" multiple="multiple" disabled="disabled">
@@ -169,31 +175,31 @@
                             as <label id="start-rule" for="opt-pre-typed">schema start rule</label>
                             <br/>
                             <input type="radio" name="mode" id="opt-find-type" value="find-type"/> <label for="opt-pre-typed">
-                            <a href="#" class="hasToolTip">Find node types
+                            <span class="hasToolTip">Find node types
                               <span class="toolTip">
                                 <strong>Find-types</strong> enumerates for each data nodes all of the rules which it matches.<br/>
                                 This demo may also be used in <strong>Validation</strong> mode.
                               </span>
-                            </a>
+                            </span>
                           </label>
                         </div>
                         <input type="checkbox" id="opt-disable-js" disabled="disabled"/>
                         <label for="opt-disable-js">
-                          <a href="#" class="hasToolTip">Disable javascript extensions
+                          <span class="hasToolTip">Disable javascript extensions
                           <span class="toolTip">
                             When loading schemas from outside of the ShExDemo resource space, javascript extensions are disabled.
                             Users may explicitly permit javascript extensions if they trust the schema to e.g. update the DOM, manipulate the display, enable RTSP, etc.
                           </span>
-                          </a>
+                          </span>
                         </label>
 
                         <input type="checkbox" id="opt-closed-shapes" disabled="disabled"/>
                         <label for="opt-closed-shapes">
-                          <a href="#" class="hasToolTip">Closed shapes
+                          <span class="hasToolTip">Closed shapes
                           <span class="toolTip">
                             The schema must mention all shapes in any visited node in the instance data.
                           </span>
-                          </a>
+                          </span>
                         </label>
                     </div>
                 </div>

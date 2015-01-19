@@ -125,22 +125,22 @@ h2 { margin: 0; border: none; }
 .success { color: #0d0; }
 
 /* adapted from http://www.menucool.com/tooltip/css-tooltip */
-a.hasToolTip {outline:none; }
-a.hasToolTip strong999 {line-height:3ex;}
-a.hasToolTip:hover {text-decoration:none;} 
-a.hasToolTip .toolTip {
+.hasToolTip {outline:none; }
+.hasToolTip strong999 {line-height:3ex;}
+.hasToolTip:hover {text-decoration:none;}
+.hasToolTip .toolTip {
     z-index:10; display:none; padding:1.4em 2.0ex;
     margin-top:2em; margin-left:-10em;
     width: 25em; line-height:2ex;
 }
-a.hasToolTip .wide {
+.hasToolTip .wide {
     width: 80%;
 }
-a.hasToolTip:hover .toolTip {
+.hasToolTip:hover .toolTip {
     display:inline; position:absolute; color:#111;
     border:thin solid #DCA; background:#fffAF0;}
 /*CSS3 extras*/
-a.hasToolTip .toolTip {
+.hasToolTip .toolTip {
     border-radius:1em;
     box-shadow: .5em .5em .8em #CCC;
 }
