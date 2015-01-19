@@ -127,8 +127,8 @@ literal        = RDFLiteral / NumericLiteral / BooleanLiteral
 NumericLiteral = value:DOUBLE  { return _literalHere(value, 'double'); }
                / value:DECIMAL { return _literalHere(value, 'decimal'); }
                / value:INTEGER { return _literalHere(value, 'integer'); }
-RDFLiteral     = s:String l:LANGTAG { return RDF.RDFLiteral(s.lex, l, undefined, RDF.Position5(text(), s.line, s.column, s.offset, s.length+3+l._pos.width)); }
-               / s:String '^^' i:iri { return RDF.RDFLiteral(s.lex, undefined, i, RDF.Position5(text(), s.line, s.column, s.offset, s.length+4+i._pos.width)); }
+RDFLiteral     = s:String _ l:LANGTAG { return RDF.RDFLiteral(s.lex, l, undefined, RDF.Position5(text(), s.line, s.column, s.offset, s.length+1+l._pos.width)); }
+               / s:String _ '^^' _ i:iri { return RDF.RDFLiteral(s.lex, undefined, i, RDF.Position5(text(), s.line, s.column, s.offset, s.length+2+i._pos.width)); }
                / s:String      { return RDF.RDFLiteral(s.lex, undefined, undefined, RDF.Position5(text(), s.line, s.column, s.offset, s.length)); }
 BooleanLiteral = 'true'        { return _literalHere('true', 'boolean'); }
                / 'false'       { return _literalHere('false', 'boolean'); }
