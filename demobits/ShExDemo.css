@@ -123,6 +123,8 @@ h2 { margin: 0; border: none; }
 .comment { color: #911; }
 .error { color: #d00; }
 .success { color: #0d0; }
+.parseError { border: solid medium #d00; }
+.parseError::before { content: "⇐☠"; }
 
 /* adapted from http://www.menucool.com/tooltip/css-tooltip */
 .hasToolTip {outline:none; }

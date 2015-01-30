@@ -30,10 +30,19 @@ ShExDemo = function() {
         });
     }
 
-    function buildErrorMessage(e) {
+    function buildErrorMessage(e, id) {
         var ret = null;
         if (typeof(e) == 'object') {
             var text = "";
+            if ('offset' in e && $("#ctl-colorize").is(":checked")) {
+                var now = textValue(id);
+                var element = $(id + " pre").get(0);
+                var textMap = new CharMap(now);
+                textMap.HTMLescape();
+                textMap.insertBefore(e.offset, "<span class='parseError'>", 0);
+                textMap.insertAfter(e.offset+1, "</span>", 0);
+                element.innerHTML = textMap.getText();
+            }
             if ('line' in e) text += "Line " + e.line + " ";
             if ('column' in e) text += "Column " + e.column + " ";
             if ('message' in e) text += e.message;
@@ -641,7 +650,7 @@ ShExDemo = function() {
                 } else
                     $("#view a").removeClass("disabled");
             } catch (e) {
-                $("#schema .message").removeClass("progress").addClass("message error").append(buildErrorMessage(e));
+                $("#schema .message").removeClass("progress").addClass("message error").append(buildErrorMessage(e, "#schema"));
                 var unavailable = "data:text/plain;charset=utf-8;base64,"
                     + Base64.encode("Alternate representations unavailable when ShEx fails to parse.");
                 $("#as-sparql-query"     ).attr("href", unavailable);
@@ -676,7 +685,7 @@ ShExDemo = function() {
                 //     iface.updateURLParameters();
                 // }
             } catch (e) {
-                $("#data .message").removeClass("progress").addClass("message error").append(buildErrorMessage(e));
+                $("#data .message").removeClass("progress").addClass("message error").append(buildErrorMessage(e, "#data"));
             }
 
             iface.updateURL();
