@@ -30,17 +30,19 @@ ShExDemo = function() {
         });
     }
 
-    function buildErrorMessage(e, id) {
+    function buildErrorMessage(e, id, label) {
         var ret = null;
         if (typeof(e) == 'object') {
             var text = "";
+            var errorMarkerId = null;
             if ('offset' in e && $("#ctl-colorize").is(":checked")) {
                 var now = textValue(id);
                 var element = $(id + " pre").get(0);
                 var textMap = new CharMap(now);
                 textMap.HTMLescape();
-                textMap.insertBefore(e.offset, "<span class='parseError'>", 0);
-                textMap.insertAfter(e.offset+1, "</span>", 0);
+                errorMarkerId = label + "-error1";
+                textMap.insertAfter(e.offset, "<span class='parseError' id='"+errorMarkerId+"'>", 0);
+                textMap.insertAfter(e.offset, "</span>", 0);
                 element.innerHTML = textMap.getText();
             }
             if ('line' in e) text += "Line " + e.line + " ";
@@ -55,6 +57,10 @@ ShExDemo = function() {
                         + "</span></a>");
             else
                 ret = $("<div>"+text+"</div>");
+            if (errorMarkerId)
+                ret
+                .mouseenter(function (event) {debugger; $("#"+errorMarkerId).addClass("highlightError");})
+                .mouseleave(function (event) {debugger; $("#"+errorMarkerId).removeClass("highlightError");})
         } else {
             ret = document.createTextNode(e);
         }
@@ -650,7 +656,7 @@ ShExDemo = function() {
                 } else
                     $("#view a").removeClass("disabled");
             } catch (e) {
-                $("#schema .message").removeClass("progress").addClass("message error").append(buildErrorMessage(e, "#schema"));
+                $("#schema .message").removeClass("progress").addClass("message error").append(buildErrorMessage(e, "#schema", "Schema"));
                 var unavailable = "data:text/plain;charset=utf-8;base64,"
                     + Base64.encode("Alternate representations unavailable when ShEx fails to parse.");
                 $("#as-sparql-query"     ).attr("href", unavailable);
@@ -685,7 +691,7 @@ ShExDemo = function() {
                 //     iface.updateURLParameters();
                 // }
             } catch (e) {
-                $("#data .message").removeClass("progress").addClass("message error").append(buildErrorMessage(e, "#data"));
+                $("#data .message").removeClass("progress").addClass("message error").append(buildErrorMessage(e, "#data", "Data"));
             }
 
             iface.updateURL();
