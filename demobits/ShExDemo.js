@@ -60,7 +60,7 @@ ShExDemo = function() {
             if (errorMarkerId)
                 ret
                 .mouseenter(function (event) {debugger; $("#"+errorMarkerId).addClass("highlightError");})
-                .mouseleave(function (event) {debugger; $("#"+errorMarkerId).removeClass("highlightError");})
+                .mouseleave(function (event) {debugger; $("#"+errorMarkerId).removeClass("highlightError");});
         } else {
             ret = document.createTextNode(e);
         }
