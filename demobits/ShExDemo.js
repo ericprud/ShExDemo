@@ -561,13 +561,47 @@ ShExDemo = function() {
             return $("#valResults").removeClass("disabled");
         },
 
-        // Factors out code common to schema and data parsers.
+        // Factors out code common to schema and data parsers. e.g.
+        //   data = iface.runParser("#data", "Data", "data-color", function(text, iriResolver) {
+        //     return TurtleParser.parse(text, {iriResolver: iriResolver});
+        //   })
         runParser: function(id, label, colorClass, parse) {
             var now = textValue(id);
 
             last[id + " .textInput"] = now;
             iface.queryParms[id.substr(1)] = [now];
             
+            var m = now.match(/^GET\s+(\S+)\s+$/);
+            if (m) {
+                var done = arguments.callee.caller.caller; // !! terrible. should be parameter.
+                $.ajax({
+                    type: 'GET',
+                    dataType: "text",
+                    //contentType: 'text/plain',{turtle,shex}
+                    url: m[1],
+                    success: function(body, textStatus, jqXHR) {
+                        // Loading non-endorsed links disables javascript extensions.
+                        if (/^([a-z]+:)?\/\//g.test(m[1]))
+                            $('#opt-disable-js').attr('checked', true);
+                        textValue(id, body);
+                        done();
+                        // looks like function() { iface.parseData() && iface.validator && iface.validate(); }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        debugger;
+                        $(id+" .message")
+                            .removeClass("progress")
+                            .addClass("message error")
+                            .empty()
+                            .append("unable to load " + m[1] + "\n" + textStatus + "\n" + errorThrown);
+                    }
+                });
+                $(id + " .message").attr("class", "message progress")
+                    .text("GETting " + m[1] + "...");
+                iface.disableValidatorOutput();
+                throw {type: "pending", action: "GET", url: m[1]};
+            }
+
             $(id + " .message").attr("class", "message progress")
                 .text("Parsing " + label + "...");
             iface.disableValidatorOutput();
@@ -656,7 +690,11 @@ ShExDemo = function() {
                 } else
                     $("#view a").removeClass("disabled");
             } catch (e) {
-                $("#schema .message").removeClass("progress").addClass("message error").append(buildErrorMessage(e, "#schema", "Schema"));
+                if (typeof(e) !== 'object' || e.type !== "pending")
+                    $("#schema .message")
+                    .removeClass("progress")
+                    .addClass("message error")
+                    .append(buildErrorMessage(e, "#schema", "Schema"));
                 var unavailable = "data:text/plain;charset=utf-8;base64,"
                     + Base64.encode("Alternate representations unavailable when ShEx fails to parse.");
                 $("#as-sparql-query"     ).attr("href", unavailable);
@@ -691,7 +729,11 @@ ShExDemo = function() {
                 //     iface.updateURLParameters();
                 // }
             } catch (e) {
-                $("#data .message").removeClass("progress").addClass("message error").append(buildErrorMessage(e, "#data", "Data"));
+                if (typeof(e) !== 'object' || e.type !== "pending")
+                    $("#data .message")
+                    .removeClass("progress")
+                    .addClass("message error")
+                    .append(buildErrorMessage(e, "#data", "Data"));
             }
 
             iface.updateURL();
