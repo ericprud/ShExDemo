@@ -104,9 +104,9 @@ ShExDemo = function() {
             if (newValue !== undefined)
                 $(id + " pre").text(newValue); // element.innerText = newValue;
         } else {
-            ret = $(id + " textarea").val();
+            ret = $(id + " textarea.textInput").val();
             if (newValue !== undefined)
-                $(id + " textarea").val(newValue);
+                $(id + " textarea.textInput").val(newValue);
         }
         return ret;
     }
@@ -132,6 +132,35 @@ ShExDemo = function() {
         },
         error: function (m) {
             $("#validation-messages").append($('<div/>').text(m).html() + "<br/>");
+        },
+
+        parseMessage: function (selector) {
+            return {
+                removeClass: function (classes) {
+                    $(selector).removeClass(classes);
+                    return this;
+                },
+                addClass: function (classes) {
+                    $(selector).addClass(classes);
+                    return this;
+                },
+                empty: function () {
+                    $(selector).empty();
+                    return this;
+                },
+                append: function (text) {
+                    $(selector).append(text);
+                    return this;
+                },
+                text: function (text) {
+                    $(selector).text(text);
+                    return this;
+                },
+                html: function (html) {
+                    $(selector).html(html);
+                    return this;
+                }
+            };
         },
 
         // Simplest entry point for the ShExDemo.
@@ -369,6 +398,105 @@ ShExDemo = function() {
             delete iface.queryParms['data'];
             iface.allDataIsLoaded();
         },
+        loadSPARQLResults999: function (url, id, sparqlInterface) {
+            $.ajax({
+                type: 'GET',
+                dataType: "text",
+                //contentType: 'text/plain',{turtle,shex}
+                url: url,
+                success: function (body, textStatus, jqXHR) {
+                    // Loading non-endorsed links disables javascript extensions.
+                    if (/^([a-z]+:)?\/\//g.test(url))
+                        $('#opt-disable-js').attr('checked', true);
+                    // Crappy mime parser doesn't handle quoted-string
+                    //  c.f. http://tools.ietf.org/html/rfc7230#section-3.2.6
+                    var mtParms = jqXHR.getResponseHeader("content-type").split(/;/) 
+                        .map(function (s) { return s.replace(/ /g,''); });
+                    var r = RDF.parseSPARQLResults(body, mtParms.shift(), mtParms);
+                    var nodes = r.solutions.map(function (soln) {
+                        return r.vars[0] in soln ? soln[r.vars[0]] : null;
+                    }).filter(function (elt) {
+                        return elt !== null;
+                    });
+                    iface.validateOverSPARQL(nodes, sparqlInterface);
+                    // looks like function() { iface.parseData() && iface.validator && iface.validate(); }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    debugger;
+                    iface.parseMessage(id + " .message")
+                        .removeClass("progress")
+                        .addClass("message error")
+                        .empty()
+                        .append("unable to query " + url + "\n" + textStatus + "\n" + errorThrown);
+                }
+            });
+            iface.parseMessage(id + " .message").addClass("message progress")
+                .text("Querying " + url + "...");
+            iface.disableValidatorOutput();
+        },
+        loadSPARQLResults: function (query, sparqlInterface) {
+            var endpoint = sparqlInterface.getURL();
+            sparqlInterface.execute(query, function (r) {
+                // // Loading non-endorsed links disables javascript extensions.
+                // if (/^([a-z]+:)?\/\//g.test(endpoint))
+                //     $('#opt-disable-js').attr('checked', true);
+                var nodes = r.solutions.map(function (soln) {
+                    return r.vars[0] in soln ? soln[r.vars[0]] : null;
+                }).filter(function (elt) {
+                    return elt !== null;
+                });
+                iface.validateOverSPARQL(nodes, sparqlInterface);
+            }, {
+                // override error
+                error: function (jqXHR, textStatus, errorThrown) {
+                    iface.parseMessage("#data .message")
+                        .removeClass("progress")
+                        .addClass("message error")
+                        .empty()
+                        .append("unable to query " + endpoint + "\n" + textStatus + "\n" + errorThrown);
+                }
+            });
+            iface.parseMessage("#data .message").addClass("message progress")
+                .text("Querying " + endpoint + "...");
+            iface.disableValidatorOutput();
+        },
+
+        // nodes: array of RDF nodes
+        // sparqlInterface: URL of query engine
+        validateOverSPARQL: function (nodes, sparqlInterface) {
+            iface.parseMessage("#data .message").addClass("message progress")
+                .text("Validating " + nodes.length + " nodes at " + sparqlInterface.getURL() + "...");
+            textValue("#data", "");
+            nodes.map(function (node) {
+            });
+        },
+
+        loadData: function (url, id, done) {
+            $.ajax({
+                type: 'GET',
+                dataType: "text",
+                //contentType: 'text/plain',{turtle,shex}
+                url: url,
+                success: function(body, textStatus, jqXHR) {
+                    // Loading non-endorsed links disables javascript extensions.
+                    if (/^([a-z]+:)?\/\//g.test(url))
+                        $('#opt-disable-js').attr('checked', true);
+                    textValue(id, body);
+                    done();
+                    // looks like function() { iface.parseData() && iface.validator && iface.validate(); }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    iface.parseMessage(id + " .message")
+                        .removeClass("progress")
+                        .addClass("message error")
+                        .empty()
+                        .append("unable to load " + url + "\n" + textStatus + "\n" + errorThrown);
+                }
+            });
+            iface.parseMessage(id + " .message").addClass("message progress")
+                .text("GETting " + url + "...");
+            iface.disableValidatorOutput();
+        },
 
         // redirectable alias for alert.
         lert: function() {
@@ -410,8 +538,8 @@ ShExDemo = function() {
 
         // Done filling the input fields; start the interface.
         allDataIsLoaded: function() {
-            setHandler($("#schema .textInput"), iface.handleSchemaUpdate);
-            setHandler($("#data .textInput"), iface.handleDataUpdate);
+            setHandler($("#schema .textInput"), iface.queueSchemaUpdate);
+            setHandler($("#data .textInput"), iface.queueDataUpdate);
             setHandler($("#ctl-colorize, #starting-node, #opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes"),
                        iface.handleParameterUpdate);
 
@@ -482,24 +610,30 @@ ShExDemo = function() {
             $("#data .remainingData").removeClass("remainingData");
         },
 
-        handleSchemaUpdate: function(ev) {
+        hanldeSchemaUpdate: function () {
+            iface.parseSchema() && iface.graph && iface.validate();
+        },
+        queueSchemaUpdate: function (ev) {
             if (textValue("#schema") === last["#schema .textInput"])
                 return;
 
             iface.clearStatus();
             iface.clearTimer(SCHEMA);
             iface.clearTimer(VALPARM);
-            iface.setTimer(SCHEMA, function() { iface.parseSchema() && iface.graph && iface.validate(); });
+            iface.setTimer(SCHEMA, iface.handleSchemaUpdate);
         },
 
-        handleDataUpdate: function() {
+        handleDataUpdate: function () {
+            iface.parseData() && iface.validator && iface.validate();
+        },
+        queueDataUpdate: function() {
             if (textValue("#data") === last["#data .textInput"])
                 return;
 
             iface.clearStatus();
             iface.clearTimer(DATA);
             iface.clearTimer(VALPARM);
-            iface.setTimer(DATA, function() { iface.parseData() && iface.validator && iface.validate(); });
+            iface.setTimer(DATA, iface.handleDataUpdate);
         },
 
         updateURLParameters: function() {
@@ -573,36 +707,11 @@ ShExDemo = function() {
             
             var m = now.match(/^GET\s+(\S+)\s+$/);
             if (m) {
-                var done = arguments.callee.caller.caller; // !! terrible. should be parameter.
-                $.ajax({
-                    type: 'GET',
-                    dataType: "text",
-                    //contentType: 'text/plain',{turtle,shex}
-                    url: m[1],
-                    success: function(body, textStatus, jqXHR) {
-                        // Loading non-endorsed links disables javascript extensions.
-                        if (/^([a-z]+:)?\/\//g.test(m[1]))
-                            $('#opt-disable-js').attr('checked', true);
-                        textValue(id, body);
-                        done();
-                        // looks like function() { iface.parseData() && iface.validator && iface.validate(); }
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        debugger;
-                        $(id+" .message")
-                            .removeClass("progress")
-                            .addClass("message error")
-                            .empty()
-                            .append("unable to load " + m[1] + "\n" + textStatus + "\n" + errorThrown);
-                    }
-                });
-                $(id + " .message").attr("class", "message progress")
-                    .text("GETting " + m[1] + "...");
-                iface.disableValidatorOutput();
+                iface.loadData(m[1], id, arguments.callee.caller.caller);
                 throw {type: "pending", action: "GET", url: m[1]};
             }
 
-            $(id + " .message").attr("class", "message progress")
+            iface.parseMessage(id + " .message").removeClass("schema-color data-color").addClass("message progress")
                 .text("Parsing " + label + "...");
             iface.disableValidatorOutput();
 
@@ -614,8 +723,9 @@ ShExDemo = function() {
             ret.iriResolver = iriResolver; // need it later
             ret.bnodeScope = bnodeScope;   // need it later
 
-            $(id + " .message")
-                .attr("class", "message " + colorClass)
+            iface.parseMessage(id + " .message")
+                .removeClass("progress error")
+                .addClass(colorClass)
                 .text(label + " parsed.")
                 .append(buildSizeAndTimeInfoHtml(
                     label + " parsing time and speed",
@@ -685,13 +795,13 @@ ShExDemo = function() {
                 $("#as-resource-sexpr"   ).attr("href", dtp + Base64.encode(iface.validator.toSExpression(0)));
                 $("#as-resource-haskell" ).attr("href", dtp + Base64.encode(iface.validator.toHaskell(0)));
                 if (textValue("#schema") === '') {
-                    $("#schema .message").append("<div id=\"emptySchema\"><h3>Empty Schema</h3>An empty schema is valid, but you might want to see <a href=\"Examples\" style='background-color: yellow;'>some examples</a>.</div>");
+                    iface.parseMessage("#schema .message").append("<div id=\"emptySchema\"><h3>Empty Schema</h3>An empty schema is valid, but you might want to see <a href=\"Examples\" style='background-color: yellow;'>some examples</a>.</div>");
                     $("#emptySchema").css("position","absolute").css("top",($("#schema .textInput").height()/3)+"px").css("left","3em");
                 } else
                     $("#view a").removeClass("disabled");
             } catch (e) {
                 if (typeof(e) !== 'object' || e.type !== "pending")
-                    $("#schema .message")
+                    iface.parseMessage("#schema .message")
                     .removeClass("progress")
                     .addClass("message error")
                     .append(buildErrorMessage(e, "#schema", "Schema"));
@@ -729,11 +839,12 @@ ShExDemo = function() {
                 //     iface.updateURLParameters();
                 // }
             } catch (e) {
-                if (typeof(e) !== 'object' || e.type !== "pending")
-                    $("#data .message")
+                if (typeof(e) !== 'object' || e.type !== "pending") {
+                    iface.parseMessage("#data .message")
                     .removeClass("progress")
                     .addClass("message error")
                     .append(buildErrorMessage(e, "#data", "Data"));
+                }
             }
 
             iface.updateURL();
@@ -1165,13 +1276,13 @@ ShExDemo = function() {
 
         enablePre: function() {
             $("#schema, #data").each(function(el) {
-                //$(this).find("pre").get(0).innerText = $(this).find("textarea").val();
-                $(this).find("pre").text($(this).find("textarea").val());
+                //$(this).find("pre").get(0).innerText = $(this).find("textarea.textInput").val();
+                $(this).find("pre").text($(this).find("textarea.textInput").val());
                 var width = $(this).width();
-                $(this).find("textarea").css("display", "none").removeClass("textInput");
+                $(this).find("textarea.textInput").css("display", "none").removeClass("textInput");
                 $(this).find("pre").addClass("textInput").css("display", "block");
                 $(this).width(width);
-                $(this).find(".editparent").contentEditable().change(iface.handleSchemaUpdate);
+                $(this).find(".editparent").contentEditable().change(iface.queueSchemaUpdate);
             });
             iface.parseSchema();
             iface.parseData();
@@ -1181,10 +1292,10 @@ ShExDemo = function() {
 
         enableTextarea: function() {
             $("#schema, #data").each(function(el) {
-                //$(this).find("textarea").val($(this).find("pre").get(0).innerText);
-                $(this).find("textarea").val($(this).find("pre").text());
+                //$(this).find("textarea.textInput").val($(this).find("pre").get(0).innerText);
+                $(this).find("textarea.textInput").val($(this).find("pre").text());
                 $(this).find("pre").css("display", "none").removeClass("textInput");
-                $(this).find("textarea").addClass("textInput").css("display", "block");
+                $(this).find("textarea.textInput").addClass("textInput").css("display", "block");
             });
         },
 

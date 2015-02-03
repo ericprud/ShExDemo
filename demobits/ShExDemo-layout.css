@@ -265,3 +265,23 @@ span.button-close-east:hover	{ background: url(http://layout.jquery-dev.com/demo
 #data {
 	overflow: hidden;
 }
+
+	.no-scrollbar999	{ overflow:		hidden !important; }
+
+.ui-tabs .ui-tabs-nav li a {
+  padding: .1em !important;
+}
+.ui-tabs .ui-tabs-panel {
+padding: 0 !important;
+}
+.message { font-weight: normal; }
+
+.ui-widget textarea { /* override jquery.theme.ui.css */
+font-size: 70% !important;
+}
+
+.ui-layout-content p { margin: 0; }
+
+.ui-widget input, .ui-widget select, .ui-widget textarea { /* override jquery.theme.ui.css:24 */
+  font-size: 80% !important;
+}

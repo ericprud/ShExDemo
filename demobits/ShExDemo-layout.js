@@ -194,6 +194,18 @@ function showState (o_Settings, key) {
 
 //	    layoutSettings_Inner.onresize =			resizeEditArea;
 	        innerLayout = $("div.pane-center").layout( layoutSettings_Inner );
+		// create tabs before wrapper-layout so elems are correct size before creating layout
+		innerLayout.panes.east.tabs({
+			activate:			$.layout.callbacks.resizeTabLayout
+		});
+	        // $("#data-tabs").tabs( "option", "active", "#first-tab" ); // doesn't work
+		// tab content below tab switchs
+		innerLayout.panes.east.layout({
+			closable:			false
+		,	resizable:			false
+		,	spacing_open:		0
+		,	center__onresize:	$.layout.callbacks.resizeTabLayout // tabs/panels are wrapped with an inner-layout
+		});
 
 		// DEMO HELPER: prevent hyperlinks from reloading page when a 'base.href' is set
 		$("a").each(function () {

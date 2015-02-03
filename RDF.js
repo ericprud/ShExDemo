@@ -616,6 +616,37 @@ RDF = {
         };
     },
 
+    makeSPARQLInterface: function (url, constructorParms) {
+        var separator = url.match(/\?/) ? ';' : '?';
+        var defaultParms = $.extend({
+                type: 'GET',
+                dataType: "text"
+                //contentType: 'text/plain',{turtle,shex}
+        }, constructorParms);
+        var lastQuery = null;
+        return {
+            execute: function (query, results, parms) {
+                lastQuery = query;
+                var merge = $.extend({
+                    url: url + separator + "query=" + encodeURIComponent(query),
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        throw "unable to query " + url + "\n" + textStatus + "\n" + errorThrown;
+                    }
+                }, parms);
+                $.ajax(merge).done(function (body, textStatus, jqXHR) {
+                    // Crappy mime parser doesn't handle quoted-string
+                    //  c.f. http://tools.ietf.org/html/rfc7230#section-3.2.6
+                    var ray = jqXHR.getResponseHeader("content-type").split(/;/) 
+                        .map(function (s) { return s.replace(/ /g,''); });
+                    var r = RDF.parseSPARQLResults(body, ray.shift(), ray);
+                    results(r);
+                });
+            },
+            getURL: function () { return url; },
+            getLastQuery: function () { return lastQuery; }
+        };
+    },
+
     // parseSPARQLResults("<...>"|"{...}", "application/sparql-results+json"|"xml", ["charset=UTF-8"])
     //   parameters is ignored.
     // returns:
@@ -623,7 +654,7 @@ RDF = {
     parseSPARQLResults: function (body, mediaType, parameters) {
         var ret = { vars: [], solutions: [] };
         if (mediaType === "application/sparql-results+xml") {
-            var xml = $($.parseXML(body));
+            var xml = $(typeof body === "object" ? body : $.parseXML(body));
             return {
                 vars: xml.find("head variable").get().map(function (obj) {
                     return obj.getAttribute("name");
@@ -646,14 +677,14 @@ RDF = {
                                 datatype = RDF.IRI(datatype, pos);
                             ret[varName] = RDF.RDFLiteral(content, langTag, datatype, pos);
                         } else {
-                            "unknown element name: \"" + elt.localName + "\"";
+                            "unknown node type: \"" + elt.localName + "\"";
                         }
                     });
                     return ret;
                 })
             };
         } else if (mediaType === "application/sparql-results+json") {
-            var x = jQuery.parseJSON(body);
+            var x = $(typeof body === "object" ? body : jQuery.parseJSON(body));
             return {
                 vars: x.head.vars,
                 solutions: x.results.bindings.map(function (result, solnNo) {
@@ -675,7 +706,7 @@ RDF = {
                                 datatype = RDF.IRI(binding.datatype, pos);
                             ret[varName] = RDF.RDFLiteral(binding.value, langTag, datatype, pos);
                         } else {
-                            "unknown element name: \"" + binding.type + "\"";
+                            "unknown node type: \"" + binding.type + "\"";
                         }
                     }
                     return ret;
