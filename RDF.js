@@ -624,14 +624,16 @@ RDF = {
                 //contentType: 'text/plain',{turtle,shex}
         }, constructorParms);
         var lastQuery = null;
+        var done = function () {};
+        var fail = function (jqXHR, textStatus, errorThrown) {
+            throw "unable to query " + url + "\n" + textStatus + "\n" + errorThrown;
+        };
+        var always = function () {};
         return {
-            execute: function (query, results, parms) {
+            execute: function (query, parms) {
                 lastQuery = query;
                 var merge = $.extend({
-                    url: url + separator + "query=" + encodeURIComponent(query),
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        throw "unable to query " + url + "\n" + textStatus + "\n" + errorThrown;
-                    }
+                    url: url + separator + "query=" + encodeURIComponent(query)
                 }, parms);
                 $.ajax(merge).done(function (body, textStatus, jqXHR) {
                     // Crappy mime parser doesn't handle quoted-string
@@ -639,11 +641,15 @@ RDF = {
                     var ray = jqXHR.getResponseHeader("content-type").split(/;/) 
                         .map(function (s) { return s.replace(/ /g,''); });
                     var r = RDF.parseSPARQLResults(body, ray.shift(), ray);
-                    results(r);
-                });
+                    done(r);
+                }).fail(fail).always(always);
+                return this;
             },
             getURL: function () { return url; },
-            getLastQuery: function () { return lastQuery; }
+            getLastQuery: function () { return lastQuery; },
+            done: function (newDone) { done = newDone; return this; },
+            fail: function (newFail) { fail = newFail; return this; },
+            always: function (newAlways) { always = newAlways; return this; }
         };
     },
 

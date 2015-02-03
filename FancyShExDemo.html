@@ -419,13 +419,6 @@
                     return false;
                 });
 
-                //$("#data-query").submit(function (evt) {
-                //    var queryURL = $("#data-query-endpoint").val();
-                //    queryURL += queryURL.match(/\?/) ? ';' : '?';
-                //    queryURL += "query=" + encodeURIComponent($("#data-query-select").val());
-                //    interactionInterface.loadSPARQLResults(queryURL, "#data", $("#data-query-endpoint").val());
-                //    return false;
-                //});
                 $("#data-query").submit(function (evt) {
                     var sparql = RDF.makeSPARQLInterface($("#data-query-endpoint").val());
                     interactionInterface.loadSPARQLResults($("#data-query-select").val(), sparql);

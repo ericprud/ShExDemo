@@ -398,45 +398,11 @@ ShExDemo = function() {
             delete iface.queryParms['data'];
             iface.allDataIsLoaded();
         },
-        loadSPARQLResults999: function (url, id, sparqlInterface) {
-            $.ajax({
-                type: 'GET',
-                dataType: "text",
-                //contentType: 'text/plain',{turtle,shex}
-                url: url,
-                success: function (body, textStatus, jqXHR) {
-                    // Loading non-endorsed links disables javascript extensions.
-                    if (/^([a-z]+:)?\/\//g.test(url))
-                        $('#opt-disable-js').attr('checked', true);
-                    // Crappy mime parser doesn't handle quoted-string
-                    //  c.f. http://tools.ietf.org/html/rfc7230#section-3.2.6
-                    var mtParms = jqXHR.getResponseHeader("content-type").split(/;/) 
-                        .map(function (s) { return s.replace(/ /g,''); });
-                    var r = RDF.parseSPARQLResults(body, mtParms.shift(), mtParms);
-                    var nodes = r.solutions.map(function (soln) {
-                        return r.vars[0] in soln ? soln[r.vars[0]] : null;
-                    }).filter(function (elt) {
-                        return elt !== null;
-                    });
-                    iface.validateOverSPARQL(nodes, sparqlInterface);
-                    // looks like function() { iface.parseData() && iface.validator && iface.validate(); }
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    debugger;
-                    iface.parseMessage(id + " .message")
-                        .removeClass("progress")
-                        .addClass("message error")
-                        .empty()
-                        .append("unable to query " + url + "\n" + textStatus + "\n" + errorThrown);
-                }
-            });
-            iface.parseMessage(id + " .message").addClass("message progress")
-                .text("Querying " + url + "...");
-            iface.disableValidatorOutput();
-        },
         loadSPARQLResults: function (query, sparqlInterface) {
             var endpoint = sparqlInterface.getURL();
-            sparqlInterface.execute(query, function (r) {
+            sparqlInterface.execute(query, {
+                // override error
+            }).done(function (r) {
                 // // Loading non-endorsed links disables javascript extensions.
                 // if (/^([a-z]+:)?\/\//g.test(endpoint))
                 //     $('#opt-disable-js').attr('checked', true);
@@ -446,15 +412,12 @@ ShExDemo = function() {
                     return elt !== null;
                 });
                 iface.validateOverSPARQL(nodes, sparqlInterface);
-            }, {
-                // override error
-                error: function (jqXHR, textStatus, errorThrown) {
-                    iface.parseMessage("#data .message")
-                        .removeClass("progress")
-                        .addClass("message error")
-                        .empty()
-                        .append("unable to query " + endpoint + "\n" + textStatus + "\n" + errorThrown);
-                }
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                iface.parseMessage("#data .message")
+                    .removeClass("progress")
+                    .addClass("message error")
+                    .empty()
+                    .append("unable to query " + endpoint + "\n" + textStatus + "\n" + errorThrown);
             });
             iface.parseMessage("#data .message").addClass("message progress")
                 .text("Querying " + endpoint + "...");
@@ -465,9 +428,11 @@ ShExDemo = function() {
         // sparqlInterface: URL of query engine
         validateOverSPARQL: function (nodes, sparqlInterface) {
             iface.parseMessage("#data .message").addClass("message progress")
-                .text("Validating " + nodes.length + " nodes at " + sparqlInterface.getURL() + "...");
+                .text("Validating " + nodes.length + " node" + (nodes.length === 1 ? "" : "s") +
+                      " at " + sparqlInterface.getURL() + "...");
             textValue("#data", "");
             nodes.map(function (node) {
+                
             });
         },
 
