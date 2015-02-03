@@ -616,6 +616,80 @@ RDF = {
         };
     },
 
+    // parseSPARQLResults("<...>"|"{...}", "application/sparql-results+json"|"xml", ["charset=UTF-8"])
+    //   parameters is ignored.
+    // returns:
+    //   {"vars":["s"],"solutions":[{"s":{"_":"BNode","lex":"b0x3631060","_pos":{"line":0,"column":0}}}]}
+    parseSPARQLResults: function (body, mediaType, parameters) {
+        var ret = { vars: [], solutions: [] };
+        if (mediaType === "application/sparql-results+xml") {
+            var xml = $($.parseXML(body));
+            return {
+                vars: xml.find("head variable").get().map(function (obj) {
+                    return obj.getAttribute("name");
+                }),
+                solutions: xml.find("results result").get().map(function (result, solnNo) {
+                    var ret = {};
+                    $(result).find("> binding").get().map(function (binding, bindNo) {
+                        var varName = binding.getAttribute("name");
+                        var elt = binding.children[0];
+                        var content = elt.textContent;
+                        var pos = RDF.Position2(solnNo, bindNo);
+                        if (elt.localName === "bnode") {
+                            ret[varName] = RDF.BNode(content, pos);
+                        } else if (elt.localName === "uri") {
+                            ret[varName] = RDF.IRI(content, pos);
+                        } else if (elt.localName === "literal") {
+                            var langTag = elt.getAttribute("xml:lang");
+                            var datatype = elt.getAttribute("datatype");
+                            if (datatype !== null)
+                                datatype = RDF.IRI(datatype, pos);
+                            ret[varName] = RDF.RDFLiteral(content, langTag, datatype, pos);
+                        } else {
+                            "unknown element name: \"" + elt.localName + "\"";
+                        }
+                    });
+                    return ret;
+                })
+            };
+        } else if (mediaType === "application/sparql-results+json") {
+            var x = jQuery.parseJSON(body);
+            return {
+                vars: x.head.vars,
+                solutions: x.results.bindings.map(function (result, solnNo) {
+                    var ret = {};
+                    var bindNo = 0;
+                    for (var varName in result) {
+                        var binding = result[varName];
+                        var pos = RDF.Position2(solnNo, bindNo++);
+                        if (binding.type === "bnode") {
+                            ret[varName] = RDF.BNode(binding.value, pos);
+                        } else if (binding.type === "uri") {
+                            ret[varName] = RDF.IRI(binding.value, pos);
+                        } else if (binding.type === "literal") {
+                            var langTag = null;
+                            if ("xml:lang" in binding)
+                                langTag = binding["xml:lang"];
+                            var datatype = null;
+                            if ("datatype" in binding)
+                                datatype = RDF.IRI(binding.datatype, pos);
+                            ret[varName] = RDF.RDFLiteral(binding.value, langTag, datatype, pos);
+                        } else {
+                            "unknown element name: \"" + binding.type + "\"";
+                        }
+                    }
+                    return ret;
+                })
+            };
+        } else {
+            throw "no parser for media type \"" + mediaType + "\"";
+        }
+    },
+
+    //
+    // Schema-related stuff
+    //
+
     // ShEx types
     Code: function (label, code, _pos) {
         this._ = 'Code'; this.label = label; this.code = code; this._pos = _pos;
