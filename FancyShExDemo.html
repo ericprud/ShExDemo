@@ -367,6 +367,20 @@
                         $("#schema textarea").css("padding-bottom").replace("px", "") -
                         0+3 + "px";
                 };
+
+                var oldLayoutPanelHeights = interactionInterface.layoutPanelHeights;
+                interactionInterface.layoutPanelHeights = function (ev) {
+                    $("#data-query-select").outerWidth($("#data-load").innerWidth()-10)//!! paddings?
+                    $("#data-query-select").outerHeight(100);
+                    oldLayoutPanelHeights(ev);
+                    var ht = 100 + $("#data").outerHeight() - 3 -
+                        $("#data-tabs")
+                        .add($("#data-load").children())
+                        .get()
+                        .reduce(function (total, obj) { return total + $(obj).outerHeight(); }, 0);
+                    $("#data-query-select").outerHeight(ht);
+                }
+
                 var oldEnableOutput = interactionInterface.enableValidatorOutput;
                 interactionInterface.enableValidatorOutput = function() {
                     var ret = oldEnableOutput();
