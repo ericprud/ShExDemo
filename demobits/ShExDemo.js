@@ -432,7 +432,11 @@ ShExDemo = function() {
                       " at " + sparqlInterface.getURL() + "...");
             textValue("#data", "");
             nodes.map(function (node) {
-                
+                iface.validator.termResults = {}; // clear out yester-cache
+                var r = iface.validator.validate(node, iface.validator.startRule, RDF.QueryDB(sparqlInterface, iface.graph),
+                                                 {iriResolver: iface.schema.iriResolver,
+                                                  closedShapes: $("#opt-closed-shapes").is(":checked")}, true);
+                alert(r.toString());
             });
         },
 
