@@ -718,9 +718,9 @@ RDF = {
                     return ret;
                 })
             };
-	} else if (mediaType === "text/turtle") {
+        } else if (mediaType === "text/turtle") {
             var queryIriResolver = RDF.createIRIResolver();
-	    TurtleParser.parse(body, {iriResolver: queryIriResolver});
+            return TurtleParser.parse(body, {iriResolver: queryIriResolver});
         } else {
             throw "no parser for media type \"" + mediaType + "\"";
         }
@@ -730,52 +730,52 @@ RDF = {
         return {
             _: 'QueryDB',
             sparqlInterface: sparqlInterface,
-	    slaveDB: slaveDB,
+            slaveDB: slaveDB,
             queryStack: [],
             triplesMatching: function (s, p, o) {
                 var pattern = "CONSTRUCT WHERE {" +
-		    " " + (s ? s.toString() : "?s") +
-		    " " + (p ? p.toString() : "?p") +
-		    " " + (o ? o.toString() : "?o") +
-		    " }";
-		return this.sparqlInterface.execute(pattern);
+                    " " + (s ? s.toString() : "?s") +
+                    " " + (p ? p.toString() : "?p") +
+                    " " + (o ? o.toString() : "?o") +
+                    " }";
+                return this.sparqlInterface.execute(pattern);
             },
             triplesMatching_str: function (s, p, o) {
-		throw "QueryDB.triplesMatching_str not implemented";
+                throw "QueryDB.triplesMatching_str not implemented";
             },
             length: function () {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.length not implemented";
             },
             uniqueSubjects: function () {
-		throw "QueryDB.uniqueSubjects not implemented";
+                throw "QueryDB.uniqueSubjects not implemented";
             },
             slice: function (from, length) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.length not implemented";
             },
             clone: function () {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.length not implemented";
             },
             splice: function (from, length) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.length not implemented";
             },
             index: function (t, at) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.length not implemented";
             },
             push: function (t) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.length not implemented";
             },
             insertAt: function (offset, t) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.length not implemented";
             },
             addComment: function (c) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.length not implemented";
             },
 
             toString: function () {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.length not implemented";
             },
             colorize: function (charmap) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.length not implemented";
             }
         };
     },
