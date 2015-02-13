@@ -312,7 +312,7 @@
                 </form>
 			  </div>
 			  <div class="ui-widget-header no-padding" >
-				Query
+				Validate via SPARQL
 			  </div>
 			  <div class="ui-layout-content no-scrollbar">
 				<form id="data-query" action="GET">
@@ -370,7 +370,7 @@
 
                 var oldLayoutPanelHeights = interactionInterface.layoutPanelHeights;
                 interactionInterface.layoutPanelHeights = function (ev) {
-                    $("#data-query-select").outerWidth($("#data-load").innerWidth()-10)//!! paddings?
+                    $("#data-query-select").outerWidth($("#data-load").innerWidth()-10);//!! paddings?
                     $("#data-query-select").outerHeight(100);
                     oldLayoutPanelHeights(ev);
                     var ht = 100 + $("#data").outerHeight() - 3 -
@@ -426,18 +426,31 @@
                     return ret;
                 };
 
-                $("#data-get").submit(function (evt) {
+                var getData = function (evt) {
                     interactionInterface.loadData
                         ($("#data-get-url").val(), "#data",
                          interactionInterface.handleDataUpdate);
                     return false;
-                });
-
-                $("#data-query").submit(function (evt) {
-                    var sparql = RDF.makeSPARQLInterface($("#data-query-endpoint").val());
-                    interactionInterface.loadSPARQLResults($("#data-query-select").val(), sparql);
+                };
+                var executeQuery = function (evt) {
+                    var query = $("#data-query-select").val();
+                    var m = query.match(/^(?:\s*(?:#.*?\n|PREFIX\s+[a-zA-Z0-9_-]+:\s*<.*?>|BASE\s+<.*?>)?)*(SELECT)|(CONSTRUCT)/i);
+                    if (m && m[2]) {
+                        var url = $("#data-query-endpoint").val();
+                        url += url.match(/\?/) ? '&' : '?';
+                        url += "query=";
+                        url += encodeURIComponent(query);
+                        $("#data-get-url").val(url);
+                        getData(evt);
+                    } else {
+                        var sparql = RDF.makeSPARQLInterface($("#data-query-endpoint").val());
+                        interactionInterface.loadSPARQLResults(query, sparql);
+                    }
                     return false;
-                });
+                };
+                $("#data-get").submit(getData);
+
+                $("#data-query").submit(executeQuery);
 
                 try {
                     prepareLayout(function (p1) {
