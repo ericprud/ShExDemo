@@ -431,13 +431,34 @@ ShExDemo = function() {
                 .text("Validating " + nodes.length + " node" + (nodes.length === 1 ? "" : "s") +
                       " at " + sparqlInterface.getURL() + "...");
             textValue("#data", "");
-            nodes.map(function (node) {
-                iface.validator.termResults = {}; // clear out yester-cache
-                var r = iface.validator.validate(node, iface.validator.startRule, RDF.QueryDB(sparqlInterface, iface.graph),
-                                                 {iriResolver: iface.schema.iriResolver,
-                                                  closedShapes: $("#opt-closed-shapes").is(":checked")}, true);
-                alert(r.toString());
+            $("#starting-nodes option").remove();
+            nodes.forEach(function (node) {
+                var text = node.toString();
+                $("#starting-nodes").append(
+                    $("<option value='"
+                      +(text.replace(/&/g, "&amp;").replace(/'/g, "&quot;"))
+                      +"' selected='selected'>"
+                      +(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
+                      +"</option>"));
             });
+            iface.validator.termResults = {}; // clear out yester-cache
+            debugger;
+            var oldGraph = iface.graph;
+            var queryDB = RDF.QueryDB(sparqlInterface, iface.graph);
+            iface.graph = queryDB;
+            var timeBefore = (new Date).getTime();
+            iface.validate()
+            var timeAfter = (new Date).getTime();
+            iface.graph = oldGraph;
+            iface.parseMessage("#data" + " .message")
+                .removeClass("progress error")
+                .addClass("data-color")
+                .text("Data" + " crawled.")
+                .append(buildSizeAndTimeInfoHtml(
+                    "Data" + " crawling time and speed",
+                    queryDB.seen(), "queries",
+                    timeAfter - timeBefore
+                ));
         },
 
         loadData: function (url, id, done) {
@@ -921,7 +942,7 @@ ShExDemo = function() {
                     ));
                 iface.message("Validation complete.");
 
-                if (validationResult.passed()) {
+                if (validationResult.passed() && iface.graph.length() != -1) { // -1 signals unknown length db @@ needs UI switch
                     // replace with an encapsulating object with remaining triples.
                     var triplesEncountered = validationResult.triples();
                     validationResult = {

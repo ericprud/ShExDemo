@@ -632,6 +632,10 @@ RDF = {
         return {
             execute: function (query, parms) {
                 lastQuery = query;
+                if ("done" in parms) { // suck in old-style controls -- needed for synchronous execution.
+                    this.done(parms.done); // set the new done
+                    delete parms.done;
+                }
                 var merge = $.extend({
                     url: url + separator + "query=" + encodeURIComponent(query)
                 }, parms);
@@ -718,9 +722,10 @@ RDF = {
                     return ret;
                 })
             };
-	} else if (mediaType === "text/turtle") {
+        } else if (mediaType === "text/turtle") {
             var queryIriResolver = RDF.createIRIResolver();
-	    TurtleParser.parse(body, {iriResolver: queryIriResolver});
+            return {obj: TurtleParser.parse(body, {iriResolver: queryIriResolver}),
+                    iriResolver: queryIriResolver};
         } else {
             throw "no parser for media type \"" + mediaType + "\"";
         }
@@ -730,52 +735,64 @@ RDF = {
         return {
             _: 'QueryDB',
             sparqlInterface: sparqlInterface,
-	    slaveDB: slaveDB,
+            slaveDB: slaveDB,
+            r: null,
             queryStack: [],
+            _seen: 0,
             triplesMatching: function (s, p, o) {
                 var pattern = "CONSTRUCT WHERE {" +
-		    " " + (s ? s.toString() : "?s") +
-		    " " + (p ? p.toString() : "?p") +
-		    " " + (o ? o.toString() : "?o") +
-		    " }";
-		return this.sparqlInterface.execute(pattern);
+                    " " + (s ? s.toString() : "?s") +
+                    " " + (p ? p.toString() : "?p") +
+                    " " + (o ? o.toString() : "?o") +
+                    " }";
+                var queryDB = this;
+                this.sparqlInterface.execute(pattern, {async: false, done: function (r) {
+                    queryDB.r = r;
+                }});
+                var ret = this.r.obj.slice();
+                queryDB._seen += ret.length;
+                return ret;
             },
             triplesMatching_str: function (s, p, o) {
-		throw "QueryDB.triplesMatching_str not implemented";
+                throw "QueryDB.triplesMatching_str not implemented";
             },
             length: function () {
-		throw "QueryDB.length not implemented";
+                return -1; // unknown
             },
             uniqueSubjects: function () {
-		throw "QueryDB.uniqueSubjects not implemented";
+                throw "QueryDB.uniqueSubjects not implemented";
             },
             slice: function (from, length) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.slice not implemented";
             },
             clone: function () {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.clone not implemented";
             },
             splice: function (from, length) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.splice not implemented";
             },
             index: function (t, at) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.index not implemented";
             },
             push: function (t) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.push not implemented";
             },
             insertAt: function (offset, t) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.insertAt not implemented";
             },
             addComment: function (c) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.addComment not implemented";
             },
 
             toString: function () {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.toString not implemented";
             },
             colorize: function (charmap) {
-		throw "QueryDB.length not implemented";
+                throw "QueryDB.colorize not implemented";
+            },
+
+            seen: function () {
+                return this._seen;
             }
         };
     },
