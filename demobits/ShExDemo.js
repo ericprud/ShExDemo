@@ -309,61 +309,43 @@ ShExDemo = function() {
                 };
                 iface.queryParms = parseQueryString(location.search);
 
-                // Keep track of pending parallel load opperations.
-                var waitingOn = 0;
-                if (iface.queryParms['schemaURL'])
-                    waitingOn++;
-                if (iface.queryParms['dataURL'])
-                    waitingOn++;
-                if (waitingOn === 0)
-                    // There are no references to external input.
-                    iface.loadDirectData();
+                function getTargetContentPromise (elt, into) {
+                    return Promise.resolve($.ajax({ type: 'GET', dataType: "text", url: elt }))
+                        .then(function (body) {
+                            return [into, body];
+                        }).catch(function (jqXHR, textStatus, errorThrown) {
+                            // @@ show jqXHR.responseText with mouseenter?
+                            return [into, "# !! GET " + elt + " returned " + jqXHR.status + " " + jqXHR.statusText + "\n"];
+                        });
+                }
 
-                var joinAndRun = function() {
-                    if (--waitingOn === 0) {
+                Promise.all((iface.queryParms['schemaURL'] || []).map(function (elt) {
+                    // Iterate schema URLs
+                    // Loading non-endorsed schema links disables javascript extensions.
+                    if (/^([a-z]+:)?\/\//g.test(elt))
+                        $('#opt-disable-js').attr('checked', true);
+                    return getTargetContentPromise(elt, "#schema");
+                }).concat(((iface.queryParms['dataURL'] || [])).map(function (elt) {
+                    // Iterate data URLs
+                    // You can load any data (modulo CORS).
+                    return getTargetContentPromise(elt, "#data");
+                })))
+                // When all are loaded
+                    .then(function (components) {
+                        // Iterate [target,content]s:
+                        // [['#schema', "shex1"],['#data', "turtle1"],['#data', "turtle2"]
+                        components.forEach(function(intoContent) {
+                            // …and add to the page
+                            textValue(intoContent[0], textValue(intoContent[0])+intoContent[1]);
+                        });
+                    }).catch(function(err) {
+                        // Don't know how we could get here.
+                        console.log("Argh, broken: " + err.message);
+                    }).then(function() {
                         delete iface.queryParms['schemaURL'];
                         delete iface.queryParms['dataURL'];
                         iface.loadDirectData();
-                    }
-                }
-
-                // Lists of schema and data parameters are loaded in sequence.
-                // done() is called after the list is exhausted.
-                var getSequenceOfURLs = function(list, into, done) {
-                    if (list.length) {
-                        $.ajax({
-                            type: 'GET',
-                            dataType: "text",
-                            //contentType: 'text/plain',{turtle,shex}
-                            url: list[0],
-                            success: function(body, textStatus, jqXHR) {
-                                // Loading non-endorsed links disables javascript extensions.
-                                if (/^([a-z]+:)?\/\//g.test(list[0]))
-                                    $('#opt-disable-js').attr('checked', true);
-                                textValue(into, textValue(into)+body);
-                                getSequenceOfURLs(list.slice(1), into, done);
-                            },
-                            error: function(jqXHR, textStatus, errorThrown) {
-                                console.log("failed to load <" + list[0]
-                                            + ">: Status: " + textStatus
-                                            + " Message: " + errorThrown);
-                                getSequenceOfURLs(list.slice(1), into, done);
-                            }
-                        });
-                    } else {
-                        done();
-                    }
-                }
-
-                // Load inputs from schema and data URLs.
-                if (iface.queryParms['schemaURL']) {
-                    textValue("#schema", "");
-                    getSequenceOfURLs(iface.queryParms['schemaURL'], "#schema", joinAndRun);
-                }
-                if (iface.queryParms['dataURL']) {
-                    textValue("#data", "");
-                    getSequenceOfURLs(iface.queryParms['dataURL'  ], "#data"  , joinAndRun);
-                }
+                    });
             }
         },
 
@@ -1220,17 +1202,17 @@ ShExDemo = function() {
                                 document.getElementById("output").textContent = "";
                                 validate();
                                 return false;
-                                // case 82:
+                                // case 82: // 'R'
                                 //     if (e.ctrlKey)
                                 //         return true;
                                 //     document.getElementById("output").textContent = "";
                                 //     return false;
-                            case 83:
+                            case 83: // 'S'
                                 if (e.ctrlKey)
                                     return true;
                                 document.getElementById("schemaText").textContent = "";
                                 return false;
-                            case 68:
+                            case 68: // 'D'
                                 if (e.ctrlKey)
                                     return true;
                                 document.getElementById("turtleText").textContent = "";
