@@ -152,14 +152,15 @@ h2 { margin: 0; border: none; }
 
 .highlightTerms { background-color: #de9; } /* couldn't decide bewteen hover and click for data selection UI. */
 
-#contact.selected {
-  background-color:#1F75CC;
+.selected {
+  border:4px solid #1F75CC;
+  margin:-4px;
   color:white;
   z-index:100;
 }
 
 .messagepop {
-  background-color:#777;
+  background-color:#ddd;
   border:1px solid #999999;
   cursor:default;
   display:none;

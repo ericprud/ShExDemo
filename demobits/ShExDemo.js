@@ -351,7 +351,7 @@ ShExDemo = function() {
                                 var elt = $("<a href='"+c.url+"'>"+c.errorStr+"</a><br/>").addClass("error small");
 
                                 // Popup with error contents -- disabled for now.
-                                if (c.errorMouseover && false) {
+                                if (false && c.errorMouseover) {
                                     elt.on('click', function() {
                                         if($(this).hasClass('selected')) {
                                             iface.deselectPopup($(this));
