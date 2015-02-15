@@ -40,6 +40,10 @@
   <body>
     <div id="apology">loading javascript.</div>
 
+<div class="messagepop pop">Click to close
+    <div id="pcontent"></div>
+</div>
+
     <div id="examples">
 
 	    <div class="header">Examples</div>
@@ -271,7 +275,7 @@
       <div id="schema" class="column">
         <div>
           <h2 class="task schema">Schema (ShEx):</h2>
-          <div class="message progress">Preparing to parse schema.</div>
+          <div class="message"><div class="log"></div><div class="now progress">Waiting for schema.</div></div>
           <div style="clear:both;"></div>
         </div>
         <textarea class="textInput" spellcheck="false" cols="70" rows="20"></textarea>
@@ -285,7 +289,7 @@
 		<li><a href="#data-input">Text</a> <!--  message data-color --> </li>
 		<li><a href="#data-load" style="font-size:60%;">Load/<br/>Query</a></li>
     <li>
-          <div class="message data-color">Data parsed.<span class="size-and-time" title="Data parsing time and speed">0.25&nbsp;kB, 1&nbsp;ms, 2.5e+2&nbsp;kB/s</span></div>
+          <div class="message"><div class="log"></div><div class="now progress">Waiting for data.</div></div>
     </li>
 	</ul>
         <!-- div>

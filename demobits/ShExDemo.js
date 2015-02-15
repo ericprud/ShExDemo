@@ -134,6 +134,14 @@ ShExDemo = function() {
             $("#validation-messages").append($('<div/>').text(m).html() + "<br/>");
         },
 
+        // setup popup stuff
+        deselectPopup: function (e) {
+            $('.pop').slideFadeToggle(function() {
+                e.removeClass('selected');
+                $("#pcontent").empty();
+            });
+        },
+
         parseMessage: function (selector) {
             return {
                 removeClass: function (classes) {
@@ -312,10 +320,12 @@ ShExDemo = function() {
                 function getTargetContentPromise (elt, into) {
                     return Promise.resolve($.ajax({ type: 'GET', dataType: "text", url: elt }))
                         .then(function (body) {
-                            return [into, body];
+                            return {url:elt, into:into, body:body, errorStr:null, errorMouseover:null};
                         }).catch(function (jqXHR, textStatus, errorThrown) {
-                            // @@ show jqXHR.responseText with mouseenter?
-                            return [into, "# !! GET " + elt + " returned " + jqXHR.status + " " + jqXHR.statusText + "\n"];
+                            // @@ show  with mouseenter?
+                            var errorStr = "GET " + elt + " returned " + jqXHR.status + " " + jqXHR.statusText;
+                            return {url:elt, into:into, body:"# !! " + errorStr + "\n",
+                                    errorStr: errorStr, errorMouseover:jqXHR.responseText};
                         });
                 }
 
@@ -334,13 +344,47 @@ ShExDemo = function() {
                     .then(function (components) {
                         // Iterate [target,content]s:
                         // [['#schema', "shex1"],['#data', "turtle1"],['#data', "turtle2"]
-                        components.forEach(function(intoContent) {
-                            // …and add to the page
-                            textValue(intoContent[0], textValue(intoContent[0])+intoContent[1]);
+                        components.forEach(function(c) {
+                            // load into their targets.
+                            textValue(c.into, textValue(c.into)+c.body);
+                            if (c.errorStr) {
+                                var elt = $("<a href='"+c.url+"'>"+c.errorStr+"</a><br/>").addClass("error small");
+
+                                // Popup with error contents -- disabled for now.
+                                if (c.errorMouseover && false) {
+                                    elt.on('click', function() {
+                                        if($(this).hasClass('selected')) {
+                                            iface.deselectPopup($(this));
+                                        } else {
+                                            $(this).addClass('selected');
+                                            $("#pcontent").html(c.errorMouseover);
+                                            $('.pop').slideFadeToggle();
+                                        }
+                                        $('.pop').on('click', function() {
+                                            iface.deselectPopup(elt);
+                                            return false;
+                                        });
+                                        return false;
+                                    });
+                                }
+                                iface.parseMessage(c.into+" .log").append(elt);
+
+                        // $("#start-rule").text(startRuleText)
+                        // .mouseenter(function () {
+                        //     $(this).addClass("ui-state-hover", 50);
+                        //     if ($("#ctl-colorize").is(":checked"))
+                        //         iface.schema.termStringToIds.get(startRuleText).map(function (id) { $("#"+id).addClass("ui-state-hover", 50) })
+                        // })
+                        // .mouseleave(function () {
+                        //     $(this).removeClass("ui-state-hover", 50);
+                        //     if ($("#ctl-colorize").is(":checked"))
+                        //         iface.schema.termStringToIds.get(startRuleText).map(function (id) { $("#"+id).removeClass("ui-state-hover", 50) })
+                        // });
+
+                            }
                         });
                     }).catch(function(err) {
-                        // Don't know how we could get here.
-                        console.log("Argh, broken: " + err.message);
+                        alert("Completely unexpected error loading data: \""+err+"\nPlease file a bug with the URL that produced this error");
                     }).then(function() {
                         delete iface.queryParms['schemaURL'];
                         delete iface.queryParms['dataURL'];
@@ -395,13 +439,12 @@ ShExDemo = function() {
                 });
                 iface.validateOverSPARQL(nodes, sparqlInterface);
             }).fail(function (jqXHR, textStatus, errorThrown) {
-                iface.parseMessage("#data .message")
-                    .removeClass("progress")
-                    .addClass("message error")
+                iface.parseMessage("#data .log")
+                    .addClass("error")
                     .empty()
                     .append("unable to query " + endpoint + "\n" + textStatus + "\n" + errorThrown);
             });
-            iface.parseMessage("#data .message").addClass("message progress")
+            iface.parseMessage("#data .now").addClass("progress")
                 .text("Querying " + endpoint + "...");
             iface.disableValidatorOutput();
         },
@@ -409,7 +452,7 @@ ShExDemo = function() {
         // nodes: array of RDF nodes
         // sparqlInterface: URL of query engine
         validateOverSPARQL: function (nodes, sparqlInterface) {
-            iface.parseMessage("#data .message").addClass("message progress")
+            iface.parseMessage("#data .now").addClass("progress")
                 .text("Validating " + nodes.length + " node" + (nodes.length === 1 ? "" : "s") +
                       " at " + sparqlInterface.getURL() + "...");
             textValue("#data", "");
@@ -432,8 +475,8 @@ ShExDemo = function() {
             iface.validate()
             var timeAfter = (new Date).getTime();
             iface.graph = oldGraph;
-            iface.parseMessage("#data" + " .message")
-                .removeClass("progress error")
+            iface.parseMessage("#data" + " .now")
+                .removeClass("progress")
                 .addClass("data-color")
                 .text("Data" + " crawled.")
                 .append(buildSizeAndTimeInfoHtml(
@@ -458,14 +501,14 @@ ShExDemo = function() {
                     // looks like function() { iface.parseData() && iface.validator && iface.validate(); }
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
-                    iface.parseMessage(id + " .message")
+                    iface.parseMessage(id + " .now")
                         .removeClass("progress")
-                        .addClass("message error")
+                        .addClass("error")
                         .empty()
                         .append("unable to load " + url + "\n" + textStatus + "\n" + errorThrown);
                 }
             });
-            iface.parseMessage(id + " .message").addClass("message progress")
+            iface.parseMessage(id + " .now").addClass("progress")
                 .text("GETting " + url + "...");
             iface.disableValidatorOutput();
         },
@@ -683,7 +726,7 @@ ShExDemo = function() {
                 throw {type: "pending", action: "GET", url: m[1]};
             }
 
-            iface.parseMessage(id + " .message").removeClass("schema-color data-color").addClass("message progress")
+            iface.parseMessage(id + " .now").removeClass("schema-color data-color").addClass("progress")
                 .text("Parsing " + label + "...");
             iface.disableValidatorOutput();
 
@@ -695,7 +738,7 @@ ShExDemo = function() {
             ret.iriResolver = iriResolver; // need it later
             ret.bnodeScope = bnodeScope;   // need it later
 
-            iface.parseMessage(id + " .message")
+            iface.parseMessage(id + " .now")
                 .removeClass("progress error")
                 .addClass(colorClass)
                 .text(label + " parsed.")
@@ -767,15 +810,15 @@ ShExDemo = function() {
                 $("#as-resource-sexpr"   ).attr("href", dtp + Base64.encode(iface.validator.toSExpression(0)));
                 $("#as-resource-haskell" ).attr("href", dtp + Base64.encode(iface.validator.toHaskell(0)));
                 if (textValue("#schema") === '') {
-                    iface.parseMessage("#schema .message").append("<div id=\"emptySchema\"><h3>Empty Schema</h3>An empty schema is valid, but you might want to see <a href=\"Examples\" style='background-color: yellow;'>some examples</a>.</div>");
+                    iface.parseMessage("#schema .now").append("<div id=\"emptySchema\"><h3>Empty Schema</h3>An empty schema is valid, but you might want to see <a href=\"Examples\" style='background-color: yellow;'>some examples</a>.</div>");
                     $("#emptySchema").css("position","absolute").css("top",($("#schema .textInput").height()/3)+"px").css("left","3em");
                 } else
                     $("#view a").removeClass("disabled");
             } catch (e) {
                 if (typeof(e) !== 'object' || e.type !== "pending")
-                    iface.parseMessage("#schema .message")
+                    iface.parseMessage("#schema .now")
                     .removeClass("progress")
-                    .addClass("message error")
+                    .addClass("error")
                     .append(buildErrorMessage(e, "#schema", "Schema"));
                 var unavailable = "data:text/plain;charset=utf-8;base64,"
                     + Base64.encode("Alternate representations unavailable when ShEx fails to parse.");
@@ -812,9 +855,9 @@ ShExDemo = function() {
                 // }
             } catch (e) {
                 if (typeof(e) !== 'object' || e.type !== "pending") {
-                    iface.parseMessage("#data .message")
+                    iface.parseMessage("#data .now")
                     .removeClass("progress")
-                    .addClass("message error")
+                    .addClass("error")
                     .append(buildErrorMessage(e, "#data", "Data"));
                 }
             }
@@ -1289,6 +1332,10 @@ ShExDemo = function() {
             $("#data .textInput").outerHeight(panelHeightPx);
         }
 
+    };
+
+    $.fn.slideFadeToggle = function(easing, callback) {
+        return this.animate({ opacity: 'toggle', height: 'toggle' }, 'fast', easing, callback);
     };
 
     return iface;
