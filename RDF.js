@@ -475,8 +475,22 @@ RDF = {
     Dataset: function () {
         return {
             _: 'Dataset',
+            /* triples is a simple array of Triple objects, here abbreviated {str:"s p o"}:
+               [{str:"<Bob> <foaf:knows> <Joe>"},
+                {str:"<Bob> <foaf:knows> _:sue"},
+                {str:"_:Sue <foaf:knows> <Bob>"},
+                {str:"<Bob> <foaf:name>  'Bob'"},
+                {str:"<Bob> <foaf:name>  'Rob'"}]
+             */
             triples: [],
             comments: [],
+            /* SPO is an index of the form:
+               { "<Bob>": { "<foaf:name>" :  { "'Bob'": [{str:"<Bob> <foaf:name>  'Bob'"}, 3],
+                                               "'Rob'": [{str:"<Bob> <foaf:name>  'Rob'"}, 4]},
+                            "<foaf:knows>":  { "<Joe>": [{str:"<Bob> <foaf:knows> <Joe>"}, 0],
+                                               "_:sue": [{str:"<Bob> <foaf:knows> _:sue"}, 1]} },
+                  "_:Sue": { "<foaf:knows>": { "<Bob>": [{str:"_:Sue <foaf:knows> <Bob>"}, 2]} } }
+            */
             SPO: {},
             indexEntries: [],
             triplesMatching: function (s, p, o) {
@@ -516,13 +530,6 @@ RDF = {
                     }
                 }
                 ss(this.SPO);
-                //            for (var i = 0; i < this.triples.length; ++i) {
-                //                var t = this.triples[i];
-                //                if ((s === null || s === undefined || s.lex == t.s.lex && s._ == t.s._) &&
-                //                    (p === null || p === undefined || p.lex == t.p.lex && p._ == t.p._) &&
-                //                    (o === null || o === undefined || o.lex == t.o.lex && o._ == t.o._))
-                //                    ret.push(t);
-                //            }
                 return ret;
             },
             triplesMatching_str: function (s, p, o) {
