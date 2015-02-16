@@ -431,12 +431,14 @@
                 };
 
                 var getData = function (evt) {
+                    $("#data .log").empty();
                     interactionInterface.loadData
                         ($("#data-get-url").val(), "#data",
                          interactionInterface.handleDataUpdate);
                     return false;
                 };
                 var executeQuery = function (evt) {
+                    $("#data .log").empty();
                     var query = $("#data-query-select").val();
                     var m = query.match(/^(?:\s*(?:#.*?\n|PREFIX\s+[a-zA-Z0-9_-]+:\s*<.*?>|BASE\s+<.*?>)?)*(SELECT)|(CONSTRUCT)/i);
                     if (m && m[2]) {
