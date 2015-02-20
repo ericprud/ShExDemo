@@ -625,7 +625,7 @@ ShExDemo = function() {
             $("#data .remainingData").removeClass("remainingData");
         },
 
-        hanldeSchemaUpdate: function () {
+        handleSchemaUpdate: function () {
             iface.parseSchema() && iface.graph && iface.validate();
         },
         queueSchemaUpdate: function (ev) {
