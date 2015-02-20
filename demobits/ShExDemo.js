@@ -318,12 +318,17 @@ ShExDemo = function() {
                 iface.queryParms = parseQueryString(location.search);
 
                 function getTargetContentPromise (elt, into) {
-                    return Promise.resolve($.ajax({ type: 'GET', dataType: "text", url: elt }))
+                    return Promise.resolve($.ajax({ type: 'GET', dataType: "text", url: elt })) // add , contentType: "text/plain" to eliminate OPTIONS query?
                         .then(function (body) {
                             return {url:elt, into:into, body:body, errorStr:null, errorMouseover:null};
-                        }).catch(function (jqXHR, textStatus, errorThrown) {
+                        }).catch(function (jqXHR) {
                             // @@ show  with mouseenter?
-                            var errorStr = "GET " + elt + " returned " + jqXHR.status + " " + jqXHR.statusText;
+                            var m = null;
+                            if (window.location.origin == "file://" && jqXHR.status == 0)
+                                m = jqXHR.statusText.match("^NetworkError: Failed to execute 'send' on 'XMLHttpRequest': Failed to load 'file:///([^']+)'\\.$");
+                            var errorStr = m ?
+                                "Your browser didn't load local file /"+m[1]+"; click the error message or try firefox." :
+                                "GET " + elt + " returned " + jqXHR.status + " " + jqXHR.statusText;
                             return {url:elt, into:into, body:"# !! " + errorStr + "\n",
                                     errorStr: errorStr, errorMouseover:jqXHR.responseText};
                         });
