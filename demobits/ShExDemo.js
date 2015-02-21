@@ -429,7 +429,7 @@ ShExDemo = function() {
             delete iface.queryParms['data'];
             iface.allDataIsLoaded();
         },
-        loadSPARQLResults: function (query, sparqlInterface) {
+        loadSPARQLResults: function (query, sparqlInterface, cacheSize) {
             var endpoint = sparqlInterface.getURL();
             sparqlInterface.execute(query, {
                 // override error
@@ -442,7 +442,7 @@ ShExDemo = function() {
                 }).filter(function (elt) {
                     return elt !== null;
                 });
-                iface.validateOverSPARQL(nodes, sparqlInterface);
+                iface.validateOverSPARQL(nodes, sparqlInterface, cacheSize);
             }).fail(function (jqXHR, textStatus, errorThrown) {
                 iface.parseMessage("#data .log")
                     .addClass("error")
@@ -456,7 +456,7 @@ ShExDemo = function() {
 
         // nodes: array of RDF nodes
         // sparqlInterface: URL of query engine
-        validateOverSPARQL: function (nodes, sparqlInterface) {
+        validateOverSPARQL: function (nodes, sparqlInterface, cacheSize) {
             iface.parseMessage("#data .now").addClass("progress")
                 .text("Validating " + nodes.length + " node" + (nodes.length === 1 ? "" : "s") +
                       " at " + sparqlInterface.getURL() + "...");
@@ -474,7 +474,9 @@ ShExDemo = function() {
             iface.validator.termResults = {}; // clear out yester-cache
             debugger;
             var oldGraph = iface.graph;
-            var queryDB = RDF.QueryDB(sparqlInterface, iface.graph);
+            iface.graph.clear();
+            iface.graph.unordered(); // @@ make it ordered by default when parsing data from page.
+            var queryDB = RDF.QueryDB(sparqlInterface, iface.graph, cacheSize);
             iface.graph = queryDB;
             var timeBefore = (new Date).getTime();
             iface.validate()

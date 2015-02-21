@@ -474,6 +474,35 @@ RDF = {
 
     Dataset: function () {
         return {
+            // test with RDF.Dataset().test()
+            test: function (info, warning, error) {
+                info = info || function (s) { console.log("info: "+s); }
+                warning = warning || function (s) { console.log("warning: "+s); }
+                error = error || function (s) { console.log("error: "+s); }
+                var errors = 0;
+                var t0 = RDF.Triple(RDF.IRI  ("Bob"), RDF.IRI("http://...foaf/knows"),  RDF.IRI       ("Joe"));
+                var t1 = RDF.Triple(RDF.IRI  ("Bob"), RDF.IRI("http://...foaf/knows"),  RDF.BNode     ("sue"));
+                var t2 = RDF.Triple(RDF.BNode("Sue"), RDF.IRI("http://...foaf/knows"),  RDF.IRI       ("Bob"));
+                var t3 = RDF.Triple(RDF.IRI  ("Bob"), RDF.IRI("http://...foaf/name" ),  RDF.RDFLiteral("Bob"));
+                var t4 = RDF.Triple(RDF.IRI  ("Bob"), RDF.IRI("http://...foaf/name" ),  RDF.RDFLiteral("Rob"));
+
+                var ds = RDF.Dataset();
+                ds.unordered();
+                ds.push(t0);ds.push(t1);ds.push(t2);ds.push(t3);ds.push(t4); info(ds.toString());
+                info("- " + t1.toString()); ds.retract(t1); info(ds.toString());
+                info("- " + t4.toString()); ds.retract(t4); info(ds.toString());
+                info("- " + t3.toString()); ds.retract(t3); info(ds.toString());
+                info("- " + t2.toString()); ds.retract(t2); info(ds.toString());
+                info("- " + t0.toString()); ds.retract(t0); info(ds.toString());
+                try {
+                    info("- " + t2.toString()); ds.retract(t2); info(ds.toString());
+                    error("expected to fail removal of t2.");
+                    ++errors;
+                } catch (e) {
+                    // expected path
+                }
+                return errors;
+            },
             _: 'Dataset',
             /* triples is a simple array of Triple objects, here abbreviated {str:"s p o"}:
                [{str:"<Bob> <foaf:knows> <Joe>"},
@@ -493,6 +522,15 @@ RDF = {
             */
             SPO: {},
             indexEntries: [],
+            unordered: function () {
+                this.triples = null;
+            },
+            clear: function () {
+                this.triples = [];
+                this.comments = [];
+                this.SPO = {};
+                this.indexEntries = [];
+            },
             triplesMatching: function (s, p, o) {
                 var ret = [];
                 var sStr = s ? s.toString() : '', pStr = p ? p.toString() : '', oStr = o ? o.toString() : '';
@@ -544,30 +582,34 @@ RDF = {
                 return ret;
             },
             length: function () {
-                return this.triples.length;
+                return this.triples === null ? -1 : this.triples.length;
             },
             uniqueSubjects: function () {
-                var ret = [];
-                var subjects = {};
-                for (var i = 0; i < this.triples.length; ++i) {
-                    var t = this.slice(i)[0].s;
-                    var s = t.toString();
-                    if (subjects[s] === undefined) {
-                        subjects[s] = t;
-                        ret.push(t);
-                    }
-                }
-                return ret;
+                return Object.keys(this.SPO);
             },
             slice: function (from, length) {
+                if (this.triples === null)
+                    throw "Dataset.slice not available in unordered mode.";
                 return this.triples.slice(from, length);
             },
             clone: function () {
                 var ret = RDF.Dataset();
-                ret.triples = this.triples.slice();
+                for (si in this.SPO) {
+                    ret.SPO[si] = {};
+                    for (pi in this.SPO[si]) {
+                        ret.SPO[si][pi] = {};
+                        for (oi in this.SPO[si][pi]) {
+                            ret.SPO[si][pi][oi] = [ret.SPO[si][pi][oi][0], ret.SPO[si][pi][oi][1]];
+                        }
+                    }
+                }
+                if (this.triples !== null)
+                    ret.triples = this.triples.slice();
                 return ret;
             },
             splice: function (from, length) {
+                if (this.triples === null)
+                    throw "Dataset.splice not available in unordered mode.";
                 return this.triples.splice(from, length);
             },
             index: function (t, at) {
@@ -579,38 +621,102 @@ RDF = {
                     PO[pStr] = {};
                 var O = PO[pStr];
                 var entry = [t, at];
-                var len = this.indexEntries.length;
-                if (at < len)
-                    for (var i = at; i < len; ++i) {
-                        this.indexEntries[i+1] = this.indexEntries[i];
-                        this.indexEntries[i+1][1] = i+1;
-                    }
+                if (this.triples) { // not in unordered mode
+                    var len = this.indexEntries.length;
+                    if (at < len)
+                        for (var i = at; i < len; ++i) {
+                            this.indexEntries[i+1] = this.indexEntries[i];
+                            this.indexEntries[i+1][1] = i+1;
+                        }
+                }
                 O[oStr] = entry;
             },
             push: function (t) {
                 if (this.triplesMatching(t.s, t.p, t.o).length === 0) {
-                    this.triples.push(t);
-                    this.index(t, this.triples.length);
+                    if (this.triples !== null) {
+                        this.triples.push(t);
+                        this.index(t, this.triples.length);
+                    } else {
+                        this.index(t, -1);
+                    }
                 }
             },
             insertAt: function (offset, t) {
+                if (this.triples === null)
+                    throw "Dataset.insertAt not available in unordered mode.";
                 if (this.triplesMatching(t.s, t.p, t.o).length === 0) {
                     this.triples.splice(offset, 0, t);
                     this.index(t, offset);
                 }
+            },
+            retract: function (t) {
+                var sStr = t.s ? t.s.toString() : '';
+                var pStr = t.p ? t.p.toString() : '';
+                var oStr = t.o ? t.o.toString() : '';
+                function os (O) {
+                    if (t.o) {
+                        if (!(oStr in O))
+                            throw "object not found: " + t.toString();
+                        delete O[oStr];
+                    } else {
+                        for (var oi in O)
+                            delete(O[oi]);
+                    }
+                    return Object.keys(O).length == 0;
+                }
+                function ps (PO) {
+                    if (t.p) {
+                        if (!(pStr in PO))
+                            throw "predicate not found: " + t.toString();
+                        if (os(PO[pStr]))
+                            delete PO[pStr];
+                    } else {
+                        for (var pi in PO)
+                            if (os(PO[pi]))
+                                delete PO[pi];
+                    }
+                    return Object.keys(PO).length == 0
+                }
+                function ss (SPO) {
+                    if (t.s) {
+                        if (!(sStr in SPO))
+                            throw "subject not found: " + t.toString();
+                        if (ps(SPO[sStr]))
+                            delete SPO[sStr];
+                    } else {
+                        for (var si in SPO)
+                            if (ps(SPO[si]))
+                                delete SPO[si];
+                    }
+                }
+                ss(this.SPO);
             },
             addComment: function (c) {
                 this.comments.push(c);
             },
 
             toString: function () {
-                return this.triples.map(function (t) { return t.toString(); }).join("\n");
+                if (this.triples === null) {
+                    var ret = [];
+                    for (si in this.SPO)
+                        for (pi in this.SPO[si])
+                            for (oi in this.SPO[si][pi])
+                                ret.push(this.SPO[si][pi][oi][0].toString());
+                    return ret.join("\n");
+                } else
+                    return this.triples.map(function (t) { return t.toString(); }).join("\n");
             },
             colorize: function (charmap) {
                 var idMap = IntStringMap();
                 var termStringToIds = StringIdMap();
-                for (var iTriple = 0; iTriple < this.triples.length; ++iTriple)
-                    this.triples[iTriple].colorize(charmap, idMap, termStringToIds);
+                if (this.triples === null)
+                    for (si in this.SPO)
+                        for (pi in this.SPO[si])
+                            for (oi in this.SPO[si][pi])
+                                this.SPO[si][pi][oi][0].colorize(charmap, idMap, termStringToIds);
+                else
+                    for (var iTriple = 0; iTriple < this.triples.length; ++iTriple)
+                        this.triples[iTriple].colorize(charmap, idMap, termStringToIds);
                 var commentId = "tc";
                 //this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
                 for (var iComment = 0; iComment < this.comments.length; ++iComment) {
@@ -738,27 +844,45 @@ RDF = {
         }
     },
 
-    QueryDB: function (sparqlInterface, slaveDB) {
+    QueryDB: function (sparqlInterface, slaveDB, cacheSize) {
         return {
             _: 'QueryDB',
             sparqlInterface: sparqlInterface,
             slaveDB: slaveDB,
+            cacheSize: cacheSize, 
             r: null,
             queryStack: [],
             _seen: 0,
+            cache: {},
+            LRU: [],
+            nodes: [],
             triplesMatching: function (s, p, o) {
-                var pattern = "CONSTRUCT WHERE {" +
-                    " " + (s ? s.toString() : "?s") +
-                    " " + (p ? p.toString() : "?p") +
-                    " " + (o ? o.toString() : "?o") +
-                    " }";
                 var queryDB = this;
-                this.sparqlInterface.execute(pattern, {async: false, done: function (r) {
-                    queryDB.r = r;
-                }});
-                var ret = this.r.obj.slice();
-                queryDB._seen += ret.length;
-                return ret;
+                function query () {
+                    var isSPO = (s && p && !o);
+                    if (isSPO) {
+                        queryDB.LRU.push(s.toString());
+                        queryDB.nodes.push(s);
+                        if (queryDB.LRU.length > queryDB.cacheSize) {
+                            queryDB.LRU.shift();
+                            queryDB.slaveDB.retract({s:queryDB.nodes.shift(), p:null, o:null});
+                        }
+                    }
+                    var pattern = "CONSTRUCT WHERE {" +
+                        " " + (s ? s.toString() : "?s") +
+                        " " + (!isSPO && p ? p.toString() : "?p") +
+                        " " + (o ? o.toString() : "?o") +
+                        " }";
+                    queryDB.sparqlInterface.execute(pattern, {async: false, done: function (r) {
+                        queryDB.r = r;
+                    }});
+                    var ret = queryDB.r.obj.slice();
+                    this._seen += ret.length;
+                    ret.forEach(function (t) { queryDB.slaveDB.push(t); });
+                }
+                if (!s || !p || o || this.LRU.indexOf(s.toString()) == -1)
+                    query();
+                return this.slaveDB.triplesMatching(s, p, o);
             },
             triplesMatching_str: function (s, p, o) {
                 throw "QueryDB.triplesMatching_str not implemented";
