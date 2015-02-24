@@ -850,39 +850,42 @@ RDF = {
             sparqlInterface: sparqlInterface,
             slaveDB: slaveDB,
             cacheSize: cacheSize, 
-            r: null,
             queryStack: [],
             _seen: 0,
             cache: {},
-            LRU: [],
+            LRU: [], // The Least Recently Used subject is at LRU[0].
             nodes: [],
             triplesMatching: function (s, p, o) {
-                var queryDB = this;
-                function query () {
-                    var isSPO = (s && p && !o);
-                    if (isSPO) {
-                        queryDB.LRU.push(s.toString());
-                        queryDB.nodes.push(s);
-                        if (queryDB.LRU.length > queryDB.cacheSize) {
-                            queryDB.LRU.shift();
-                            queryDB.slaveDB.retract({s:queryDB.nodes.shift(), p:null, o:null});
-                        }
-                    }
+                var cacheSubject = (s && p && !o && cacheSize != 0);
+                if (cacheSubject && this.LRU.indexOf(s.toString()) != -1)
+                    // We've already cached this subject in slaveDB.
+                    return this.slaveDB.triplesMatching(s, p, o);
+                else {
                     var pattern = "CONSTRUCT WHERE {" +
                         " " + (s ? s.toString() : "?s") +
-                        " " + (!isSPO && p ? p.toString() : "?p") +
+                        " " + (!cacheSubject && p ? p.toString() : "?p") +
                         " " + (o ? o.toString() : "?o") +
                         " }";
-                    queryDB.sparqlInterface.execute(pattern, {async: false, done: function (r) {
-                        queryDB.r = r;
+                    var queryDB = this;
+                    var results;
+                    this.sparqlInterface.execute(pattern, {async: false, done: function (r) {
+                        results = r;
                     }});
-                    var ret = queryDB.r.obj.slice();
+                    var ret = results.obj.slice();
                     this._seen += ret.length;
-                    ret.forEach(function (t) { queryDB.slaveDB.push(t); });
+                    if (cacheSubject) {
+                        this.LRU.push(s.toString());
+                        this.nodes.push(s);
+                        if (this.LRU.length > this.cacheSize) {
+                            this.LRU.shift();
+                            this.slaveDB.retract({s:this.nodes.shift(), p:null, o:null});
+                        }
+                        ret.forEach(function (t) { queryDB.slaveDB.push(t); });
+                        return this.slaveDB.triplesMatching(s, p, o);
+                    } else {
+                        return ret;
+                    }
                 }
-                if (!s || !p || o || this.LRU.indexOf(s.toString()) == -1)
-                    query();
-                return this.slaveDB.triplesMatching(s, p, o);
             },
             triplesMatching_str: function (s, p, o) {
                 throw "QueryDB.triplesMatching_str not implemented";
