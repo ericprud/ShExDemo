@@ -450,7 +450,7 @@
                         getData(evt);
                     } else {
                         var sparql = RDF.makeSPARQLInterface($("#data-query-endpoint").val());
-                        interactionInterface.loadSPARQLResults(query, sparql, $("#data-query-cache").val());
+                        interactionInterface.loadSPARQLResults(query, sparql, parseInt($("#data-query-cache").val()));
                     }
                     return false;
                 };

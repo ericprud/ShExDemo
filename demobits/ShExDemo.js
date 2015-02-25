@@ -125,6 +125,8 @@ ShExDemo = function() {
         GenJwindow: undefined,
         GenNwindow: undefined,
         GenRwindow: undefined,
+        dataSources: { Text: 1, Query: 2 },
+        dataSource: 1, // Text
 
         // Logging utilities
         message: function (m) {
@@ -442,7 +444,20 @@ ShExDemo = function() {
                 }).filter(function (elt) {
                     return elt !== null;
                 });
-                iface.validateOverSPARQL(nodes, sparqlInterface, cacheSize);
+                iface.graph = RDF.QueryDB(sparqlInterface, RDF.Dataset(), cacheSize);
+                $("#starting-nodes option").remove();
+                nodes.forEach(function (node) {
+                    var text = node.toString();
+                    $("#starting-nodes").append(
+                        $("<option value='"
+                          +(text.replace(/&/g, "&amp;").replace(/'/g, "&quot;"))
+                          +"' selected='selected'>"
+                          +(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
+                          +"</option>"));
+                });
+                $("#starting-nodes").multiselect("refresh");
+                iface.dataSource = iface.dataSources.Query;
+                iface.validate();
             }).fail(function (jqXHR, textStatus, errorThrown) {
                 iface.parseMessage("#data .log")
                     .addClass("error")
@@ -452,45 +467,6 @@ ShExDemo = function() {
             iface.parseMessage("#data .now").addClass("progress")
                 .text("Querying " + endpoint + "...");
             iface.disableValidatorOutput();
-        },
-
-        // nodes: array of RDF nodes
-        // sparqlInterface: URL of query engine
-        validateOverSPARQL: function (nodes, sparqlInterface, cacheSize) {
-            iface.parseMessage("#data .now").addClass("progress")
-                .text("Validating " + nodes.length + " node" + (nodes.length === 1 ? "" : "s") +
-                      " at " + sparqlInterface.getURL() + "...");
-            textValue("#data", "");
-            $("#starting-nodes option").remove();
-            nodes.forEach(function (node) {
-                var text = node.toString();
-                $("#starting-nodes").append(
-                    $("<option value='"
-                      +(text.replace(/&/g, "&amp;").replace(/'/g, "&quot;"))
-                      +"' selected='selected'>"
-                      +(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
-                      +"</option>"));
-            });
-            iface.validator.termResults = {}; // clear out yester-cache
-            debugger;
-            var oldGraph = iface.graph;
-            iface.graph.clear();
-            iface.graph.unordered(); // @@ make it ordered by default when parsing data from page.
-            var queryDB = RDF.QueryDB(sparqlInterface, iface.graph, cacheSize);
-            iface.graph = queryDB;
-            var timeBefore = (new Date).getTime();
-            iface.validate()
-            var timeAfter = (new Date).getTime();
-            iface.graph = oldGraph;
-            iface.parseMessage("#data" + " .now")
-                .removeClass("progress")
-                .addClass("data-color")
-                .text("Data" + " crawled.")
-                .append(buildSizeAndTimeInfoHtml(
-                    "Data" + " crawling time and speed",
-                    queryDB.seen(), "queries",
-                    timeAfter - timeBefore
-                ));
         },
 
         loadData: function (url, id, done) {
@@ -646,6 +622,7 @@ ShExDemo = function() {
         },
 
         handleDataUpdate: function () {
+            iface.dataSource = iface.dataSources.Text;
             iface.parseData() && iface.validator && iface.validate();
         },
         queueDataUpdate: function() {
@@ -842,6 +819,8 @@ ShExDemo = function() {
         },
 
         parseData: function() {
+            if (iface.dataSource == iface.dataSources.Query)
+                return true;
             iface.graph = null;
             try {
                 iface.data = iface.runParser("#data", "Data", "data-color", function(text, iriResolver) {
@@ -873,7 +852,7 @@ ShExDemo = function() {
             return iface.graph !== null;
         },
 
-        validate: function() {
+        validateCore: function() {
             if (!iface.validator || !iface.graph || iface.graph.length() == 0)
                 return;
 
@@ -1054,6 +1033,37 @@ ShExDemo = function() {
             iface.updateURL();
         },
 
+        // nodes: array of RDF nodes
+        // sparqlInterface: URL of query engine
+        validateOverSPARQL: function () {
+            var nodes = $("#starting-nodes").val();
+            debugger;
+            iface.parseMessage("#data .now").addClass("progress")
+                .text("Validating " + nodes.length + " node" + (nodes.length === 1 ? "" : "s") +
+                      " at " + iface.graph.sparqlInterface.getURL() + "...");
+            textValue("#data", "");
+            iface.validator.termResults = {}; // clear out yester-cache
+            var timeBefore = (new Date).getTime();
+            iface.validateCore()
+            var timeAfter = (new Date).getTime();
+            iface.parseMessage("#data" + " .now")
+                .removeClass("progress")
+                .addClass("data-color")
+                .text("Data" + " crawled.")
+                .append(buildSizeAndTimeInfoHtml(
+                    "Data" + " crawling time and speed",
+                    iface.graph.seen(), "queries",
+                    timeAfter - timeBefore
+                ));
+        },
+
+        validate: function () {
+            if (iface.dataSource == iface.dataSources.Query)
+                iface.validateOverSPARQL();
+            else
+                iface.validateCore();
+        },
+
         mapResultsToInput: function(validationResult, valResultsElement) {
             // non-jquery functions from SimpleShExDemo
             function removeClass (type, list, className) {
@@ -1151,8 +1161,9 @@ ShExDemo = function() {
                 // Turn off current highlighting.
                 removeClass("s", lastSolution, "hilightSolution");
                 removeClass("r", lastRule, "hilightRule");
-                for (var i = 0; i < lastTriple.length; ++i)
-                    removeClass("", iface.data.idMap.getMembers(lastTriple[i]), "hilightData");
+                if (iface.data.idMap)
+                    for (var i = 0; i < lastTriple.length; ++i)
+                        removeClass("", iface.data.idMap.getMembers(lastTriple[i]), "hilightData");
 
                 if (sameElements(lastRule, schemaList) &&
                     sameElements(lastTriple, dataList) &&
@@ -1176,7 +1187,8 @@ ShExDemo = function() {
                     addClass("s", solutionList, "hilightSolution");
                     addClass("r", schemaList, "hilightRule");
                     for (var i = 0; i < dataList.length; ++i)
-                        addClass("", iface.data.idMap.getMembers(dataList[i]), "hilightData");
+                        if (dataList[i] != null)
+                            addClass("", iface.data.idMap.getMembers(dataList[i]), "hilightData");
 
                     // Write down current state.
                     lastRule = schemaList;

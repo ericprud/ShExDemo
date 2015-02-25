@@ -845,6 +845,7 @@ RDF = {
     },
 
     QueryDB: function (sparqlInterface, slaveDB, cacheSize) {
+        slaveDB.unordered();
         return {
             _: 'QueryDB',
             sparqlInterface: sparqlInterface,
@@ -3719,7 +3720,8 @@ SELECT ?s ?p ?o {\n\
             var to;
             if (triple) {
                 var ts = triple.toString();
-                tOrdinal = dataIdMap.getInt(ts);
+                // May be called with no renderable data.
+                tOrdinal = dataIdMap ? dataIdMap.getInt(ts) : null;
                 var to = triple.s.toString(true) + " " + triple.p.toString(true) + " " + triple.o.toString(true) + " .";
                 solutions.push({rule:rOrdinal, triple:tOrdinal});
             } else {
