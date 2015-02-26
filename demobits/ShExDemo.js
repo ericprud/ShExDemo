@@ -866,7 +866,6 @@ ShExDemo = function() {
             $("#schema .textInput .error").removeClass("error");
             $("#data .textInput .error").removeClass("error");
 
-            try {
                 var timeBefore = (new Date).getTime();
                 iface.validator.termResults = {}; // clear out yester-cache
 
@@ -885,14 +884,16 @@ ShExDemo = function() {
                 var validationResult
                 if ($("#opt-pre-typed").is(":checked") && !iface.validator.startRule) {
                     $("#validation-messages").append($('<div/>').html() + "<span class='error'>No schema start rule against which to validate against.</span>" + "<br/>");
-                } else if ($("#opt-pre-typed").is(":checked") && iface.validator.startRule) {
+                } else {
+                    var p;
+                    if ($("#opt-pre-typed").is(":checked") && iface.validator.startRule) {
                     var startingNodes = $("#starting-nodes").val() || [];
                     if (startingNodes.length > 1) {
                         validationResult = new RDF.ValRes(); // aggregate results
                         validationResult.status = RDF.DISPOSITION.PASS;
                     }
-                    for (var startingNodeNo = 0; startingNodeNo < startingNodes.length; startingNodeNo++) {
-                        var startingNode = startingNodes[startingNodeNo];
+                        p = Promise.all(
+                    startingNodes.map(function (startingNode) {
                         if (startingNode.charAt(0) == '_' && startingNode.charAt(1) == ':') {
                             startingNode = RDF.BNode(startingNode.substr(2), RDF.Position0())
                         } else {
@@ -918,6 +919,7 @@ ShExDemo = function() {
                         var r = iface.validator.validate(startingNode, iface.validator.startRule, iface.graph,
                                                          {iriResolver: iface.schema.iriResolver,
                                                           closedShapes: $("#opt-closed-shapes").is(":checked")}, true);
+                        return Promise.resolve(r).then(function(r) {
                         if (r.passed())
                             $("#validation-messages").append($('<div/>'
                                                                + "<span class='success'>passed</span>"
@@ -935,13 +937,17 @@ ShExDemo = function() {
                                 validationResult.status = RDF.DISPOSITION.FAIL;
                         } else
                             validationResult = r;
-                    }
+});
+                    })
+                        );
                 } else {
+                    p = new Promise(function (p, f) {
                     iface.message("looking for types");
                     validationResult = iface.validator.findTypes(iface.graph, {iriResolver: iface.schema.iriResolver,
                                                                                closedShapes: $("#opt-closed-shapes").is(":checked")});
+                    });
                 }
-
+                    p.then(function (r) {
                 var timeAfter = (new Date).getTime();
 
                 $("#validation-messages")
@@ -1027,10 +1033,14 @@ ShExDemo = function() {
                 generatorInterface('GenJ', 'application/json');
                 generatorInterface('GenN', 'text/plain');
                 generatorInterface('GenR', 'text/plain');
-            } catch (e) {
-                $("#validation-messages").attr("class", "message error").text(e);
-            }
+                    }
+                );
+
+            // } catch (e) {
+            //     $("#validation-messages").attr("class", "message error").text(e);
+            // }
             iface.updateURL();
+                }
         },
 
         // nodes: array of RDF nodes
