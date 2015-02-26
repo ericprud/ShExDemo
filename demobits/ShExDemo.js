@@ -1034,11 +1034,9 @@ ShExDemo = function() {
                 generatorInterface('GenN', 'text/plain');
                 generatorInterface('GenR', 'text/plain');
                     }
-                );
-
-            // } catch (e) {
-            //     $("#validation-messages").attr("class", "message error").text(e);
-            // }
+                ).catch(function (e) {
+		    $("#validation-messages").attr("class", "message error").text(e);
+		});
             iface.updateURL();
                 }
         },
