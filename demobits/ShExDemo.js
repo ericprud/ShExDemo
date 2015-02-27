@@ -916,10 +916,10 @@ ShExDemo = function() {
                                       (iface.validator.startRule._ == "BNode"
                                        ? "schema start rule"
                                        : iface.validator.startRule.toString()) + ".");
-                        var r = iface.validator.validate(startingNode, iface.validator.startRule, iface.graph,
+                        var p2 = iface.validator.validate(startingNode, iface.validator.startRule, iface.graph,
                                                          {iriResolver: iface.schema.iriResolver,
                                                           closedShapes: $("#opt-closed-shapes").is(":checked")}, true);
-                        return Promise.resolve(r).then(function(r) {
+                        p2.then(function(r) {
                         if (r.passed())
                             $("#validation-messages").append($('<div/>'
                                                                + "<span class='success'>passed</span>"
@@ -938,6 +938,7 @@ ShExDemo = function() {
                         } else
                             validationResult = r;
 });
+                        return p2;
                     })
                         );
                 } else {
@@ -1035,8 +1036,8 @@ ShExDemo = function() {
                 generatorInterface('GenR', 'text/plain');
                     }
                 ).catch(function (e) {
-		    $("#validation-messages").attr("class", "message error").text(e);
-		});
+                    $("#validation-messages").attr("class", "message error").text(e);
+                });
             iface.updateURL();
                 }
         },

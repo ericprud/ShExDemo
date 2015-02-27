@@ -3382,6 +3382,7 @@ RDF = {
 
         this.closeShapes = function (point, as, db, validatorStuff, subShapes) {
             var ret = this.validatePoint(point, as, db, validatorStuff, subShapes);
+            return Promise.resolve(ret).then(function (ret) {
             if (ret.status == RDF.DISPOSITION.PASS) {
                 var seen = ret.triples();
                 var missed = ret.misses.filter(function (m) { // triplesMatch
@@ -3395,6 +3396,7 @@ RDF = {
                 }
             }
             return ret;
+            });
         };
 
         // usual interface for validating a pointed graph
@@ -3413,9 +3415,11 @@ RDF = {
                     }
                 }
             });
-            var ret = this.closeShapes(point, as, db, validatorStuff, subShapes);
-            this.dispatch('end', this.init, null, ret);
-            return ret;
+            var schema = this;
+            return this.closeShapes(point, as, db, validatorStuff, subShapes).then(function (ret) {
+                schema.dispatch('end', this.init, null, ret);
+                return ret;
+            });
         };
 
         // usual interface for finding types in a graph
@@ -3432,34 +3436,37 @@ RDF = {
                 if ('beginFindTypes' in this.handlers[handler])
                     this.handlers[handler]['beginFindTypes']();
             // For each (distinct) subject node s,
-            for (var iSubjects = 0; iSubjects < subjects.length; ++ iSubjects) {
-                var s = subjects[iSubjects];
-
+            var promises = [];
+            var schema = this;
+            subjects.map(function (s) {
                 // for each rule label ruleLabel,
-                for (var ri = 0; ri < this.ruleLabels.length; ++ri) {
-                    var ruleLabel = this.ruleLabels[ri];
+                schema.ruleLabels.map(function (ruleLabel) {
 
                     // if the labeled rule not VIRTUAL,
-                    if (!this.isVirtualShape[ruleLabel.toString()]) {
+                    if (!schema.isVirtualShape[ruleLabel.toString()]) {
 
                         var closedSubGraph = db.triplesMatching(s, null, null);
-                        var res = this.validate(s, ruleLabel, db, validatorStuff, false);
-
+                        var p2 = schema.validate(s, ruleLabel, db, validatorStuff, false);
+                        p2.then(function (res) {
                         // If it passed or is indeterminate,
                         if (res.status !== RDF.DISPOSITION.FAIL) {
 
                             // record the success.
                             RDF.message(s.toString() + " is a " + ruleLabel.toString());
                             var t = {s:s, p:RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0()), o:ruleLabel};
-                            ret.matchedTree(this.ruleMap[ruleLabel], t, res);
+                            ret.matchedTree(schema.ruleMap[ruleLabel], t, res);
                         }
+                        }).catch(function (e) { console.dir(e); });
+                        promises.push(p2);
                     }
-                }
-            }
-            for (var handler in this.handlers)
-                if ('endFindTypes' in this.handlers[handler])
-                    this.handlers[handler]['endFindTypes']();
-            return ret;
+                });
+            });
+            return Promise.all(promises).then(function () {
+            for (var handler in schema.handlers)
+                if ('endFindTypes' in schema.handlers[handler])
+                    schema.handlers[handler]['endFindTypes']();
+                return ret;
+            });
         };
         this.dispatch = function (event, codes, valRes, context) {
             var handlers = this.handlers;
