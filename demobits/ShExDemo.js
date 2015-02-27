@@ -942,11 +942,12 @@ ShExDemo = function() {
                     })
                         );
                 } else {
-                    p = new Promise(function (p, f) {
                     iface.message("looking for types");
-                    validationResult = iface.validator.findTypes(iface.graph, {iriResolver: iface.schema.iriResolver,
-                                                                               closedShapes: $("#opt-closed-shapes").is(":checked")});
-                    });
+                    p = iface.validator.findTypes(iface.graph, {iriResolver: iface.schema.iriResolver,
+                                                                closedShapes: $("#opt-closed-shapes").is(":checked")}).
+			then(function(r) {
+			    validationResult = r;
+			});
                 }
                     p.then(function (r) {
                 var timeAfter = (new Date).getTime();
@@ -1036,7 +1037,8 @@ ShExDemo = function() {
                 generatorInterface('GenR', 'text/plain');
                     }
                 ).catch(function (e) {
-                    $("#validation-messages").attr("class", "message error").text(e);
+		    $("#validation-messages").append($("<span class='error'>error: "+e+"</span><br>"));
+                    //$("#validation-messages").attr("class", "message error").append("error:"+e).append($("<br/>"));
                 });
             iface.updateURL();
                 }
