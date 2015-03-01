@@ -585,7 +585,13 @@ RDF = {
                 return this.triples === null ? -1 : this.triples.length;
             },
             uniqueSubjects: function () {
-                return Object.keys(this.SPO);
+                var _Dataset = this;
+                return Object.keys(this.SPO).map(function (s) {
+                    // Dive in and grab triple.s for first p and o.
+                    var p = Object.keys(_Dataset.SPO[s])[0];
+                    var o = Object.keys(_Dataset.SPO[s][p])[0];
+                    return _Dataset.SPO[s][p][o][0].s;
+                });
             },
             slice: function (from, length) {
                 if (this.triples === null)
