@@ -435,7 +435,7 @@ ShExDemo = function() {
             var endpoint = sparqlInterface.getURL();
             sparqlInterface.execute(query, {
                 // override error
-            }).done(function (r) {
+            }).then(function (r) {
                 // // Loading non-endorsed links disables javascript extensions.
                 // if (/^([a-z]+:)?\/\//g.test(endpoint))
                 //     $('#opt-disable-js').attr('checked', true);
@@ -458,7 +458,8 @@ ShExDemo = function() {
                 $("#starting-nodes").multiselect("refresh");
                 iface.dataSource = iface.dataSources.Query;
                 iface.validate();
-            }).fail(function (jqXHR, textStatus, errorThrown) {
+            }).catch(function (tuple) {
+                var jqXHR = tuple[0], textStatus = tuple[1], errorThrown = tuple[2];
                 iface.parseMessage("#data .log")
                     .addClass("error")
                     .empty()

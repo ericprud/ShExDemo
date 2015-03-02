@@ -761,15 +761,23 @@ RDF = {
                 var merge = $.extend({
                     url: url + separator + "query=" + encodeURIComponent(query)
                 }, parms);
-                $.ajax(merge).done(function (body, textStatus, jqXHR) {
-                    // Crappy mime parser doesn't handle quoted-string
-                    //  c.f. http://tools.ietf.org/html/rfc7230#section-3.2.6
-                    var ray = jqXHR.getResponseHeader("content-type").split(/;/) 
-                        .map(function (s) { return s.replace(/ /g,''); });
-                    var r = RDF.parseSPARQLResults(body, ray.shift(), ray);
-                    done(r);
-                }).fail(fail).always(always);
-                return this;
+
+                return new Promise(function (resolve, reject) {
+                    $.ajax(merge).then(function (body, textStatus, jqXHR) {
+                        if (jqXHR.status === 200) {
+                            // Crappy mime parser doesn't handle quoted-string
+                            //  c.f. http://tools.ietf.org/html/rfc7230#section-3.2.6
+                            var ray = jqXHR.getResponseHeader("content-type").split(/;/)
+                                .map(function (s) { return s.replace(/ /g,''); });
+                            var r = RDF.parseSPARQLResults(body, ray.shift(), ray);
+                            resolve(r);
+                        } else {
+                            reject([body, jqXHR]);
+                        }
+                    }).fail(function (jqXHR, textStatus, errorThrown) {
+                        reject([jqXHR, textStatus, errorThrown]);
+                    });
+                });
             },
             getURL: function () { return url; },
             getLastQuery: function () { return lastQuery; },
@@ -869,36 +877,54 @@ RDF = {
                 throw "QueryDB.triplesMatching not implemented";
             },
             triplesMatching_async: function (s, p, o) {
+                var _queryDB = this;
                 var cacheSubject = (s && p && !o && cacheSize != 0);
-                if (cacheSubject && this.LRU.indexOf(s.toString()) != -1)
-                    // We've already cached this subject in slaveDB.
-                    return this.slaveDB.triplesMatching(s, p, o);
-                else {
+                var sStr = s.toString();
+                var cachedAt = cacheSubject ? this.LRU.indexOf(sStr) : -1;
+                if (cachedAt != -1) {
+                    // We've already cached this subject in slaveDB. Push to top of LRU.
+                    this.LRU.splice(cachedAt,1);
+                    this.LRU.push(sStr);
+                    var node = this.nodes.splice(cachedAt,1)[0];
+                    this.nodes.push(node);
+                    return node[1].then(function () {
+                        return _queryDB.slaveDB.triplesMatching(s, p, o);
+                    });
+                } else {
                     var pattern = "CONSTRUCT WHERE {" +
-                        " " + (s ? s.toString() : "?s") +
+                        " " + (s ? sStr : "?s") +
                         " " + (!cacheSubject && p ? p.toString() : "?p") +
                         " " + (o ? o.toString() : "?o") +
                         " }";
-                    var queryDB = this;
                     var results;
-                    return this.sparqlInterface.execute(pattern, {async: true, done: function (r) {
+                    var p1 = this.sparqlInterface.execute(pattern, {async: true, done: function (r) {
                         results = r;
-                    }}).then(function (results) {
+                    }});
+                    var p2 = p1.then(function (results) {
                     var ret = results.obj.slice();
-                    this._seen += ret.length;
+                    _queryDB._seen += ret.length;
                     if (cacheSubject) {
-                        this.LRU.push(s.toString());
-                        this.nodes.push(s);
-                        if (this.LRU.length > this.cacheSize) {
-                            this.LRU.shift();
-                            this.slaveDB.retract({s:this.nodes.shift(), p:null, o:null});
-                        }
-                        ret.forEach(function (t) { queryDB.slaveDB.push(t); });
-                        return this.slaveDB.triplesMatching(s, p, o);
+                        ret.forEach(function (t) { _queryDB.slaveDB.push(t); });
+                        return _queryDB.slaveDB.triplesMatching(s, p, o);
                     } else {
                         return ret;
                     }
                     });
+                    if (cacheSubject) {
+                        this.LRU.push(sStr);
+                        this.nodes.push([s, p1]);
+                        if (this.LRU.length > this.cacheSize) {
+                            // Shift from the bottom of LRU.
+                            this.LRU.shift();
+                            var node = this.nodes.shift()[0];
+                            p2 = p2.then(function (res) {
+                                // Queue removal from slave DB.
+                                _queryDB.slaveDB.retract({s:node, p:null, o:null});
+                                return res;
+                            });
+                        }
+                    }
+                    return p2;
                 }
             },
             triplesMatching_str: function (s, p, o) {
