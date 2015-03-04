@@ -439,6 +439,7 @@
                 };
                 var executeQuery = function (evt) {
                     $("#data .log").empty();
+                    $("#data .error").removeClass("error");
                     var query = $("#data-query-select").val();
                     var m = query.match(/^(?:\s*(?:#.*?\n|PREFIX\s+[a-zA-Z0-9_-]+:\s*<.*?>|BASE\s+<.*?>)?)*(SELECT)|(CONSTRUCT)/i);
                     if (m && m[2]) {
