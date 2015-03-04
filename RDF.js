@@ -190,6 +190,26 @@ RDF = {
         console.error(str);
     },
 
+    StructuredError_proto: {
+    },
+    StructuredError: function (data) {
+        var ret = {
+            _: "StructuredError",
+            data: data,
+            toString: function () {
+                return data.map(function (p) {
+                    return p[0] == "code" ? "\""+p[1]+"\"" : p[1];
+                }).join("\n");
+            }
+        };
+        Object.keys(RDF.StructuredError_proto).map(function (k) {
+            ret[k] = RDF.StructuredError_proto[k];
+        });
+        return ret;
+    },
+
+    /* <Exceptions>
+     */
     // SPARQL validation queries can't expression recursive grammars.
     ValidationRecursion: function (label) {
         this._ = 'ValidationRecursion'; this.label = label;
@@ -201,6 +221,8 @@ RDF = {
             return "Rule " + this.label.toString() + " not found in schema.";
         };
     },
+    /* </Exceptions>
+     */
 
     createIRIResolver: function() {
         return {
@@ -775,7 +797,8 @@ RDF = {
                             reject([body, jqXHR]);
                         }
                     }).fail(function (jqXHR, textStatus, errorThrown) {
-                        reject([jqXHR, textStatus, errorThrown]);
+                        jqXHR.statusText = "failed to connect";
+                        reject(["", jqXHR]);
                     });
                 });
             },
@@ -909,6 +932,13 @@ RDF = {
                     } else {
                         return ret;
                     }
+                    }).catch(function (pair) {
+                        var body = pair[0], jqXHR = pair[1];
+                        throw RDF.StructuredError(
+                            [["text", "failed to GET "],
+                             ["code", pattern],
+                             ["text", " from " + _queryDB.sparqlInterface.getURL()]
+                            ]);
                     });
                     if (cacheSubject) {
                         this.LRU.push(sStr);
@@ -2268,7 +2298,8 @@ var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.rev
                 if (r.status == RDF.DISPOSITION.NONE)
                     // seenEmpty = true;
                     empties.push(r);
-                }));
+                })
+);
             }
             return Promise.all(promises).then(function () {
             if (passes.length && empties.length) // 

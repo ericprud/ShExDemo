@@ -459,11 +459,12 @@ ShExDemo = function() {
                 iface.dataSource = iface.dataSources.Query;
                 iface.validate();
             }).catch(function (tuple) {
-                var jqXHR = tuple[0], textStatus = tuple[1], errorThrown = tuple[2];
+                var body = tuple[0], jqXHR = tuple[1];
                 iface.parseMessage("#data .log")
                     .addClass("error")
                     .empty()
-                    .append("unable to query " + endpoint + "\n" + textStatus + "\n" + errorThrown);
+                    .append("unable to query " + endpoint + "\n" + jqXHR.status + ": " + jqXHR.statusText);
+                $("#data .now").removeClass("progress").empty();
             });
             iface.parseMessage("#data .now").addClass("progress")
                 .text("Querying " + endpoint + "...");
@@ -1038,8 +1039,25 @@ ShExDemo = function() {
                 generatorInterface('GenR', 'text/plain');
                     }
                 ).catch(function (e) {
-		    $("#validation-messages").append($("<span class='error'>error: "+e+"</span><br>"));
+                    console.dir(["ShExDemo.js.1045: ", e]);
+                    throw(e);
+                }).catch(function (e) {
+                    console.log("HERE!!! error: "+e);
+                    console.dir(["ShExDemo.js.1049: ", e]);
+                    // console.dir(e.toHTML());
+                    var html = typeof e == "object" && "_" in e && e._ == "StructuredError" ?
+                        e.toHTML() :
+                        $('<div/>').text(e).html();
+                    iface.parseMessage("#data .now").addClass("error").empty().
+		        text("Failed to access data.");
+		    $("#validation-messages").empty().
+                        append($("<span class='error'>error: "+
+                                 html+
+                                 "</span><br>"));
                     //$("#validation-messages").attr("class", "message error").append("error:"+e).append($("<br/>"));
+                }).catch(function (e) {
+                    console.log("uncaught error: " + e);
+                    return e;
                 });
             iface.updateURL();
                 }
@@ -1363,6 +1381,13 @@ ShExDemo = function() {
             $("#data .textInput").outerHeight(panelHeightPx);
         }
 
+    };
+
+    // Inject a jquery-dependent toHTML into every RDF.StructuredError.
+    RDF.StructuredError_proto.toHTML = function () {
+        return this.data.map(function (p) {
+            return p[0] == "code" ? "<pre style='margin: 0;'>"+$('<div/>').text(p[1]).html()+"</pre>" : p[1];
+        }).join("\n");
     };
 
     $.fn.slideFadeToggle = function(easing, callback) {
