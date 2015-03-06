@@ -797,7 +797,7 @@ RDF = {
                             reject([body, jqXHR]);
                         }
                     }).fail(function (jqXHR, textStatus, errorThrown) {
-                        jqXHR.statusText = "failed to connect";
+                        jqXHR.statusText = "connection or CORS failure";
                         reject(["", jqXHR]);
                     });
                 });

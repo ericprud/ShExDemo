@@ -71,17 +71,6 @@ ShExDemo = function() {
         $("#validation-messages").removeAttr("disabled");
     }
 
-    function enableValidatorInput() {
-        $("#opt-pre-typed").removeAttr("disabled");
-        $("#opt-find-type").removeAttr("disabled");
-        $("#opt-disable-js").removeAttr("disabled");
-        $("#opt-closed-shapes").removeAttr("disabled");
-
-        // $("#settings input[name='mode']").change(); would trigger handleParameterUpdate() so:
-        if ($("#opt-pre-typed").is(":checked"))
-            $("#starting-nodes").removeAttr("disabled");
-    }
-
     function sanitizeEditable (element) {
         if (element.innerHTML.search(/<div>|<br>|&nbsp;/) != -1)
             element.innerHTML = element.innerHTML
@@ -433,17 +422,31 @@ ShExDemo = function() {
         },
         loadSPARQLResults: function (query, sparqlInterface, cacheSize) {
             var endpoint = sparqlInterface.getURL();
-            sparqlInterface.execute(query, {
+            iface.parseMessage("#data .now").addClass("progress")
+                .text("Loading nodes from " + endpoint + "...");
+            return sparqlInterface.execute(query, {
                 // override error
             }).then(function (r) {
+                iface.enableValidatorInput()
                 // // Loading non-endorsed links disables javascript extensions.
                 // if (/^([a-z]+:)?\/\//g.test(endpoint))
                 //     $('#opt-disable-js').attr('checked', true);
-                var nodes = r.solutions.map(function (soln) {
-                    return r.vars[0] in soln ? soln[r.vars[0]] : null;
-                }).filter(function (elt) {
-                    return elt !== null;
+
+                var nodes = [];
+                var m = {};
+                r.solutions.forEach(function (soln) {
+                    if (r.vars[0] in soln) {
+                        var v = soln[r.vars[0]];
+                        var s = v.toString();
+                        if (!(s in m)) {
+                            nodes.push(v);
+                            m[s] = undefined;
+                        }
+                    }
                 });
+                if (r.solutions.length/nodes.length > 1.5)
+                    iface.parseMessage("#data .log")
+                    .append($('<div/>').html() + "<span class='info'>Found "+nodes.length+" unique nodes out of "+r.solutions.length+" solutions, you may want to SELECT DISTINCT or SELECT REDUCED for more efficiency.</span>" + "<br/>");
                 iface.graph = RDF.QueryDB(sparqlInterface, RDF.Dataset(), cacheSize);
                 $("#starting-nodes option").remove();
                 nodes.forEach(function (node) {
@@ -457,18 +460,19 @@ ShExDemo = function() {
                 });
                 $("#starting-nodes").multiselect("refresh");
                 iface.dataSource = iface.dataSources.Query;
-                iface.validate();
+                iface.parseMessage("#data .now").removeClass("progress")
+                    .text("Loaded " + nodes.length + " nodes from " + endpoint);
+                iface.disableValidatorOutput();
+                $("#data-query-validate").removeAttr('disabled');
             }).catch(function (tuple) {
+                $("#data .now").removeClass("progress").empty();
                 var body = tuple[0], jqXHR = tuple[1];
                 iface.parseMessage("#data .log")
                     .addClass("error")
                     .empty()
                     .append("unable to query " + endpoint + "\n" + jqXHR.status + ": " + jqXHR.statusText);
-                $("#data .now").removeClass("progress").empty();
+                throw tuple; // let the caller know we failed.
             });
-            iface.parseMessage("#data .now").addClass("progress")
-                .text("Querying " + endpoint + "...");
-            iface.disableValidatorOutput();
         },
 
         loadData: function (url, id, done) {
@@ -677,6 +681,17 @@ ShExDemo = function() {
             iface.updateURLParameters();
         },
 
+        enableValidatorInput: function() {
+            $("#opt-pre-typed").removeAttr("disabled");
+            $("#opt-find-type").removeAttr("disabled");
+            $("#opt-disable-js").removeAttr("disabled");
+            $("#opt-closed-shapes").removeAttr("disabled");
+
+            // $("#settings input[name='mode']").change(); would trigger handleParameterUpdate() so:
+            if ($("#opt-pre-typed").is(":checked"))
+                $("#starting-nodes").removeAttr("disabled");
+        },
+
         /* Turn bits of validator on or off depending on schema and data
          * availability */
         disableValidatorOutput: function() {
@@ -755,7 +770,7 @@ ShExDemo = function() {
                 iface.validator = iface.schema.obj; // intuitive alias
                 enableValidatorLink();
                 if (iface.graph)
-                    enableValidatorInput();
+                    iface.enableValidatorInput();
                 var dtp = "data:text/plain;charset=utf-8;base64,";
                 if (iface.validator.startRule) {
                     $("#opt-pre-typed").removeAttr("disabled");
@@ -831,7 +846,7 @@ ShExDemo = function() {
                 iface.graph = iface.data.obj; // intuitive alias
                 if (iface.validator) {
                     enableValidatorLink();
-                    enableValidatorInput();
+                    iface.enableValidatorInput();
                 }
                 var was = $("#starting-nodes").val() || [];
                 iface.selectNodesForValidation(was);
