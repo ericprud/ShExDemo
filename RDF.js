@@ -899,7 +899,7 @@ RDF = {
             triplesMatching: function (s, p, o) {
                 throw "QueryDB.triplesMatching not implemented";
             },
-            triplesMatching_async: function (s, p, o) {
+            triplesMatching_async: function (s, p, o, validatorStuff) {
                 var _queryDB = this;
                 var cacheSubject = (s && p && !o && cacheSize != 0);
                 var sStr = s.toString();
@@ -914,11 +914,20 @@ RDF = {
                         return _queryDB.slaveDB.triplesMatching(s, p, o);
                     });
                 } else {
-                    var pattern = "CONSTRUCT WHERE {" +
-                        " " + (s ? sStr : "?s") +
+                    var context = '';
+                    if (s._ === "BNode") {
+                        for (var i = validatorStuff.pointStack.length-1; i; --i) {
+                            context += "?s"+i+" "+validatorStuff.pointStack[i][0].toString()+" ?s"+(i-1)+" .\n";
+                            if (validatorStuff.pointStack[i][1]._ === "IRI")
+                                break;
+                        }
+                    }
+                    var pattern = "CONSTRUCT WHERE {" + context +
+                        " " + (s ? (s._ === "BNode" ? "?s0" : sStr) : "?s") +
                         " " + (!cacheSubject && p ? p.toString() : "?p") +
                         " " + (o ? o.toString() : "?o") +
                         " }";
+                    console.log(pattern);
                     var results;
                     var p1 = this.sparqlInterface.execute(pattern, {async: true, done: function (r) {
                         results = r;
@@ -1222,7 +1231,17 @@ RDF = {
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             var ret = new RDF.ValRes();
             schema.dispatch('enter', rule.codes, rule, t);
-            return schema.validatePoint(point, this.label, db, validatorStuff, true).
+            var nestedValidatorStuff = {pointStack: []};
+            Object.keys(validatorStuff).forEach(function (k) {
+                if (k != "pointStack")
+                    nestedValidatorStuff[k] = validatorStuff[k];
+            });
+            validatorStuff.pointStack.forEach(function (elt) {
+                nestedValidatorStuff.pointStack.push(elt);
+            });
+            nestedValidatorStuff.pointStack.push([rule.nameClass, point]);
+            console.dir([point, this.label.toString(), db, validatorStuff]);
+            return schema.validatePoint(point, this.label, db, nestedValidatorStuff, true).
                 then(function (r) {
                     schema.dispatch('exit', rule.codes, rule, r);
                     ret.status = r.status;
@@ -1662,7 +1681,8 @@ RDF = {
             var _AtomicRule = this;
             return db.triplesMatching_async(this.reversed ? null : point, 
                                             this.nameClass._ === 'NameTerm' ? this.nameClass.term : null,
-                                            this.reversed ? point : null).
+                                            this.reversed ? point : null,
+                                            validatorStuff).
                 then(function (matchName) {
                     matchName = matchName.filter(function (t) {
                         return _AtomicRule.nameClass.match(t.p);
@@ -3484,7 +3504,6 @@ RDF = {
                     closedSubGraph = db.triplesMatching(point, null, null); // !!!
 
                 var rule = subShapes ? this.getRuleMapClosure(as) : this.ruleMap[asStr];
-
                 p = rule.validate(this, point, false, db, validatorStuff);
 
                 // Make sure we used all of the closedSubGraph.

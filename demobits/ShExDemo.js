@@ -933,9 +933,11 @@ ShExDemo = function() {
                                           (iface.validator.startRule._ == "BNode"
                                            ? "schema start rule"
                                            : iface.validator.startRule.toString()) + ".");
+                            var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0());
                             var p2 = iface.validator.validate(startingNode, iface.validator.startRule, iface.graph,
                                                               {iriResolver: iface.schema.iriResolver,
-                                                               closedShapes: $("#opt-closed-shapes").is(":checked")}, true);
+                                                               closedShapes: $("#opt-closed-shapes").is(":checked"),
+                                                               pointStack: [[instSh, startingNode]]}, true);
                             p2.then(function(r) {
                                 if (r.passed())
                                     $("#validation-messages").append($('<div/>'
@@ -1075,7 +1077,6 @@ ShExDemo = function() {
         // sparqlInterface: URL of query engine
         validateOverSPARQL: function () {
             var nodes = $("#starting-nodes").val();
-            debugger;
             iface.parseMessage("#data .now").addClass("progress")
                 .text("Validating " + nodes.length + " node" + (nodes.length === 1 ? "" : "s") +
                       " at " + iface.graph.sparqlInterface.getURL() + "...");
