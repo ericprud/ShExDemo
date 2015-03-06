@@ -924,14 +924,14 @@ RDF = {
                         results = r;
                     }});
                     var p2 = p1.then(function (results) {
-                    var ret = results.obj.slice();
-                    _queryDB._seen += ret.length;
-                    if (cacheSubject) {
-                        ret.forEach(function (t) { _queryDB.slaveDB.push(t); });
-                        return _queryDB.slaveDB.triplesMatching(s, p, o);
-                    } else {
-                        return ret;
-                    }
+                        var ret = results.obj.slice();
+                        _queryDB._seen += ret.length;
+                        if (cacheSubject) {
+                            ret.forEach(function (t) { _queryDB.slaveDB.push(t); });
+                            return _queryDB.slaveDB.triplesMatching(s, p, o);
+                        } else {
+                            return ret;
+                        }
                     }).catch(function (pair) {
                         var body = pair[0], jqXHR = pair[1];
                         throw RDF.StructuredError(
@@ -1224,13 +1224,13 @@ RDF = {
             schema.dispatch('enter', rule.codes, rule, t);
             return schema.validatePoint(point, this.label, db, validatorStuff, true).
                 then(function (r) {
-            schema.dispatch('exit', rule.codes, rule, r);
-            ret.status = r.status;
-            if (r.passed())
-                { ret.status = r.status; ret.matchedTree(rule, t, r); }
-            else
-                { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatchTree(rule, t, r); }
-            return ret;
+                    schema.dispatch('exit', rule.codes, rule, r);
+                    ret.status = r.status;
+                    if (r.passed())
+                    { ret.status = r.status; ret.matchedTree(rule, t, r); }
+                    else
+                    { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatchTree(rule, t, r); }
+                    return ret;
                 });
         },
         this.SPARQLobject = function (prefixes) {
@@ -1661,79 +1661,79 @@ RDF = {
             ret.status = RDF.DISPOSITION.PASS;
             var _AtomicRule = this;
             return db.triplesMatching_async(this.reversed ? null : point, 
-                                               this.nameClass._ === 'NameTerm' ? this.nameClass.term : null,
-                                               this.reversed ? point : null).
+                                            this.nameClass._ === 'NameTerm' ? this.nameClass.term : null,
+                                            this.reversed ? point : null).
                 then(function (matchName) {
                     matchName = matchName.filter(function (t) {
-                                                   return _AtomicRule.nameClass.match(t.p);
-                                               });
+                        return _AtomicRule.nameClass.match(t.p);
+                    });
                     var pet = null;
-            if (inOpt && matchName.length === 0)
-                { ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE; ret.matchedEmpty(_AtomicRule);
-                  pet = Promise.resolve(ret);
-                }
-            else if (matchName.length < _AtomicRule.min)
-                { ret.status = RDF.DISPOSITION.FAIL; ret.error_belowMin(_AtomicRule.min, _AtomicRule);
-                  pet = Promise.resolve(ret);
-                }
-//             else if (matchName.length > _AtomicRule.max)
-//                 { ret.status = RDF.DISPOSITION.FAIL; ret.error_aboveMax(_AtomicRule.max, _AtomicRule, matchName[_AtomicRule.max]); }
-            else {
-                var passes = [];
-                var fails = [];
-                var promises = [];
-                for (var i = 0; i < matchName.length; ++i) {
-                    var t = matchName[i];
-                    if (_AtomicRule.valueClass._ == 'ValueReference')
-                        schema.dispatch('link', _AtomicRule.codes, null, t);
-var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.reversed ? t.s : t.o, db, validatorStuff);
+                    if (inOpt && matchName.length === 0)
+                    { ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE; ret.matchedEmpty(_AtomicRule);
+                      pet = Promise.resolve(ret);
+                    }
+                    else if (matchName.length < _AtomicRule.min)
+                    { ret.status = RDF.DISPOSITION.FAIL; ret.error_belowMin(_AtomicRule.min, _AtomicRule);
+                      pet = Promise.resolve(ret);
+                    }
+                    //             else if (matchName.length > _AtomicRule.max)
+                    //                 { ret.status = RDF.DISPOSITION.FAIL; ret.error_aboveMax(_AtomicRule.max, _AtomicRule, matchName[_AtomicRule.max]); }
+                    else {
+                        var passes = [];
+                        var fails = [];
+                        var promises = [];
+                        for (var i = 0; i < matchName.length; ++i) {
+                            var t = matchName[i];
+                            if (_AtomicRule.valueClass._ == 'ValueReference')
+                                schema.dispatch('link', _AtomicRule.codes, null, t);
+                            var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.reversed ? t.s : t.o, db, validatorStuff);
                             px.
-                        then(function (r) {
-                    if (_AtomicRule.valueClass._ != 'ValueReference')
-                        schema.dispatch('visit', _AtomicRule.codes, r, t);
-                    if (!r.passed() ||
-                        schema.dispatch('post', _AtomicRule.codes, r, t) == RDF.DISPOSITION.FAIL)
-                        fails.push({t:t, r:r});
-                    else
-                        passes.push({t:t, r:r});
-                        })
-                    promises.push(px
-                        );
-                }
-                pet = Promise.all(promises).then(function () {
-                if (inOpt && passes.length === 0) {
-                    ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
-                    ret.matchedEmpty(_AtomicRule);
-                } else if (passes.length < _AtomicRule.min) {
-                    ret.status = RDF.DISPOSITION.FAIL;
-                    ret.error_belowMin(_AtomicRule.min, _AtomicRule);
-                } else if (_AtomicRule.max !== null && passes.length > _AtomicRule.max) {
-                    ret.status = RDF.DISPOSITION.FAIL;
-                    ret.error_aboveMax(_AtomicRule.max, _AtomicRule, passes[_AtomicRule.max].r);
-                }
-                if (ret.status == RDF.DISPOSITION.FAIL) {
-                    for (var iFails1 = 0; iFails1 < fails.length; ++iFails1)
-                        ret.add(fails[iFails1].r);
-                } else {
-                    for (var iPasses = 0; iPasses < passes.length; ++iPasses)
-                        ret.add(passes[iPasses].r);
-                    for (var iFails2 = 0; iFails2 < fails.length; ++iFails2)
-                        ret.missed(fails[iFails2].r);
-                }
-                    return ret;
-                });
-            }
+                                then(function (r) {
+                                    if (_AtomicRule.valueClass._ != 'ValueReference')
+                                        schema.dispatch('visit', _AtomicRule.codes, r, t);
+                                    if (!r.passed() ||
+                                        schema.dispatch('post', _AtomicRule.codes, r, t) == RDF.DISPOSITION.FAIL)
+                                        fails.push({t:t, r:r});
+                                    else
+                                        passes.push({t:t, r:r});
+                                })
+                            promises.push(px
+                                         );
+                        }
+                        pet = Promise.all(promises).then(function () {
+                            if (inOpt && passes.length === 0) {
+                                ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
+                                ret.matchedEmpty(_AtomicRule);
+                            } else if (passes.length < _AtomicRule.min) {
+                                ret.status = RDF.DISPOSITION.FAIL;
+                                ret.error_belowMin(_AtomicRule.min, _AtomicRule);
+                            } else if (_AtomicRule.max !== null && passes.length > _AtomicRule.max) {
+                                ret.status = RDF.DISPOSITION.FAIL;
+                                ret.error_aboveMax(_AtomicRule.max, _AtomicRule, passes[_AtomicRule.max].r);
+                            }
+                            if (ret.status == RDF.DISPOSITION.FAIL) {
+                                for (var iFails1 = 0; iFails1 < fails.length; ++iFails1)
+                                    ret.add(fails[iFails1].r);
+                            } else {
+                                for (var iPasses = 0; iPasses < passes.length; ++iPasses)
+                                    ret.add(passes[iPasses].r);
+                                for (var iFails2 = 0; iFails2 < fails.length; ++iFails2)
+                                    ret.missed(fails[iFails2].r);
+                            }
+                            return ret;
+                        });
+                    }
                     pet.then(function () {
-            if (_AtomicRule.negated) {
-                if (ret.status == RDF.DISPOSITION.FAIL) {
-                    ret.status = RDF.DISPOSITION.PASS;
-                    ret.errors = [];
-                } else if (ret.status == RDF.DISPOSITION.PASS) {
-                    ret.status = RDF.DISPOSITION.FAIL;
-                    ret.error_aboveMax(0, _AtomicRule, matchName[0]); // !! take a triple from passes
-                }
-            }
-            return ret;
+                        if (_AtomicRule.negated) {
+                            if (ret.status == RDF.DISPOSITION.FAIL) {
+                                ret.status = RDF.DISPOSITION.PASS;
+                                ret.errors = [];
+                            } else if (ret.status == RDF.DISPOSITION.PASS) {
+                                ret.status = RDF.DISPOSITION.FAIL;
+                                ret.error_aboveMax(0, _AtomicRule, matchName[0]); // !! take a triple from passes
+                            }
+                        }
+                        return ret;
                     });
                     return pet;
                 });
@@ -1900,11 +1900,11 @@ var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.rev
             if (inOpt && matchName.length === 0)
                 { ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE; ret.matchedEmpty(this);
                   return Promise.resolve(ret);
- }
+                }
             else if (matchName.length < this.min)
                 { ret.status = RDF.DISPOSITION.FAIL; ret.error_belowMin(this.min, this);
                   return Promise.resolve(ret);
- }
+                }
 //             else if (matchName.length > this.max)
 //                 { ret.status = RDF.DISPOSITION.FAIL; ret.error_aboveMax(this.max, this, matchName[this.max]); }
             else {
@@ -1917,30 +1917,30 @@ var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.rev
                     if (this.valueClass._ == 'ValueReference')
                         schema.dispatch('link', this.codes, r, t);
                     promises.push(this.valueClass.validate(schema, this, t, s, db, validatorStuff).
-                        then(function (v) {
-                    if (this.valueClass._ != 'ValueReference')
-                        schema.dispatch('visit', this.codes, r, t);
-                    if (r.passed() &&
-                        schema.dispatch('post', this.codes, r, t) != RDF.DISPOSITION.FAIL)
-                        passes.push({t:t, r:r});
-                        }));
+                                  then(function (v) {
+                                      if (this.valueClass._ != 'ValueReference')
+                                          schema.dispatch('visit', this.codes, r, t);
+                                      if (r.passed() &&
+                                          schema.dispatch('post', this.codes, r, t) != RDF.DISPOSITION.FAIL)
+                                          passes.push({t:t, r:r});
+                                  }));
                 }
                 return Promise.all(function () {
-                if (inOpt && passes.length === 0) {
-                    ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
-                    ret.matchedEmpty(this);
-                } else if (passes.length < this.min) {
-                    ret.status = RDF.DISPOSITION.FAIL;
-                    ret.error_belowMin(this.min, this);
-                } else if (this.max !== null && passes.length > this.max) {
-                    ret.status = RDF.DISPOSITION.FAIL;
-                    ret.error_aboveMax(this.max, this, passes[this.max].r);
-                }
-                if (ret.status != RDF.DISPOSITION.FAIL)
-                    for (var iPasses = 0; iPasses < passes.length; ++iPasses)
-                        ret.add(passes[iPasses].r);
+                    if (inOpt && passes.length === 0) {
+                        ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
+                        ret.matchedEmpty(this);
+                    } else if (passes.length < this.min) {
+                        ret.status = RDF.DISPOSITION.FAIL;
+                        ret.error_belowMin(this.min, this);
+                    } else if (this.max !== null && passes.length > this.max) {
+                        ret.status = RDF.DISPOSITION.FAIL;
+                        ret.error_aboveMax(this.max, this, passes[this.max].r);
+                    }
+                    if (ret.status != RDF.DISPOSITION.FAIL)
+                        for (var iPasses = 0; iPasses < passes.length; ++iPasses)
+                            ret.add(passes[iPasses].r);
                     return ret;
-});
+                });
             }
             return ret;
         };
@@ -2086,18 +2086,18 @@ var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.rev
             schema.dispatch('enter', this.codes, this, {o:point}); // !! lie! it's the *subject*!
             return this.rule.validate(schema, point, inOpt || this.opt, db, validatorStuff).
                 then(function (v) {
-            schema.dispatch('exit', this.codes, this, null);
-            if (v.status == RDF.DISPOSITION.FAIL || v.status == RDF.DISPOSITION.ZERO)
-                ; // v.status = RDF.DISPOSITION.FAIL; -- avoid dispatch below
-            else if (v.status == RDF.DISPOSITION.NONE) {
-                // if (inOpt) v.status = RDF.DISPOSITION.NONE; else
-                if (this.opt)
-                    v.status = RDF.DISPOSITION.PASS;
-                else
-                    v.status = RDF.DISPOSITION.FAIL;
-            } else if (v.status != RDF.DISPOSITION.FAIL)
-                v.status = schema.dispatch('post', this.codes, v, v.matches);
-            return v;
+                    schema.dispatch('exit', this.codes, this, null);
+                    if (v.status == RDF.DISPOSITION.FAIL || v.status == RDF.DISPOSITION.ZERO)
+                        ; // v.status = RDF.DISPOSITION.FAIL; -- avoid dispatch below
+                    else if (v.status == RDF.DISPOSITION.NONE) {
+                        // if (inOpt) v.status = RDF.DISPOSITION.NONE; else
+                        if (this.opt)
+                            v.status = RDF.DISPOSITION.PASS;
+                        else
+                            v.status = RDF.DISPOSITION.FAIL;
+                    } else if (v.status != RDF.DISPOSITION.FAIL)
+                        v.status = schema.dispatch('post', this.codes, v, v.matches);
+                    return v;
                 });
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
@@ -2285,32 +2285,32 @@ var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.rev
             var promises = [];
             for (var i = 0; i < this.conjoints.length; ++i) {
                 var conj = this.conjoints[i];
-                promises.push(conj.validate(schema, point, inOpt, db, validatorStuff)
-                              .then(function (r) {
-                ret.add(r);
-                if (r.status == RDF.DISPOSITION.FAIL)
-                    seenFail = true;
-                if (r.status == RDF.DISPOSITION.PASS)
-                    // seenPass = true;
-                    passes.push(r);
-                else
-                    allPass = RDF.DISPOSITION.NONE;
-                if (r.status == RDF.DISPOSITION.NONE)
-                    // seenEmpty = true;
-                    empties.push(r);
-                })
-);
+                promises.push(conj.validate(schema, point, inOpt, db, validatorStuff).
+                              then(function (r) {
+                                  ret.add(r);
+                                  if (r.status == RDF.DISPOSITION.FAIL)
+                                      seenFail = true;
+                                  if (r.status == RDF.DISPOSITION.PASS)
+                                      // seenPass = true;
+                                      passes.push(r);
+                                  else
+                                      allPass = RDF.DISPOSITION.NONE;
+                                  if (r.status == RDF.DISPOSITION.NONE)
+                                      // seenEmpty = true;
+                                      empties.push(r);
+                              })
+                             );
             }
             return Promise.all(promises).then(function () {
-            if (passes.length && empties.length) // 
-            { ret.status = RDF.DISPOSITION.FAIL; ret.error_mixedOpt(passes, empties, this); }
-            else if (seenFail)
-                ret.status = RDF.DISPOSITION.FAIL;
-            else if (!passes.length && !empties.length)
-                ret.status = RDF.DISPOSITION.ZERO;
-            else
-                ret.status = allPass;
-            return ret;
+                if (passes.length && empties.length)
+                { ret.status = RDF.DISPOSITION.FAIL; ret.error_mixedOpt(passes, empties, this); }
+                else if (seenFail)
+                    ret.status = RDF.DISPOSITION.FAIL;
+                else if (!passes.length && !empties.length)
+                    ret.status = RDF.DISPOSITION.ZERO;
+                else
+                    ret.status = allPass;
+                return ret;
             });
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
@@ -2446,30 +2446,30 @@ var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.rev
                 var disj = this.disjoints[i];
                 promises.push(disj.validate(schema, point, inOpt, db, validatorStuff).
                               then(function (r) {
-                if (r.status == RDF.DISPOSITION.FAIL)
-                    failures.push(r);
-                else {
-                    allErrors = false;
-                    ret.add(r);
-                    if (r.status == RDF.DISPOSITION.PASS)
-                        ++passCount;
-                    else if (r.status == RDF.DISPOSITION.ZERO)
-                        ++indefCount;
-                }
-                }));
+                                  if (r.status == RDF.DISPOSITION.FAIL)
+                                      failures.push(r);
+                                  else {
+                                      allErrors = false;
+                                      ret.add(r);
+                                      if (r.status == RDF.DISPOSITION.PASS)
+                                          ++passCount;
+                                      else if (r.status == RDF.DISPOSITION.ZERO)
+                                          ++indefCount;
+                                  }
+                              }));
             }
             return Promise.all(promises).then(function () {
-            if (allErrors || passCount > 1)
-                ret.status = RDF.DISPOSITION.FAIL;
-            else if (passCount)
-                ret.status = RDF.DISPOSITION.PASS;
-            else if (indefCount)
-                ret.status = RDF.DISPOSITION.ZERO;
-            else 
-                ret.status = RDF.DISPOSITION.FAIL;
-            if (ret.status === RDF.DISPOSITION.FAIL)
-                ret.error_or(failures, this);
-            return ret;
+                if (allErrors || passCount > 1)
+                    ret.status = RDF.DISPOSITION.FAIL;
+                else if (passCount)
+                    ret.status = RDF.DISPOSITION.PASS;
+                else if (indefCount)
+                    ret.status = RDF.DISPOSITION.ZERO;
+                else
+                    ret.status = RDF.DISPOSITION.FAIL;
+                if (ret.status === RDF.DISPOSITION.FAIL)
+                    ret.error_or(failures, this);
+                return ret;
             });
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
@@ -3489,17 +3489,17 @@ var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.rev
 
                 // Make sure we used all of the closedSubGraph.
                 p.then(function (ret) {
-                if (validatorStuff.closedShapes && ret.passed()) {
-                    var remaining = closedSubGraph.filter(function (t) {
-                        var r = ret.triples();
-                        for (var i = 0; i < r.length; ++i)
-                            if (r[i] === t)
-                                return false;
-                        return true;
-                    });
-                    if (remaining.length)
-                    { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatchExtra(rule, remaining); }
-                }
+                    if (validatorStuff.closedShapes && ret.passed()) {
+                        var remaining = closedSubGraph.filter(function (t) {
+                            var r = ret.triples();
+                            for (var i = 0; i < r.length; ++i)
+                                if (r[i] === t)
+                                    return false;
+                            return true;
+                        });
+                        if (remaining.length)
+                        { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatchExtra(rule, remaining); }
+                    }
                 });
                 this.termResults[key] = p;
             }
@@ -3509,20 +3509,20 @@ var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.rev
         this.closeShapes = function (point, as, db, validatorStuff, subShapes) {
             return this.validatePoint(point, as, db, validatorStuff, subShapes).
                 then(function (ret) {
-            if (ret.status == RDF.DISPOSITION.PASS) {
-                var seen = ret.triples();
-                var missed = ret.misses.filter(function (m) { // triplesMatch
-                    return seen.filter(function (t) {
-                        return m.triple.toString() == t.toString();
-                    }).length ? false : true;
-                })
-                if (missed.length) {
-                    ret.status = RDF.DISPOSITION.FAIL;
-                    ret.errors = missed;
-                }
-            }
-            return ret;
-            });
+                    if (ret.status == RDF.DISPOSITION.PASS) {
+                        var seen = ret.triples();
+                        var missed = ret.misses.filter(function (m) { // triplesMatch
+                            return seen.filter(function (t) {
+                                return m.triple.toString() == t.toString();
+                            }).length ? false : true;
+                        })
+                        if (missed.length) {
+                            ret.status = RDF.DISPOSITION.FAIL;
+                            ret.errors = missed;
+                        }
+                    }
+                    return ret;
+                });
         };
 
         // usual interface for validating a pointed graph
@@ -3574,23 +3574,23 @@ var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.rev
                         var closedSubGraph = db.triplesMatching(s, null, null);
                         var p2 = schema.validate(s, ruleLabel, db, validatorStuff, false);
                         p2.then(function (res) {
-                        // If it passed or is indeterminate,
-                        if (res.status !== RDF.DISPOSITION.FAIL) {
+                            // If it passed or is indeterminate,
+                            if (res.status !== RDF.DISPOSITION.FAIL) {
 
-                            // record the success.
-                            RDF.message(s.toString() + " is a " + ruleLabel.toString());
-                            var t = RDF.Triple(s, RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0()), ruleLabel);
-                            ret.matchedTree(schema.ruleMap[ruleLabel], t, res);
-                        }
+                                // record the success.
+                                RDF.message(s.toString() + " is a " + ruleLabel.toString());
+                                var t = RDF.Triple(s, RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0()), ruleLabel);
+                                ret.matchedTree(schema.ruleMap[ruleLabel], t, res);
+                            }
                         }).catch(function (e) { console.dir(e); });
                         promises.push(p2);
                     }
                 });
             });
             return Promise.all(promises).then(function () {
-            for (var handler in schema.handlers)
-                if ('endFindTypes' in schema.handlers[handler])
-                    schema.handlers[handler]['endFindTypes']();
+                for (var handler in schema.handlers)
+                    if ('endFindTypes' in schema.handlers[handler])
+                        schema.handlers[handler]['endFindTypes']();
                 return ret;
             });
         };
