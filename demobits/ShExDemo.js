@@ -964,9 +964,9 @@ ShExDemo = function() {
                     iface.message("looking for types");
                     p = iface.validator.findTypes(iface.graph, {iriResolver: iface.schema.iriResolver,
                                                                 closedShapes: $("#opt-closed-shapes").is(":checked")}).
-			then(function(r) {
-			    validationResult = r;
-			});
+                        then(function(r) {
+                            validationResult = r;
+                        });
                 }
                 p.then(function (r) {
                     var timeAfter = (new Date).getTime();
@@ -1059,8 +1059,8 @@ ShExDemo = function() {
                         e.toHTML() :
                         $('<div/>').text(e).html();
                     iface.parseMessage("#data .now").addClass("error").empty().
-		        text("Failed to access data.");
-		    $("#validation-messages").empty().
+                        text("Failed to access data.");
+                    $("#validation-messages").empty().
                         append($("<span class='error'>error: "+
                                  html+
                                  "</span><br>"));
