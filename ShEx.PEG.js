@@ -351,9 +351,11 @@ PNAME_LN = pre:PNAME_NS l:PN_LOCAL {
     return {width: pre.length+1+l.length, prefix:pre, lex:l};
 }
 
-BLANK_NODE_LABEL = '_:' first:[a-zA-Z_] rest:[a-zA-Z0-9_]* {
+BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL2* {
     return RDF.BNode(bnodeScope.uniqueLabel(first+rest.join('')), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
 }
+BLANK_NODE_LABEL2 = l:'.' r:BLANK_NODE_LABEL2 { return l+r; }
+          / l:PN_CHARS r:BLANK_NODE_LABEL2? { return r ? l+r : l; }
 LANGTAG          = '@' s:([a-zA-Z]+ ('-' [a-zA-Z0-9]+)*) {
     s[1].splice(0, 0, '');
     var str = s[0].join('')+s[1].reduce(function(a,b){return a+b[0]+b[1].join('');});
