@@ -1234,15 +1234,7 @@ RDF = {
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             var ret = new RDF.ValRes();
             schema.dispatch('enter', rule.codes, rule, t);
-            var nestedValidatorStuff = {pointStack: []};
-            Object.keys(validatorStuff).forEach(function (k) {
-                if (k != "pointStack")
-                    nestedValidatorStuff[k] = validatorStuff[k];
-            });
-            validatorStuff.pointStack.forEach(function (elt) {
-                nestedValidatorStuff.pointStack.push(elt);
-            });
-            nestedValidatorStuff.pointStack.push([rule.nameClass.term, point]);
+            var nestedValidatorStuff = validatorStuff.push(point, rule.nameClass.term);
             return schema.validatePoint(point, this.label, db, nestedValidatorStuff, true).
                 then(function (r) {
                     schema.dispatch('exit', rule.codes, rule, r);
@@ -3570,15 +3562,10 @@ RDF = {
         };
 
         // usual interface for finding types in a graph
-        this.findTypes = function (db, validatorStuff) {
+        this.findTypes = function (db, subjects, validatorStuff) {
             var ret = new RDF.ValRes(); // accumulate validation successes.
             ret.status = RDF.DISPOSITION.PASS;
 
-            // Get all of the subject nodes.
-            // Note that this dataset has different objects for each
-            // lexical instantiation of an RDF node so we key on
-            // the string (N-Triples) representations.
-            var subjects = db.uniqueSubjects();
             for (var handler in this.handlers)
                 if ('beginFindTypes' in this.handlers[handler])
                     this.handlers[handler]['beginFindTypes']();
@@ -3592,8 +3579,11 @@ RDF = {
                     // if the labeled rule not VIRTUAL,
                     if (!schema.isVirtualShape[ruleLabel.toString()]) {
 
-                        var closedSubGraph = db.triplesMatching(s, null, null);
-                        var p2 = schema.validate(s, ruleLabel, db, validatorStuff, false);
+                        // var closedSubGraph = db.triplesMatching(s, null, null);
+
+                        var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0());
+                        var nestedValidatorStuff = validatorStuff.push(s, instSh);
+                        var p2 = schema.validate(s, ruleLabel, db, nestedValidatorStuff, false);
                         p2.then(function (res) {
                             // If it passed or is indeterminate,
                             if (res.status !== RDF.DISPOSITION.FAIL) {
@@ -3603,7 +3593,12 @@ RDF = {
                                 var t = RDF.Triple(s, RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0()), ruleLabel);
                                 ret.matchedTree(schema.ruleMap[ruleLabel], t, res);
                             }
-                        }).catch(function (e) { console.dir(e); });
+                        }).catch(function (e) {
+                            console.dir(e);
+                            $("#validation-messages").append($('<div/>'
+                                                               + "<span class='error'>"+e+"</span>"
+                                                               + "<br/>"));
+                        });
                         promises.push(p2);
                     }
                 });
@@ -4211,6 +4206,23 @@ SELECT ?s ?p ?o {\n\
             ret += this.matches.map(function (m) { return m.toHTML(depth+1, schemaIdMap, dataIdMap, solutions, classNames); }).join("\n");
             return ret + "\n" + p + "}";
         }
+    },
+
+    ValidatorStuff: function (iriResolver, closedShapes) {
+        return {
+            _: 'ValidatorStuff',
+            iriResolver: iriResolver,
+            closedShapes: closedShapes,
+            pointStack: [],
+            push: function (node, predicate) {
+                var nestedValidatorStuff = RDF.ValidatorStuff(this.iriResolver, this.closedShapes);
+                this.pointStack.forEach(function (elt) {
+                    nestedValidatorStuff.pointStack.push(elt);
+                });
+                nestedValidatorStuff.pointStack.push([predicate, node]);
+                return nestedValidatorStuff;
+            }
+        };
     },
 
 //    curSchema: new this.Schema()
