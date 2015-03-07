@@ -340,8 +340,8 @@ RDF = {
 
     // Three kinds of position. Not needed in the long run, but useful for recording what's expected.
     Position5: function (_orig, line, column, offset, width) {
-        if (Math.abs(_orig.length - width) > 1)
-            RDF.message(new Error("'"+_orig+"'.length = "+_orig.length+" != "+width));
+        // if (Math.abs(_orig.length - width) > 1)
+        //     RDF.message(new Error("'"+_orig+"'.length = "+_orig.length+" != "+width));
         return { _orig:_orig, line:line, column:column, offset:offset, width:width,
                  origText: function () { return this._orig; }
                };
