@@ -916,10 +916,13 @@ RDF = {
                 } else {
                     var context = '';
                     if (s._ === "BNode") {
-                        for (var i = validatorStuff.pointStack.length-1; i; --i) {
-                            context += "?s"+i+" "+validatorStuff.pointStack[i][0].toString()+" ?s"+(i-1)+" .\n";
-                            if (validatorStuff.pointStack[i][1]._ === "IRI")
-                                break;
+                        debugger;
+                        var t = validatorStuff.pointStack; // for readability
+                        for (var i = t.length-1; i && t[i][1]._ === "BNode"; --i) {
+                            context +=
+                                (t[i-1][1]._ === "IRI" ? t[i-1][1].toString() : ("?s"+i))+
+                                " "+t[i][0].toString()+
+                                " ?s"+(i-1)+" .\n";
                         }
                     }
                     var pattern = "CONSTRUCT WHERE {" + context +
@@ -1239,8 +1242,7 @@ RDF = {
             validatorStuff.pointStack.forEach(function (elt) {
                 nestedValidatorStuff.pointStack.push(elt);
             });
-            nestedValidatorStuff.pointStack.push([rule.nameClass, point]);
-            console.dir([point, this.label.toString(), db, validatorStuff]);
+            nestedValidatorStuff.pointStack.push([rule.nameClass.term, point]);
             return schema.validatePoint(point, this.label, db, nestedValidatorStuff, true).
                 then(function (r) {
                     schema.dispatch('exit', rule.codes, rule, r);
