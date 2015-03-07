@@ -902,16 +902,21 @@ ShExDemo = function() {
             if (iface.validator.disableJavascript)
                 iface.message("javascript disabled");
 
-            var validationResult
-            if ($("#opt-pre-typed").is(":checked") && !iface.validator.startRule) {
+            var preTyped = $("#opt-pre-typed").is(":checked");
+            var validationResult;
+            if (preTyped && !iface.validator.startRule) {
                 $("#validation-messages").append($('<div/>').html() + "<span class='error'>No schema start rule against which to validate against.</span>" + "<br/>");
             } else {
+                var schema = iface.validator; // shortcut.
+                if (!preTyped)
+                    for (var handler in schema.handlers)
+                        if ('beginFindTypes' in schema.handlers[handler])
+                            schema.handlers[handler]['beginFindTypes']();
                 var startingNodes = $("#starting-nodes").val() || [];
-                if (startingNodes.length > 1) {
+                if (!preTyped || startingNodes.length > 1) {
                     validationResult = new RDF.ValRes(); // aggregate results
                     validationResult.status = RDF.DISPOSITION.PASS;
                 }
-                var schema = iface.validator; // shortcut.
                 var promises = [];
                 startingNodes.forEach(function (startingNode) {
                     if (startingNode.charAt(0) == '_' && startingNode.charAt(1) == ':') {
@@ -933,7 +938,7 @@ ShExDemo = function() {
                                     , RDF.Position0());
                     }
                     var testAgainst =
-                        ($("#opt-pre-typed").is(":checked") && iface.validator.startRule) ?
+                        preTyped ?
                         [iface.validator.startRule] :
                         schema.ruleLabels.map(function (ruleLabel) {
                             return schema.isVirtualShape[ruleLabel.toString()] ?
@@ -952,7 +957,7 @@ ShExDemo = function() {
                                                                              $("#opt-closed-shapes").is(":checked")).
                                                           push(startingNode, instSh), true);
                         p2.then(function(r) {
-                            if ($("#opt-pre-typed").is(":checked") && iface.validator.startRule) {
+                            if (preTyped) {
                                 if (r.passed())
                                     elt.append("<span class='success'>passed</span>");
                                 else
@@ -982,6 +987,11 @@ ShExDemo = function() {
                 });
                 Promise.all(promises).
                     then(function (r) {
+                        if (!preTyped)
+                            for (var handler in schema.handlers)
+                                if ('endFindTypes' in schema.handlers[handler])
+                                    schema.handlers[handler]['endFindTypes']();
+
                         var timeAfter = (new Date).getTime();
 
                         $("#validation-messages")
