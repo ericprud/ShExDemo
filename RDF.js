@@ -1620,8 +1620,8 @@ RDF = {
         };
     },
 
-    AtomicRule: function (negated, reversed, nameClass, valueClass, min, max, codes, _pos) {
-        this._ = 'AtomicRule'; this.negated = negated; this.reversed = reversed; this.nameClass = nameClass; this.valueClass = valueClass; this.min = min; this.max = max; this.codes = codes; this._pos = _pos;
+    AtomicRule: function (negated, reversed, additive, nameClass, valueClass, min, max, codes, _pos) {
+        this._ = 'AtomicRule'; this.negated = negated; this.reversed = reversed; this.additive = additive; this.nameClass = nameClass; this.valueClass = valueClass; this.min = min; this.max = max; this.codes = codes; this._pos = _pos;
         this.ruleID = undefined;
         this.setRuleID = function (ruleID) { this.ruleID = ruleID; };
         this.label = undefined;
@@ -1696,8 +1696,7 @@ RDF = {
                         var passes = [];
                         var fails = [];
                         var promises = [];
-                        for (var i = 0; i < matchName.length; ++i) {
-                            var t = matchName[i];
+                        matchName.forEach(function (t) {
                             if (_AtomicRule.valueClass._ == 'ValueReference')
                                 schema.dispatch('link', _AtomicRule.codes, null, t);
                             var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.reversed ? t.s : t.o, db, validatorStuff);
@@ -1713,7 +1712,7 @@ RDF = {
                                 })
                             promises.push(px
                                          );
-                        }
+                        });
                         pet = Promise.all(promises).then(function () {
                             if (inOpt && passes.length === 0) {
                                 ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
@@ -1732,7 +1731,8 @@ RDF = {
                                 for (var iPasses = 0; iPasses < passes.length; ++iPasses)
                                     ret.add(passes[iPasses].r);
                                 for (var iFails2 = 0; iFails2 < fails.length; ++iFails2)
-                                    ret.missed(fails[iFails2].r);
+                                    if (!_AtomicRule.additive)
+                                        ret.missed(fails[iFails2].r);
                             }
                             return ret;
                         });
