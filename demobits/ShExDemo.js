@@ -946,12 +946,13 @@ ShExDemo = function() {
                                 ruleLabel;
                         }).filter(function (ruleLabel) { return !!ruleLabel; });
                     testAgainst.forEach(function (ruleLabel) {
+                        var pos0 = RDF.Position0();
                         var niceRuleLabel = ruleLabel._ == "BNode" && ruleLabel == iface.validator.startRule ?
                             "schema start rule" :
                             ruleLabel.toString();
                         var elt =
                             iface.message("Validating " + startingNode + " as " + niceRuleLabel + ".");
-                        var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0());
+                        var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", pos0);
                         var p2 = iface.validator.validate(startingNode, ruleLabel, iface.graph,
                                                           RDF.ValidatorStuff(iface.schema.iriResolver,
                                                                              $("#opt-closed-shapes").is(":checked")).
@@ -962,25 +963,33 @@ ShExDemo = function() {
                                     elt.append("<span class='success'>passed</span>");
                                 else
                                     elt.append("<span class='error'>failed</span>");
+                                if (startingNodes.length > 1) {
+                                    validationResult.add(r);
+                                    if (!r.passed())
+                                        validationResult.status = RDF.DISPOSITION.FAIL;
+                                } else
+                                    validationResult = r;
                             }
                             else {
                                 if (r.passed()) {
+                                    // add a fake rule with a value reference for oslc:instanceShape
                                     elt.empty().append($('<div/>').text(startingNode + " is a " + niceRuleLabel + ".").html());
+                                    var fakeRule =
+                                        new RDF.AtomicRule(false, false,
+                                                           new RDF.NameTerm(instSh, pos0),
+                                                           new RDF.ValueReference(ruleLabel, pos0),
+                                                           0, -1, {}, pos0);
+                                    fakeRule.setLabel(RDF.BNode(RDF.Position0()));
+                                    validationResult.matchedTree
+                                    (fakeRule,
+                                     RDF.Triple(RDF.BNode("FindTypesTest", pos0), instSh, startingNode),
+                                     r);
                                 } else {
                                     var br = elt.next();
                                     elt.remove();
                                     br.remove();
                                 }
                             }
-                            //iface.message("failed");
-                            //$("#validation-messages").attr("class", "message error").text("failedXX");
-                            // iface.message("  " + (r.passed() ? "passed" : "<span class='error'>failed</span>"));
-                            if (startingNodes.length > 1) {
-                                validationResult.add(r);
-                                if (!r.passed())
-                                    validationResult.status = RDF.DISPOSITION.FAIL;
-                            } else
-                                validationResult = r;
                         });
                         promises.push(p2);
                     });
