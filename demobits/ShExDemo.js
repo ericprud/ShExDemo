@@ -587,6 +587,17 @@ ShExDemo = function() {
             if (iface.queryParms['closedShapes'] == "true")
                 $("#opt-closed-shapes").prop( "checked", true );
 
+            [["#data-get-url", "dataGetURL"],
+             ["#data-query-endpoint", "dataQueryEndpoint"],
+             ["#data-query-select", "dataQuerySelect"]].forEach(function (pair) {
+                 var selector = pair[0], parm = pair[1];
+                 var val = iface.queryParms[parm];
+                 if (val)
+                     $(selector).val(val);
+             });
+
+
+
             // enablePre parses schema and data and validates if possible.
             if (iface.queryParms['colorize'] == "true") { // switch to pre after unhiding.
                 $("#ctl-colorize").prop( "checked", true );
@@ -651,7 +662,8 @@ ShExDemo = function() {
                 var startingNodes = $("#starting-nodes").val();
                 if (startingNodes)
                     iface.queryParms['starting-nodes'] = startingNodes;
-                delete iface.queryParms['starting-nodes'];
+                else
+                    delete iface.queryParms['starting-nodes'];
             } else {
                 delete iface.queryParms['find-types'];
                 iface.queryParms['starting-nodes'] = [($("#starting-nodes").val() || []).join(' ')];
@@ -666,6 +678,17 @@ ShExDemo = function() {
             } else {
                 delete iface.queryParms['closedShapes'];
             }
+
+            [["#data-get-url", "dataGetURL"],
+             ["#data-query-endpoint", "dataQueryEndpoint"],
+             ["#data-query-select", "dataQuerySelect"]].forEach(function (pair) {
+                 var selector = pair[0], parm = pair[1];
+                 var val = $(selector).val();
+                 if (val)
+                     iface.queryParms[parm] = [val];
+                 else
+                     delete iface.queryParms[parm];
+            });
         },
 
         handleParameterUpdate: function() {
@@ -958,15 +981,23 @@ ShExDemo = function() {
                                                                              $("#opt-closed-shapes").is(":checked")).
                                                           push(startingNode, instSh), true);
                         p2.then(function(r) {
+                            var thisTest = RDF.Triple(RDF.BNode("FindTypesTest", pos0), instSh, startingNode);
+                            var fakeRule =
+                                new RDF.AtomicRule(false, false,
+                                                   new RDF.NameTerm(instSh, pos0),
+                                                   new RDF.ValueReference(ruleLabel, pos0),
+                                                   0, -1, {}, pos0);
+                            fakeRule.setLabel(RDF.BNode(RDF.Position0()));
                             if (preTyped) {
                                 if (r.passed())
                                     elt.append("<span class='success'>passed</span>");
                                 else
                                     elt.append("<span class='error'>failed</span>");
                                 if (startingNodes.length > 1) {
-                                    validationResult.add(r);
-                                    if (!r.passed())
-                                        validationResult.status = RDF.DISPOSITION.FAIL;
+                                    if (r.passed())
+                                        validationResult.matchedTree(fakeRule, thisTest, r);
+                                    else
+                                        validationResult.error_noMatchTree(fakeRule, thisTest, r);
                                 } else
                                     validationResult = r;
                             }
@@ -974,17 +1005,9 @@ ShExDemo = function() {
                                 if (r.passed()) {
                                     // add a fake rule with a value reference for oslc:instanceShape
                                     elt.empty().append($('<div/>').text(startingNode + " is a " + niceRuleLabel + ".").html());
-                                    var fakeRule =
-                                        new RDF.AtomicRule(false, false,
-                                                           new RDF.NameTerm(instSh, pos0),
-                                                           new RDF.ValueReference(ruleLabel, pos0),
-                                                           0, -1, {}, pos0);
-                                    fakeRule.setLabel(RDF.BNode(RDF.Position0()));
-                                    validationResult.matchedTree
-                                    (fakeRule,
-                                     RDF.Triple(RDF.BNode("FindTypesTest", pos0), instSh, startingNode),
-                                     r);
+                                    validationResult.matchedTree (fakeRule, thisTest, r);
                                 } else {
+                                    // Get rid of the message saying were checking this node.
                                     var br = elt.next();
                                     elt.remove();
                                     br.remove();
@@ -1087,18 +1110,19 @@ ShExDemo = function() {
                         generatorInterface('GenN', 'text/plain');
                         generatorInterface('GenR', 'text/plain');
                     }).catch(function (e) {
-                        var html = typeof e == "object" && "_" in e && e._ == "StructuredError" ?
+                        var html =
+                            typeof e == "object" && "_" in e && e._ == "StructuredError" ?
                             e.toHTML() :
                             $('<div/>').text(e).html();
-                        iface.parseMessage("#data .now").addClass("error").empty().
-                            text("Failed to access data.");
+                        iface.parseMessage("#data .now").addClass("error").
+                            append("Failed to access data.");
                         $("#validation-messages").empty().
                             append($("<span class='error'>error: "+
                                      html+
                                      "</span><br>"));
                         //$("#validation-messages").attr("class", "message error").append("error:"+e).append($("<br/>"));
                     }).catch(function (e) {
-                        console.log("uncaught error: " + e);
+                        console.log("uncaught error in error handler: " + e);
                         return e;
                     });
                 iface.updateURL();
@@ -1426,9 +1450,27 @@ ShExDemo = function() {
 
     // Inject a jquery-dependent toHTML into every RDF.StructuredError.
     RDF.StructuredError_proto.toHTML = function () {
-        return this.data.map(function (p) {
-            return p[0] == "code" ? "<pre style='margin: 0;'>"+$('<div/>').text(p[1]).html()+"</pre>" : p[1];
-        }).join("\n");
+        var ob = this;
+        function nest (a) {
+            console.log("str version: "+ob.toString());
+            return a.map(function (p) {
+                if (p[0] == "code")
+                    return "<pre style='margin: 0;'>"+$('<div/>').text(p[1]).html()+"</pre>";
+                if (p[0] == "link")
+                    return "<a href='"+p[1]+"'>"+nest(p[2])+"</a>";
+                if (p[0] == "SyntaxError") {
+                    debugger;
+                    textValue("#data", p[2]);
+                    iface.parseMessage("#data .now").
+                        removeClass("progress").
+                        addClass("error").
+                        append(buildErrorMessage(p[1], "#data", "Data"));
+                    return "see data log";
+                }
+                return ""+p[1];
+            }).join("");
+        };
+        return nest(this.data);
     };
 
     $.fn.slideFadeToggle = function(easing, callback) {

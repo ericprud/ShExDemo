@@ -91,6 +91,7 @@
                 features
                 <ul>
                   <li>recursive pattern: <a href="http://w3.org/brief/NDMx">foaf:knows/foaf:knows</a></li>
+                  <li>remote query: <a href="http://w3.org/brief/NDM0">DBPedia German cities</a> (select Data: Load/Query and then <button style="font-size:.5em">LOAD</button> and <button style="font-size:.5em">VALIDATE</button>)</li>
                 </ul>
               </li>
             </ul>
@@ -469,6 +470,8 @@
                                 }).
                                 catch(function () { // ignore -- failures logged by loadSPARQLResults
                                     // console.log("failed");
+                                }).then(function () {
+                                    interactionInterface.graph.clearCache();
                                 });
                         }
                     } else {
@@ -482,6 +485,8 @@
                 var newQuery = function () {
                     $("#data-query-validate").attr('disabled','disabled');
                     interactionInterface.disableValidatorOutput();
+                    interactionInterface.updateURLParameters();
+                    interactionInterface.updateURL();
                     $("#starting-nodes option").remove();
                     try {
                         $("#starting-nodes").multiselect("refresh");

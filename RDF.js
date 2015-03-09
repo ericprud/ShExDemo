@@ -197,9 +197,18 @@ RDF = {
             _: "StructuredError",
             data: data,
             toString: function () {
-                return data.map(function (p) {
-                    return p[0] == "code" ? "\""+p[1]+"\"" : p[1];
-                }).join("\n");
+                function nest (a) {
+                    return a.map(function (p) {
+                        return p[0] == "code" ?
+                            "\""+p[1]+"\"" :
+                            p[0] == "link" ?
+                            "<"+p[1]+"> {\n"+nest(p[2]).replace(new RegExp("^","gm"),"  ")+"\n}" :
+                            p[0] == "SyntaxError" ?
+                            p[1].column+"."+p[1].line+"("+p[1].offset+"):"+p[1].toString()+" See [[["+p[2].substr(p[1].offset - 20, 40)+"]]]":
+                            p[1];
+                    }).join("\n");
+                };
+                return nest(this.data);
             }
         };
         Object.keys(RDF.StructuredError_proto).map(function (k) {
@@ -768,6 +777,7 @@ RDF = {
                 //contentType: 'text/plain',{turtle,shex}
         }, constructorParms);
         var lastQuery = null;
+        var lastURL = null;
         var done = function () {};
         var fail = function (jqXHR, textStatus, errorThrown) {
             throw "unable to query " + url + "\n" + textStatus + "\n" + errorThrown;
@@ -783,6 +793,7 @@ RDF = {
                 var merge = $.extend({
                     url: url + separator + "query=" + encodeURIComponent(query)
                 }, parms);
+                lastURL = merge.url;
 
                 return new Promise(function (resolve, reject) {
                     $.ajax(merge).then(function (body, textStatus, jqXHR) {
@@ -791,19 +802,25 @@ RDF = {
                             //  c.f. http://tools.ietf.org/html/rfc7230#section-3.2.6
                             var ray = jqXHR.getResponseHeader("content-type").split(/;/)
                                 .map(function (s) { return s.replace(/ /g,''); });
-                            var r = RDF.parseSPARQLResults(body, ray.shift(), ray);
-                            resolve(r);
+                            try {
+                                var r = RDF.parseSPARQLResults(body, ray.shift(), ray);
+                                resolve(r);
+                            } catch (e) {
+                                debugger;
+                                reject([body, e, query]);
+                            }
                         } else {
-                            reject([body, jqXHR]);
+                            reject([body, jqXHR, query]);
                         }
                     }).fail(function (jqXHR, textStatus, errorThrown) {
                         jqXHR.statusText = "connection or CORS failure";
-                        reject(["", jqXHR]);
+                        reject(["", jqXHR, query]);
                     });
                 });
             },
             getURL: function () { return url; },
             getLastQuery: function () { return lastQuery; },
+            getLastURL: function () { return lastURL; },
             done: function (newDone) { done = newDone; return this; },
             fail: function (newFail) { fail = newFail; return this; },
             always: function (newAlways) { always = newAlways; return this; }
@@ -890,12 +907,16 @@ RDF = {
             _: 'QueryDB',
             sparqlInterface: sparqlInterface,
             slaveDB: slaveDB,
-            cacheSize: cacheSize, 
+            cacheSize: cacheSize,
             queryStack: [],
             _seen: 0,
-            cache: {},
             LRU: [], // The Least Recently Used subject is at LRU[0].
             nodes: [],
+            clearCache: function () {
+                this.slaveDB.clear();
+                this.LRU = [];
+                this.nodes = [];
+            },
             triplesMatching: function (s, p, o) {
                 throw "QueryDB.triplesMatching not implemented";
             },
@@ -904,6 +925,20 @@ RDF = {
                 var cacheSubject = (s && p && !o && cacheSize != 0);
                 var sStr = s.toString();
                 var cachedAt = cacheSubject ? this.LRU.indexOf(sStr) : -1;
+                function errorWrapper (rejection) {
+                    var body = rejection[0], e = rejection[1], query = rejection[2];
+                    debugger;
+                    var message =
+                        [["text", "failed to "],
+                         ['link', _queryDB.sparqlInterface.getLastURL(),
+                          [["text", e.constructor.name === "SyntaxError" ? "parse" : "GET"]]],
+                         ["code", query],
+                         ["text", " from " + _queryDB.sparqlInterface.getURL()]
+                        ];
+                    if (e.constructor.name === "SyntaxError")
+                        message.push(["SyntaxError", e, body]);
+                    throw RDF.StructuredError(message);
+                }
                 if (cachedAt != -1) {
                     // We've already cached this subject in slaveDB. Push to top of LRU.
                     this.LRU.splice(cachedAt,1);
@@ -912,11 +947,10 @@ RDF = {
                     this.nodes.push(node);
                     return node[1].then(function () {
                         return _queryDB.slaveDB.triplesMatching(s, p, o);
-                    });
+                    }).catch(errorWrapper);
                 } else {
                     var context = '';
                     if (s._ === "BNode") {
-                        debugger;
                         var t = validatorStuff.pointStack; // for readability
                         for (var i = t.length-1; i && t[i][1]._ === "BNode"; --i) {
                             context +=
@@ -930,7 +964,7 @@ RDF = {
                         " " + (!cacheSubject && p ? p.toString() : "?p") +
                         " " + (o ? o.toString() : "?o") +
                         " }";
-                    console.log(pattern);
+                    // console.log(pattern);
                     var results;
                     var p1 = this.sparqlInterface.execute(pattern, {async: true, done: function (r) {
                         results = r;
@@ -944,14 +978,7 @@ RDF = {
                         } else {
                             return ret;
                         }
-                    }).catch(function (pair) {
-                        var body = pair[0], jqXHR = pair[1];
-                        throw RDF.StructuredError(
-                            [["text", "failed to GET "],
-                             ["code", pattern],
-                             ["text", " from " + _queryDB.sparqlInterface.getURL()]
-                            ]);
-                    });
+                    }).catch(errorWrapper);
                     if (cacheSubject) {
                         this.LRU.push(sStr);
                         this.nodes.push([s, p1]);
