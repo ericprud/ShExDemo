@@ -489,27 +489,33 @@ ShExParser = (function() {
         peg$c256 = { type: "class", value: "[\\u2070-\\u218F]", description: "[\\u2070-\\u218F]" },
         peg$c257 = /^[\u2C00-\u2FEF]/,
         peg$c258 = { type: "class", value: "[\\u2C00-\\u2FEF]", description: "[\\u2C00-\\u2FEF]" },
-        peg$c259 = /^[\u3001-\uD7FF]/,
-        peg$c260 = { type: "class", value: "[\\u3001-\\uD7FF]", description: "[\\u3001-\\uD7FF]" },
+        peg$c259 = /^[\u3001-\uFFFD]/,
+        peg$c260 = { type: "class", value: "[\\u3001-\\uFFFD]", description: "[\\u3001-\\uFFFD]" },
         peg$c261 = "_",
         peg$c262 = { type: "literal", value: "_", description: "\"_\"" },
-        peg$c263 = function(b, r) { return r ? b+r : b; },
-        peg$c264 = function(l, r) { return '%'+l+r; },
-        peg$c265 = /^[A-F]/,
-        peg$c266 = { type: "class", value: "[A-F]", description: "[A-F]" },
-        peg$c267 = /^[a-f]/,
-        peg$c268 = { type: "class", value: "[a-f]", description: "[a-f]" },
-        peg$c269 = /^[_~.!$&'()*+,;=\/?#@%\-]/,
-        peg$c270 = { type: "class", value: "[_~.!$&'()*+,;=\\/?#@%\\-]", description: "[_~.!$&'()*+,;=\\/?#@%\\-]" },
-        peg$c271 = function(x) { return ''; },
-        peg$c272 = /^[ \t\r\n]/,
-        peg$c273 = { type: "class", value: "[ \\t\\r\\n]", description: "[ \\t\\r\\n]" },
-        peg$c274 = function() { return ''; },
-        peg$c275 = "#",
-        peg$c276 = { type: "literal", value: "#", description: "\"#\"" },
-        peg$c277 = /^[^\r\n]/,
-        peg$c278 = { type: "class", value: "[^\\r\\n]", description: "[^\\r\\n]" },
-        peg$c279 = function(comment) { curSchema.addComment(new RDF.Comment(comment.join(''), RDF.Position5(text(), line(), column(), offset(), comment.length+1))); },
+        peg$c263 = /^[\xB7]/,
+        peg$c264 = { type: "class", value: "[\\xB7]", description: "[\\xB7]" },
+        peg$c265 = /^[\u0300-\u036F]/,
+        peg$c266 = { type: "class", value: "[\\u0300-\\u036F]", description: "[\\u0300-\\u036F]" },
+        peg$c267 = /^[\u203F-\u2040]/,
+        peg$c268 = { type: "class", value: "[\\u203F-\\u2040]", description: "[\\u203F-\\u2040]" },
+        peg$c269 = function(b, r) { return r ? b+r : b; },
+        peg$c270 = function(l, r) { return '%'+l+r; },
+        peg$c271 = /^[A-F]/,
+        peg$c272 = { type: "class", value: "[A-F]", description: "[A-F]" },
+        peg$c273 = /^[a-f]/,
+        peg$c274 = { type: "class", value: "[a-f]", description: "[a-f]" },
+        peg$c275 = /^[_~.!$&'()*+,;=\/?#@%\-]/,
+        peg$c276 = { type: "class", value: "[_~.!$&'()*+,;=\\/?#@%\\-]", description: "[_~.!$&'()*+,;=\\/?#@%\\-]" },
+        peg$c277 = function(x) { return ''; },
+        peg$c278 = /^[ \t\r\n]/,
+        peg$c279 = { type: "class", value: "[ \\t\\r\\n]", description: "[ \\t\\r\\n]" },
+        peg$c280 = function() { return ''; },
+        peg$c281 = "#",
+        peg$c282 = { type: "literal", value: "#", description: "\"#\"" },
+        peg$c283 = /^[^\r\n]/,
+        peg$c284 = { type: "class", value: "[^\\r\\n]", description: "[^\\r\\n]" },
+        peg$c285 = function(comment) { curSchema.addComment(new RDF.Comment(comment.join(''), RDF.Position5(text(), line(), column(), offset(), comment.length+1))); },
 
         peg$currPos          = 0,
         peg$reportedPos      = 0,
@@ -5763,6 +5769,33 @@ ShExParser = (function() {
             s0 = peg$FAILED;
             if (peg$silentFails === 0) { peg$fail(peg$c185); }
           }
+          if (s0 === peg$FAILED) {
+            if (peg$c263.test(input.charAt(peg$currPos))) {
+              s0 = input.charAt(peg$currPos);
+              peg$currPos++;
+            } else {
+              s0 = peg$FAILED;
+              if (peg$silentFails === 0) { peg$fail(peg$c264); }
+            }
+            if (s0 === peg$FAILED) {
+              if (peg$c265.test(input.charAt(peg$currPos))) {
+                s0 = input.charAt(peg$currPos);
+                peg$currPos++;
+              } else {
+                s0 = peg$FAILED;
+                if (peg$silentFails === 0) { peg$fail(peg$c266); }
+              }
+              if (s0 === peg$FAILED) {
+                if (peg$c267.test(input.charAt(peg$currPos))) {
+                  s0 = input.charAt(peg$currPos);
+                  peg$currPos++;
+                } else {
+                  s0 = peg$FAILED;
+                  if (peg$silentFails === 0) { peg$fail(peg$c268); }
+                }
+              }
+            }
+          }
         }
       }
 
@@ -5781,7 +5814,7 @@ ShExParser = (function() {
         }
         if (s2 !== peg$FAILED) {
           peg$reportedPos = s0;
-          s1 = peg$c263(s1, s2);
+          s1 = peg$c269(s1, s2);
           s0 = s1;
         } else {
           peg$currPos = s0;
@@ -5990,7 +6023,7 @@ ShExParser = (function() {
           s3 = peg$parseHEX();
           if (s3 !== peg$FAILED) {
             peg$reportedPos = s0;
-            s1 = peg$c264(s2, s3);
+            s1 = peg$c270(s2, s3);
             s0 = s1;
           } else {
             peg$currPos = s0;
@@ -6019,20 +6052,20 @@ ShExParser = (function() {
         if (peg$silentFails === 0) { peg$fail(peg$c185); }
       }
       if (s0 === peg$FAILED) {
-        if (peg$c265.test(input.charAt(peg$currPos))) {
+        if (peg$c271.test(input.charAt(peg$currPos))) {
           s0 = input.charAt(peg$currPos);
           peg$currPos++;
         } else {
           s0 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c266); }
+          if (peg$silentFails === 0) { peg$fail(peg$c272); }
         }
         if (s0 === peg$FAILED) {
-          if (peg$c267.test(input.charAt(peg$currPos))) {
+          if (peg$c273.test(input.charAt(peg$currPos))) {
             s0 = input.charAt(peg$currPos);
             peg$currPos++;
           } else {
             s0 = peg$FAILED;
-            if (peg$silentFails === 0) { peg$fail(peg$c268); }
+            if (peg$silentFails === 0) { peg$fail(peg$c274); }
           }
         }
       }
@@ -6052,12 +6085,12 @@ ShExParser = (function() {
         if (peg$silentFails === 0) { peg$fail(peg$c125); }
       }
       if (s1 !== peg$FAILED) {
-        if (peg$c269.test(input.charAt(peg$currPos))) {
+        if (peg$c275.test(input.charAt(peg$currPos))) {
           s2 = input.charAt(peg$currPos);
           peg$currPos++;
         } else {
           s2 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c270); }
+          if (peg$silentFails === 0) { peg$fail(peg$c276); }
         }
         if (s2 !== peg$FAILED) {
           peg$reportedPos = s0;
@@ -6093,7 +6126,7 @@ ShExParser = (function() {
       }
       if (s1 !== peg$FAILED) {
         peg$reportedPos = s0;
-        s1 = peg$c271(s1);
+        s1 = peg$c277(s1);
       }
       s0 = s1;
 
@@ -6105,22 +6138,22 @@ ShExParser = (function() {
 
       s0 = peg$currPos;
       s1 = [];
-      if (peg$c272.test(input.charAt(peg$currPos))) {
+      if (peg$c278.test(input.charAt(peg$currPos))) {
         s2 = input.charAt(peg$currPos);
         peg$currPos++;
       } else {
         s2 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c273); }
+        if (peg$silentFails === 0) { peg$fail(peg$c279); }
       }
       if (s2 !== peg$FAILED) {
         while (s2 !== peg$FAILED) {
           s1.push(s2);
-          if (peg$c272.test(input.charAt(peg$currPos))) {
+          if (peg$c278.test(input.charAt(peg$currPos))) {
             s2 = input.charAt(peg$currPos);
             peg$currPos++;
           } else {
             s2 = peg$FAILED;
-            if (peg$silentFails === 0) { peg$fail(peg$c273); }
+            if (peg$silentFails === 0) { peg$fail(peg$c279); }
           }
         }
       } else {
@@ -6128,7 +6161,7 @@ ShExParser = (function() {
       }
       if (s1 !== peg$FAILED) {
         peg$reportedPos = s0;
-        s1 = peg$c274();
+        s1 = peg$c280();
       }
       s0 = s1;
 
@@ -6140,34 +6173,34 @@ ShExParser = (function() {
 
       s0 = peg$currPos;
       if (input.charCodeAt(peg$currPos) === 35) {
-        s1 = peg$c275;
+        s1 = peg$c281;
         peg$currPos++;
       } else {
         s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c276); }
+        if (peg$silentFails === 0) { peg$fail(peg$c282); }
       }
       if (s1 !== peg$FAILED) {
         s2 = [];
-        if (peg$c277.test(input.charAt(peg$currPos))) {
+        if (peg$c283.test(input.charAt(peg$currPos))) {
           s3 = input.charAt(peg$currPos);
           peg$currPos++;
         } else {
           s3 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c278); }
+          if (peg$silentFails === 0) { peg$fail(peg$c284); }
         }
         while (s3 !== peg$FAILED) {
           s2.push(s3);
-          if (peg$c277.test(input.charAt(peg$currPos))) {
+          if (peg$c283.test(input.charAt(peg$currPos))) {
             s3 = input.charAt(peg$currPos);
             peg$currPos++;
           } else {
             s3 = peg$FAILED;
-            if (peg$silentFails === 0) { peg$fail(peg$c278); }
+            if (peg$silentFails === 0) { peg$fail(peg$c284); }
           }
         }
         if (s2 !== peg$FAILED) {
           peg$reportedPos = s0;
-          s1 = peg$c279(s2);
+          s1 = peg$c285(s2);
           s0 = s1;
         } else {
           peg$currPos = s0;
@@ -6240,4 +6273,3 @@ ShExParser = (function() {
     parse:       parse
   };
 })();
-
