@@ -426,16 +426,20 @@ ShExDemo = function() {
         },
         loadSPARQLResults: function (query, sparqlInterface, cacheSize) {
             var endpoint = sparqlInterface.getURL();
+            iface.disableValidatorOutput();
             iface.parseMessage("#data .now").addClass("progress")
                 .text("Loading nodes from " + endpoint + "...");
             return sparqlInterface.execute(query, {
                 // override error
             }).then(function (r) {
-                iface.enableValidatorInput()
-                // // Loading non-endorsed links disables javascript extensions.
-                // if (/^([a-z]+:)?\/\//g.test(endpoint))
-                //     $('#opt-disable-js').attr('checked', true);
 
+                console.log("Finding unique nodes in "+r.solutions.length+" results...");
+                iface.parseMessage("#data .now").addClass("progress")
+                    .text("Finding unique nodes in "+r.solutions.length+" results...");
+                iface.parseMessage("#data .log")
+                    .append("Finding unique nodes in "+r.solutions.length+" results...<br/>");
+                return r;
+            }).then(function (r) {
                 var nodes = [];
                 var m = {};
                 r.solutions.forEach(function (soln) {
@@ -448,26 +452,36 @@ ShExDemo = function() {
                         }
                     }
                 });
+
                 if (r.solutions.length/nodes.length > 1.5)
                     iface.parseMessage("#data .log")
                     .append($('<div/>').html() + "<span class='info'>Found "+nodes.length+" unique nodes out of "+r.solutions.length+" solutions, you may want to SELECT DISTINCT or SELECT REDUCED for more efficiency.</span>" + "<br/>");
+                console.log("Building selection interface...");
+                iface.parseMessage("#data .log")
+                    .append("Building selection interface...<br/>");
+                iface.parseMessage("#data .now").addClass("progress")
+                    .text("Building selection interface...");
+                return nodes;
+            }).then(function (nodes) {
                 iface.graph = RDF.QueryDB(sparqlInterface, RDF.Dataset(), cacheSize);
                 $("#starting-nodes option").remove();
-                nodes.forEach(function (node) {
+                var newElts = nodes.map(function (node) {
                     var text = node.toString();
-                    $("#starting-nodes").append(
-                        $("<option value='"
-                          +(text.replace(/&/g, "&amp;").replace(/'/g, "&quot;"))
-                          +"' selected='selected'>"
-                          +(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
-                          +"</option>"));
+                    var amp = text.replace(/&/g, "&amp;");
+                    return "<option value='"
+                        +amp.replace(/'/g, "&quot;")
+                        +"' selected='selected'>"
+                        +amp.replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                        +"</option>";
                 });
+                $("#starting-nodes").append(newElts.join(""));
                 $("#starting-nodes").multiselect("refresh");
                 iface.dataSource = iface.dataSources.Query;
+                console.log("Loaded " + nodes.length + " nodes from " + endpoint);
                 iface.parseMessage("#data .now").removeClass("progress")
                     .text("Loaded " + nodes.length + " nodes from " + endpoint);
-                iface.disableValidatorOutput();
                 $("#data-query-validate").removeAttr('disabled');
+                iface.enableValidatorInput()
             }).catch(function (tuple) {
                 $("#data .now").removeClass("progress").empty();
                 var body = tuple[0], jqXHR = tuple[1];
