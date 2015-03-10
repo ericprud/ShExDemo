@@ -688,6 +688,10 @@ ShExDemo = function() {
                      iface.queryParms[parm] = [val];
                  else
                      delete iface.queryParms[parm];
+                 if (!$("#data-load").is(":visible")) {
+                     $("a#data-load-tab.ui-tabs-anchor").click(); // switch to data-load tab.
+                     iface.disableValidatorOutput();
+                 }
             });
         },
 
