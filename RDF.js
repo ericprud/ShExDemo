@@ -834,12 +834,12 @@ RDF = {
     parseSPARQLResults: function (body, mediaType, parameters) {
         var ret = { vars: [], solutions: [] };
         if (mediaType === "application/sparql-results+xml") {
-            var xml = $(typeof body === "object" ? body : $.parseXML(body));
+            var xml = $(body instanceof XMLDocument ? body : $.parseXML(body));
             return {
-                vars: xml.find("head variable").get().map(function (obj) {
+                vars: xml.children("sparql").children("head").children("variable").get().map(function (obj) {
                     return obj.getAttribute("name");
                 }),
-                solutions: xml.find("results result").get().map(function (result, solnNo) {
+                solutions: xml.children("sparql").children("results").children("result").get().map(function (result, solnNo) {
                     var ret = {};
                     $(result).find("> binding").get().map(function (binding, bindNo) {
                         var varName = binding.getAttribute("name");
