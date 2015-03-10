@@ -442,8 +442,6 @@ ShExDemo = function() {
             }).then(function (r) {
                 iface.parseMessage("#data .now").addClass("progress")
                     .text("Finding unique nodes in "+r.solutions.length+" results...");
-                return r;
-            }).then(function (r) {
                 return idle(r);
             }).then(function (r) {
                 var nodes = [];
@@ -464,8 +462,6 @@ ShExDemo = function() {
                     .append($('<div/>').html() + "<span class='info'>Found "+nodes.length+" unique nodes out of "+r.solutions.length+" solutions, you may want to SELECT DISTINCT or SELECT REDUCED for more efficiency.</span>" + "<br/>");
                 iface.parseMessage("#data .now").addClass("progress")
                     .text("Building selection interface...");
-                return nodes;
-            }).then(function (nodes) {
                 return idle(nodes);
             }).then(function (nodes) {
                 iface.graph = RDF.QueryDB(sparqlInterface, RDF.Dataset(), cacheSize);
@@ -479,7 +475,12 @@ ShExDemo = function() {
                         +amp.replace(/</g, "&lt;").replace(/>/g, "&gt;")
                         +"</option>";
                 });
-                $("#starting-nodes").append(newElts.join(""));
+                var guess = nodes.length/200; // from imperical measurements
+                iface.parseMessage("#data .now").addClass("progress")
+                    .text("Updating browser list; this will take around "+guess+" seconds...");
+                return idle(newElts);
+            }).then(function (newElts) {
+                $("#starting-nodes").append(newElts.join("")); // expensive opperation!
                 $("#starting-nodes").multiselect("refresh");
                 iface.dataSource = iface.dataSources.Query;
                 iface.parseMessage("#data .now").removeClass("progress")
