@@ -1014,7 +1014,7 @@ ShExDemo = function() {
                         p2.then(function(r) {
                             var thisTest = RDF.Triple(RDF.BNode("FindTypesTest", pos0), instSh, startingNode);
                             var fakeRule =
-                                new RDF.AtomicRule(false, false,
+                                new RDF.AtomicRule(false, false, false,
                                                    new RDF.NameTerm(instSh, pos0),
                                                    new RDF.ValueReference(ruleLabel, pos0),
                                                    0, -1, {}, pos0);
