@@ -1,4 +1,30 @@
 {
+    // fake RDF interface to enable live debugging.
+    // console.log("start");
+    // RDF = {
+    //     Dataset: function () {
+    //         return {
+    //             triples: [],
+    //             addComment: function () {},
+    //             push: function (t) { this.triples.push(t); },
+    //             toString: function () { return this.triples.join("\n"); }
+    //         };
+    //     },
+    //     createIRIResolver: function () {
+    //         var map = {};
+    //         return {
+    //             setPrefix: function (pre, url) { map[pre] = url; },
+    //             getPrefix: function (pre) { return map[pre]; },
+    //             getAbsoluteIRI: function (r) { return r; }
+    //         };
+    //     },
+    //     createBNodeScope: function () { return {}; },
+    //     Position5: function () { return {}; },
+    //     IRI: function (l) { return l; },
+    //     RDFLiteral: function (v, l, d) { return v+"@"+l+"^^"+d; },
+    //     Comment: function () { return {}; },
+    //     Triple: function (s, p, o) { return s+" "+p+" "+o+" ."; }
+    // };
     function createStack () {
 	var ret = [];
 	ret.peek = function () { return this.slice(-1)[0]};
@@ -136,11 +162,22 @@ String = STRING_LITERAL_LONG1 / STRING_LITERAL_LONG2 / STRING_LITERAL1 / STRING_
 
 // IRIs
 iri = IRIREF / PrefixedName
-PrefixedName = ln:PNAME_LN {
+PrefixedName999 = ln:PNAME_LN {
     return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(ln.prefix) + ln.lex), RDF.Position5(text(), line(), column(), offset(), ln.width));
 }
-    / p:PNAME_NS { return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1)); }
+    / p:PNAME_NS {
+    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1));
+}
+PrefixedName = ln:ERR_PNAME_LN {
+    console.log("invalid ERR_PNAME_LN: "+ln);
+    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(ln.prefix) + ln.lex), RDF.Position5(text(), line(), column(), offset(), ln.width));
+}
+    / p:ERR_PNAME_NS {
+    console.log("invalid ERR_PNAME_NS: "+p);
+    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1));
+}
 BlankNode = BLANK_NODE_LABEL / ANON
+
 
 // Terminals:
 RDF_TYPE = 'a' { return RDF.IRI(RDF_NS+'type', RDF.Position5(text(), line(), column(), offset(), 1)); }
@@ -156,10 +193,9 @@ BASE = '@base'
 SPARQL_PREFIX = [Pp][Rr][Ee][Ff][Ii][Xx]
 SPARQL_BASE = [Bb][Aa][Ss][Ee]
 PNAME_NS = pre:PN_PREFIX? ':' { return pre ? pre : '' } // pre+'|' : '|';
-PNAME_LN = pre:PNAME_NS l:PN_LOCAL { 
+PNAME_LN         = pre:PNAME_NS l:PN_LOCAL {
     return {width: pre.length+1+l.length, prefix:pre, lex:l};
 }
-
 BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL2* {
     return RDF.BNode(bnodeScope.uniqueLabel(first+rest.join('')), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
 }
@@ -245,7 +281,27 @@ PN_CHARS_colon_PLX = PN_CHARS / ':' / PLX
 PLX = PERCENT / PN_LOCAL_ESC
 PERCENT = '%' l:HEX r:HEX { return '%'+l+r; }
 HEX = [0-9] / [A-F] / [a-f]
-PN_LOCAL_ESC = '\\' r:[_~.!$&'()*+,;=/?#@%-] { return r; }
+PN_LOCAL_ESC = '\\' r:[_~.!$&'()*+,;=/?#@%-] { return r; } //'// for syntax highlighting gone awry
+
+
+// ERR_*: non-validating PN parser -- @@ needs runtime switch
+ERR_PNAME_NS = pre:ERR_PN_PREFIX? ':' { return pre ? pre : '' } // pre+'|' : '|';
+ERR_PNAME_LN         = pre:ERR_PNAME_NS l:ERR_PN_LOCAL {
+    return {width: pre.length+1+l.length, prefix:pre, lex:l};
+}
+ERR_PN_CHARS_BASE = [A-Z] / [a-z]
+ / [\u0080-\uFFFD] // anything
+ERR_PN_CHARS_U = ERR_PN_CHARS_BASE / '_'
+ERR_PN_CHARS = ERR_PN_CHARS_U / '-' / [0-9]
+ERR_PN_PREFIX = b:ERR_PN_CHARS_BASE r:ERR_PN_PREFIX2? { return r ? b+r : b; }
+ERR_PN_PREFIX2 = l:'.' r:ERR_PN_PREFIX2 { return l+r; }
+           / l:ERR_PN_CHARS r:ERR_PN_PREFIX2? { return r ? l+r : l; }
+ERR_PN_LOCAL = l:(ERR_PN_CHARS_U / ':' / [0-9] / PLX) r:ERR_PN_LOCAL2?
+{ return r ? l+r : l; }
+ERR_PN_LOCAL2 = l:'.' r:ERR_PN_LOCAL2 { return l+r; }
+          / l:ERR_PN_CHARS_colon_PLX r:ERR_PN_LOCAL2? { return r ? l+r : l; }
+ERR_PN_CHARS_colon_PLX = ERR_PN_CHARS / ':' / PLX
+
 
 _ = x:(WS / COMMENT)* { return ''; }
 WS               = [ \t\r\n]+ { return ''; }
