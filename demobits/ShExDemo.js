@@ -475,26 +475,33 @@ ShExDemo = function() {
                         +amp.replace(/</g, "&lt;").replace(/>/g, "&gt;")
                         +"</option>";
                 });
-                var guess = nodes.length/200; // from imperical measurements
+                var l = nodes.length
+                var guess =  (30.25104 -.03174637*l + .00719544*l*l)/1000;
                 iface.parseMessage("#data .now").addClass("progress")
                     .text("Updating browser list; this will take around "+guess+" seconds...");
                 return idle(newElts);
             }).then(function (newElts) {
+                var start = Date.now();
                 $("#starting-nodes").append(newElts.join("")); // expensive opperation!
+                var end = Date.now();
+                console.log(newElts.length + ", " + (end - start));
                 $("#starting-nodes").multiselect("refresh");
                 iface.dataSource = iface.dataSources.Query;
                 iface.parseMessage("#data .now").removeClass("progress")
-                    .text("Loaded " + nodes.length + " nodes from " + endpoint);
+                    .text("Loaded " + newElts.length + " nodes from " + endpoint);
                 $("#data-query-validate").removeAttr('disabled');
                 iface.enableValidatorInput()
-            }).catch(function (tuple) {
+            }).catch(function (e) {
                 $("#data .now").removeClass("progress").empty();
-                var body = tuple[0], jqXHR = tuple[1];
                 iface.parseMessage("#data .log")
                     .addClass("error")
                     .empty()
-                    .append("unable to query " + endpoint + "\n" + jqXHR.status + ": " + jqXHR.statusText);
-                throw tuple; // let the caller know we failed.
+                    .append(
+                        e instanceof Array ? // [body, jqXHR]
+                        "unable to query " + endpoint + "\n" + e[1].status + ": " + e[1].statusText :
+                        e
+                    );
+                throw e; // let the caller know we failed.
             });
         },
 
@@ -703,13 +710,14 @@ ShExDemo = function() {
              ["#data-query-select", "dataQuerySelect"]].forEach(function (pair) {
                  var selector = pair[0], parm = pair[1];
                  var val = $(selector).val();
-                 if (val)
+                 if (val) {
                      iface.queryParms[parm] = [val];
-                 else
+                     if (!$("#data-load").is(":visible")) {
+                         $("a#data-load-tab.ui-tabs-anchor").click(); // switch to data-load tab.
+                         iface.disableValidatorOutput();
+                     }
+                 } else {
                      delete iface.queryParms[parm];
-                 if (!$("#data-load").is(":visible")) {
-                     $("a#data-load-tab.ui-tabs-anchor").click(); // switch to data-load tab.
-                     iface.disableValidatorOutput();
                  }
             });
         },
