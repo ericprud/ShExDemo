@@ -3939,9 +3939,11 @@ SELECT ?s ?p ?o {\n\
             var tOrdinal = '', ts;
             if (triple) {
                 ts = triple.toString();
-                tOrdinal = dataIdMap.getInt(ts)
-                classNames.addErrorClass("", dataIdMap.getMembers(tOrdinal));
-                // document.getElementById("t"+tOrdinal).classList.add("error");
+                if (dataIdMap) {
+                    tOrdinal = dataIdMap.getInt(ts)
+                    classNames.addErrorClass("", dataIdMap.getMembers(tOrdinal));
+                    // document.getElementById("t"+tOrdinal).classList.add("error");
+                }
             }
             var newSolution = {};
             if (rOrdinal !== '') newSolution["rule"] = rOrdinal;
