@@ -1451,11 +1451,13 @@ ShExDemo = function() {
         },
 
         enableTextarea: function() {
-            $("#schema, #data").each(function(el) {
+            $("#schema, #data-input").each(function(el) {
                 //$(this).find("textarea.textInput").val($(this).find("pre").get(0).innerText);
-                $(this).find("textarea.textInput").val($(this).find("pre").text());
-                $(this).find("pre").css("display", "none").removeClass("textInput");
-                $(this).find("textarea.textInput").addClass("textInput").css("display", "block");
+                var from = $(this).find("pre");
+                var to = $(this).find("textarea");
+                to.val(from.text());
+                from.css("display", "none").removeClass("textInput");
+                to.addClass("textInput").css("display", "block");
             });
         },
 
@@ -1507,6 +1509,13 @@ ShExDemo = function() {
     $.fn.slideFadeToggle = function(easing, callback) {
         return this.animate({ opacity: 'toggle', height: 'toggle' }, 'fast', easing, callback);
     };
+
+    $("pre.textInput").click(function () {
+        if ($("#ctl-colorize").is(":checked")) {
+            $("#ctl-colorize").attr('checked', false);
+            iface.enableTextarea();
+        }
+    });
 
     return iface;
 };
