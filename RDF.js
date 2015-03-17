@@ -1951,6 +1951,7 @@ RDF = {
             else {
                 var passes = [];
                 var promises = [];
+                var _ConcomitantRule = this;
                 for (var iMatches = 0; iMatches < matchName.length; ++iMatches) {
                     var s = matchName[iMatches];
                     var p = RDF.IRI("http://www.w3.org/2013/ShEx/Definition#concomitantRelation");
@@ -1959,23 +1960,23 @@ RDF = {
                         schema.dispatch('link', this.codes, r, t);
                     promises.push(this.valueClass.validate(schema, this, t, s, db, validatorStuff).
                                   then(function (v) {
-                                      if (this.valueClass._ != 'ValueReference')
-                                          schema.dispatch('visit', this.codes, r, t);
+                                      if (_ConcomitantRule.valueClass._ != 'ValueReference')
+                                          schema.dispatch('visit', _ConcomitantRule.codes, r, t);
                                       if (r.passed() &&
-                                          schema.dispatch('post', this.codes, r, t) != RDF.DISPOSITION.FAIL)
+                                          schema.dispatch('post', _ConcomitantRule.codes, r, t) != RDF.DISPOSITION.FAIL)
                                           passes.push({t:t, r:r});
                                   }));
                 }
                 return Promise.all(function () {
                     if (inOpt && passes.length === 0) {
                         ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
-                        ret.matchedEmpty(this);
-                    } else if (passes.length < this.min) {
+                        ret.matchedEmpty(_ConcomitantRule);
+                    } else if (passes.length < _ConcomitantRule.min) {
                         ret.status = RDF.DISPOSITION.FAIL;
-                        ret.error_belowMin(this.min, this);
-                    } else if (this.max !== null && passes.length > this.max) {
+                        ret.error_belowMin(_ConcomitantRule.min, _ConcomitantRule);
+                    } else if (_ConcomitantRule.max !== null && passes.length > _ConcomitantRule.max) {
                         ret.status = RDF.DISPOSITION.FAIL;
-                        ret.error_aboveMax(this.max, this, passes[this.max].r);
+                        ret.error_aboveMax(_ConcomitantRule.max, _ConcomitantRule, passes[_ConcomitantRule.max].r);
                     }
                     if (ret.status != RDF.DISPOSITION.FAIL)
                         for (var iPasses = 0; iPasses < passes.length; ++iPasses)
@@ -2342,9 +2343,10 @@ RDF = {
                               })
                              );
             }
+            var _AndRule = this;
             return Promise.all(promises).then(function () {
                 if (passes.length && empties.length)
-                { ret.status = RDF.DISPOSITION.FAIL; ret.error_mixedOpt(passes, empties, this); }
+                { ret.status = RDF.DISPOSITION.FAIL; ret.error_mixedOpt(passes, empties, _AndRule); }
                 else if (seenFail)
                     ret.status = RDF.DISPOSITION.FAIL;
                 else if (!passes.length && !empties.length)
@@ -2499,6 +2501,7 @@ RDF = {
                                   }
                               }));
             }
+            var _OrRule = this;
             return Promise.all(promises).then(function () {
                 if (allErrors || passCount > 1)
                     ret.status = RDF.DISPOSITION.FAIL;
@@ -2509,7 +2512,7 @@ RDF = {
                 else
                     ret.status = RDF.DISPOSITION.FAIL;
                 if (ret.status === RDF.DISPOSITION.FAIL)
-                    ret.error_or(failures, this);
+                    ret.error_or(failures, _OrRule);
                 return ret;
             });
         };
