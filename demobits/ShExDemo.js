@@ -68,7 +68,7 @@ ShExDemo = function() {
     }
 
     function enableValidatorLink() {
-        $("#validation-messages").removeAttr("disabled");
+        $("#validation .now").removeAttr("disabled");
     }
 
     function sanitizeEditable (element) {
@@ -100,6 +100,11 @@ ShExDemo = function() {
         return ret;
     }
 
+    // HTML escape.
+    function HEsc (s) {
+        return $('<div/>').text(s).html();
+    }
+
     // Interface object.
     // Can be used with just 
     //   $(document).ready(ShExDemo(RDF).loadAndStart());
@@ -118,14 +123,22 @@ ShExDemo = function() {
         dataSource: 1, // Text
 
         // Logging utilities
-        message: function (m) {
+        status: function (m, target) {
+            var target = target || "#validation .now";
             var elt = $("<span>"+$('<div/>').text(m).html()+"</span>");
-            $("#validation-messages").append(elt).append("<br/>");
+            $(target).empty().append(elt).append("<br/>");
             return elt;
         },
-        error: function (m) {
+        message: function (m, target) {
+            var target = target || "#validation .log";
             var elt = $("<span>"+$('<div/>').text(m).html()+"</span>");
-            $("#validation-messages").append(elt).append("<br/>");
+            $(target).append(elt).append("<br/>");
+            return elt;
+        },
+        error: function (m, target) {
+            var target = target || "#validation .log";
+            var elt = $("<span>"+$('<div class="error"/>').text(m).html()+"</span>");
+            $(target).append(elt).append("<br/>");
             return elt;
         },
 
@@ -492,16 +505,32 @@ ShExDemo = function() {
                 $("#data-query-validate").removeAttr('disabled');
                 iface.enableValidatorInput()
             }).catch(function (e) {
-                $("#data .now").removeClass("progress").empty();
-                iface.parseMessage("#data .log")
-                    .addClass("error")
-                    .empty()
-                    .append(
-                        e instanceof Array ? // [body, jqXHR]
-                        "unable to query " + endpoint + "\n" + e[1].status + ": " + e[1].statusText :
-                        e
-                    );
-                throw e; // let the caller know we failed.
+                if (e instanceof Array) // [body, jqXHR, query, url]
+                    return Promise.reject(RDF.StructuredError(
+                        [["actionCategory", RDF.actionCategory.DATA],
+                         ["text", e[1].statusText+" on "],
+                         ['link', e[3],
+                          [["text", "GET"]]],
+                         ["code", e[1].status],
+                         ["text", " from " + endpoint]
+                        ]
+                    ));
+                else
+                    return Promise.reject(RDF.StructuredError(
+                        [["actionCategory", RDF.actionCategory.DATA],
+                         ["text", e]
+                        ]
+                    ));
+                // $("#data .now").removeClass("progress").empty();
+                // iface.parseMessage("#data .log")
+                //     .addClass("error")
+                //     .empty()
+                //     .append(
+                //         e instanceof Array ? // [body, jqXHR]
+                //         "unable to query " + endpoint + "\n" + e[1].status + ": " + e[1].statusText :
+                //         e
+                //     );
+                // throw e; // let the caller know we failed.
             });
         },
 
@@ -753,7 +782,8 @@ ShExDemo = function() {
         /* Turn bits of validator on or off depending on schema and data
          * availability */
         disableValidatorOutput: function() {
-            $("#validation-messages").attr("class", "message disabled").text("Validator not available.");
+            $("#validation .log").empty();
+            $("#validation .now").attr("class", "now message disabled").text("Validator not available.");
             $("#starting-nodes").attr("disabled", "disabled");
             $("#opt-pre-typed").attr("disabled", "disabled");
             $("#opt-find-type").attr("disabled", "disabled");
@@ -937,9 +967,10 @@ ShExDemo = function() {
             last["#opt-closed-shapes"] = $("#opt-closed-shapes").is(":checked");
             last["#ctrl-colorize"] = $("#ctrl-colorize").is(":checked");
 
-            $("#validation-messages").text("");
-            $("#schema .textInput .error").removeClass("error");
-            $("#data .textInput .error").removeClass("error");
+            $("#validation .log").text("");
+            $("#validation .now").addClass("progress").text("validating...");
+            //$("#schema .textInput .error").removeClass("error");
+            //$("#data .textInput .error").removeClass("error");
 
             var timeBefore = (new Date).getTime();
             iface.validator.termResults = {}; // clear out yester-cache
@@ -957,9 +988,8 @@ ShExDemo = function() {
                 iface.message("javascript disabled");
 
             var preTyped = $("#opt-pre-typed").is(":checked");
-            var validationResult;
             if (preTyped && !iface.validator.startRule) {
-                $("#validation-messages").append($('<div/>').html() + "<span class='error'>No schema start rule against which to validate against.</span>" + "<br/>");
+                $("#validation .log").append($('<div/>').html() + "<span class='error'>No schema start rule against which to validate against.</span>" + "<br/>");
             } else {
                 var schema = iface.validator; // shortcut.
                 if (!preTyped)
@@ -1477,28 +1507,67 @@ ShExDemo = function() {
             var panelHeightPx = iface.getPanelHeight();
             $("#schema .textInput").outerHeight(panelHeightPx);
             $("#data .textInput").outerHeight(panelHeightPx);
-        }
+        },
 
+        renderError: function (e, target) {
+                        var html = null;
+                        if (typeof e == "object" && e._ == "StructuredError") {
+                            if (e.actionCategory === RDF.actionCategory.DATA)
+                                target = "#data .now";
+                            else if (e.actionCategory === RDF.actionCategory.SCHEMA)
+                                target = "#schema .now";
+                            html = e.toHTML();
+                        } else {
+                            html = $('<div/>').text(e).html();
+                        }
+
+                        // if (target) {
+                        //     iface.parseMessage(target).addClass("error").
+                        //     append("<p>error "+e.actionCategory+"</p>");
+                        // }
+                        $(target).removeClass("progress").empty().addClass("error").
+                            append($("<span class='error'>error: "+
+                                     html+
+                                     "</span><br/>"));
+                        $('.popup').click(function(event) {
+                            event.preventDefault();
+                            window.open($(this).attr("href"), "popupWindow", "width=600,height=600,scrollbars=yes");
+                        });
+                        //$("#validation .now").attr("class", "message error").append("error:"+e).append($("<br/>"));
+                    }
     };
 
     // Inject a jquery-dependent toHTML into every RDF.StructuredError.
     RDF.StructuredError_proto.toHTML = function () {
         var ob = this;
         function nest (a) {
-            console.log("str version: "+ob.toString());
+            var target =
+                a[0][0] == "NestedError" && a[0][1] === RDF.actionCateogyr.SCHEMA ?
+                "#schema .now" :
+                a[0][0] == "NestedError" && a[0][1] === RDF.actionCateogyr.DATA ?
+                "#data .now" :
+                "#validation .now";
             return a.map(function (p) {
                 if (p[0] == "code")
                     return "<pre style='margin: 0;'>"+$('<div/>').text(p[1]).html()+"</pre>";
                 if (p[0] == "link")
-                    return "<a href='"+p[1]+"'>"+nest(p[2])+"</a>";
+                    return "<a href='"+p[1]+"' class='popup'>"+nest(p[2])+"</a>";
                 if (p[0] == "SyntaxError") {
                     debugger;
                     textValue("#data", p[2]);
-                    iface.parseMessage("#data .now").
-                        removeClass("progress").
-                        addClass("error").
-                        append(buildErrorMessage(p[1], "#data", "Data"));
-                    return "see data log";
+                    return buildErrorMessage(p[1], "#data", "Data");
+                }
+                if (p[0] == "NestedError") {
+                    debugger;
+                    try {
+                        return "<br/>"+p[1].toHTML();
+                    } catch (e) {
+                        try {
+                            return p[1].toString();
+                        } catch (e) {
+                            return JSON.stringify(p[1]);
+                        }
+                    }
                 }
                 return ""+p[1];
             }).join("");

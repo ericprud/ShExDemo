@@ -190,6 +190,12 @@ RDF = {
         console.error(str);
     },
 
+    actionCategory: {
+        DATA: "acquiring data",
+        SCHEMA: "processing schema",
+        ACTION: "executing action",
+        VALIDATION: "validating"
+    },
     StructuredError_proto: {
     },
     StructuredError: function (data) {
@@ -205,6 +211,10 @@ RDF = {
                             "<"+p[1]+"> {\n"+nest(p[2]).replace(new RegExp("^","gm"),"  ")+"\n}" :
                             p[0] == "SyntaxError" ?
                             p[1].column+"."+p[1].line+"("+p[1].offset+"):"+p[1].toString()+" See [[["+p[2].substr(p[1].offset - 20, 40)+"]]]":
+                            p[0] == "NestedError" ?
+                            "[[["+p[1]+"]]]":
+                            p[0] == "actionCategory" ?
+                            "while "+p[1]+":\n":
                             p[1];
                     }).join("\n");
                 };
@@ -814,7 +824,7 @@ RDF = {
                         }
                     }).fail(function (jqXHR, textStatus, errorThrown) {
                         jqXHR.statusText = "connection or CORS failure";
-                        reject(["", jqXHR, query]);
+                        reject(["", jqXHR, query, lastURL]);
                     });
                 });
             },
@@ -929,7 +939,8 @@ RDF = {
                     var body = rejection[0], e = rejection[1], query = rejection[2];
                     debugger;
                     var message =
-                        [["text", "failed to "],
+                        [["actionCategory", RDF.actionCategory.DATA],
+                         ["text", "failed to "],
                          ['link', _queryDB.sparqlInterface.getLastURL(),
                           [["text", e.constructor.name === "SyntaxError" ? "parse" : "GET"]]],
                          ["code", query],
@@ -1777,6 +1788,15 @@ RDF = {
                         return ret;
                     });
                     return pet;
+                }).catch(function (e) {
+                    var message =
+                        [["text", "exception testing " + point.toString() + " against:"],
+                         ["code", _AtomicRule.toString()],
+                         ["text", "[["],
+                         ["NestedError", e],
+                         ["text", "]]"]
+                        ];
+                    throw RDF.StructuredError(message);
                 });
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
@@ -3625,9 +3645,8 @@ RDF = {
                             }
                         }).catch(function (e) {
                             console.dir(e);
-                            $("#validation-messages").append($('<div/>'
-                                                               + "<span class='error'>"+e+"</span>"
-                                                               + "<br/>"));
+                            debugger;
+                            RDF.message(e);
                         });
                         promises.push(p2);
                     }
@@ -3653,12 +3672,27 @@ RDF = {
                 }
 
                 // invoke
-                var ret = handlers[handlerName][event](code, valRes, context);
+                var ret = null;
+                var error = null;
+                try {
+                    ret = handlers[handlerName][event](code, valRes, context);
+                } catch (e) {
+                    var message =
+                        [["actionCategory", RDF.actionCategory.ACTION],
+                         ["text", "exception invoking:"],
+                         ["code", "handlers["+handlerName+"]["+event+"](\""+code+"\", valRes, "+context+")"],
+                         ["text", "[["],
+                         ["NestedError", e],
+                         ["text", "]]"]
+                        ];
+                    error = RDF.StructuredError(message);
+                }
 
                 // restore old register function
                 if (f)
                     context.register = f;
-
+                if (error)
+                    throw error;
                 return ret;
             }
             if (event in this.alwaysInvoke)

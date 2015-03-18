@@ -167,8 +167,6 @@
 
                     <h2>Validation:</h2>
                 <div>
-
-                <div id="validation">
                     <div id="settings">
                         <div id="options">
                             <input type="radio" name="mode" id="opt-pre-typed" value="pre-typed" checked="checked" />
@@ -215,7 +213,6 @@
                         </label>
                     </div>
                 </div>
-                </div>
 
                 <h2>Translations</h2>
                 <div>
@@ -233,9 +230,11 @@
                     </div>
                     <div style="clear:both"></div>
                 </div>
-                <h2>Validation messages:</h2>
                 <div>
-                <pre id="validation-messages" class="disabled">unexpected state</pre>
+                <h2>Validation messages:</h2>
+                <div id="validation">
+                  <div class="message"><div class="log"></div><div class="now progress">Waiting to validate.</div></div>
+                </div>
                 </div>
 	    </div>
     </div>
@@ -468,14 +467,18 @@
                                     interactionInterface.enableValidatorInput();
                                     // console.log("loaded");
                                 }).
-                                catch(function () { // ignore -- failures logged by loadSPARQLResults
+                                catch(function (e) { // ignore -- failures logged by loadSPARQLResults
                                     // console.log("failed");
+                                    interactionInterface.renderError(e, "#data .now");
                                 }).then(function () {
-                                    interactionInterface.graph.clearCache();
+                                    if ("clearCache" in interactionInterface.graph)
+                                        interactionInterface.graph.clearCache();
                                 });
                         }
                     } else {
                         // Validate nodes loaded above.
+                        // interactionInterface.parseMessage("#data .now").empty();
+                        // $("#validation .log").empty();
                         interactionInterface.validate();
                     }
                     return false;
