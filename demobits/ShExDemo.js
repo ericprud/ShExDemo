@@ -1171,17 +1171,7 @@ ShExDemo = function() {
                         generatorInterface('GenN', 'text/plain');
                         generatorInterface('GenR', 'text/plain');
                     }).catch(function (e) {
-                        var html =
-                            typeof e == "object" && "_" in e && e._ == "StructuredError" ?
-                            e.toHTML() :
-                            $('<div/>').text(e).html();
-                        iface.parseMessage("#data .now").addClass("error").
-                            append("Failed to access data.");
-                        $("#validation-messages").empty().
-                            append($("<span class='error'>error: "+
-                                     html+
-                                     "</span><br>"));
-                        //$("#validation-messages").attr("class", "message error").append("error:"+e).append($("<br/>"));
+                        iface.renderError(e, "#validation .now");
                     }).catch(function (e) {
                         console.log("uncaught error in error handler: " + e);
                         return e;
