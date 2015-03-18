@@ -1737,8 +1737,7 @@ RDF = {
                         matchName.forEach(function (t) {
                             if (_AtomicRule.valueClass._ == 'ValueReference')
                                 schema.dispatch('link', _AtomicRule.codes, null, t);
-                            var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.reversed ? t.s : t.o, db, validatorStuff);
-                            px.
+                            var px = _AtomicRule.valueClass.validate(schema, _AtomicRule, t, _AtomicRule.reversed ? t.s : t.o, db, validatorStuff).
                                 then(function (r) {
                                     if (_AtomicRule.valueClass._ != 'ValueReference')
                                         schema.dispatch('visit', _AtomicRule.codes, r, t);
@@ -1747,9 +1746,9 @@ RDF = {
                                         fails.push({t:t, r:r});
                                     else
                                         passes.push({t:t, r:r});
-                                })
-                            promises.push(px
-                                         );
+                                    return r;
+                                });
+                            promises.push(px);
                         });
                         pet = Promise.all(promises).then(function () {
                             if (inOpt && passes.length === 0) {
