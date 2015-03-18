@@ -282,6 +282,12 @@ font-size: 70% !important;
 
 .ui-layout-content p { margin: 0; }
 
+/* This is so embarassing */
+
 .ui-widget input, .ui-widget select, .ui-widget textarea { /* override jquery.theme.ui.css:24 */
-  font-size: 80% !important;
+  font-size: 74% !important;
+}
+
+.ui-widget .editparent { /* override jquery.theme.ui.css:24 */
+  font-size: 91% !important;
 }
