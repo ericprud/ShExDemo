@@ -169,11 +169,11 @@ PrefixedName999 = ln:PNAME_LN {
     return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1));
 }
 PrefixedName = ln:ERR_PNAME_LN {
-    console.log("invalid ERR_PNAME_LN: "+ln);
+    // @@ test for valid PNAME_LN
     return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(ln.prefix) + ln.lex), RDF.Position5(text(), line(), column(), offset(), ln.width));
 }
     / p:ERR_PNAME_NS {
-    console.log("invalid ERR_PNAME_NS: "+p);
+    // @@ test for valid PNAME_NS
     return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1));
 }
 BlankNode = BLANK_NODE_LABEL / ANON

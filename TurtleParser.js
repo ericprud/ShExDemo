@@ -135,11 +135,11 @@ TurtleParser = (function() {
             return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1));
         },
         peg$c48 = function(ln) {
-            console.log("invalid ERR_PNAME_LN: "+ln);
+            // @@ test for valid PNAME_LN
             return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(ln.prefix) + ln.lex), RDF.Position5(text(), line(), column(), offset(), ln.width));
         },
         peg$c49 = function(p) {
-            console.log("invalid ERR_PNAME_NS: "+p);
+            // @@ test for valid PNAME_NS
             return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1));
         },
         peg$c50 = "a",
