@@ -997,10 +997,6 @@ ShExDemo = function() {
                         if ('beginFindTypes' in schema.handlers[handler])
                             schema.handlers[handler]['beginFindTypes']();
                 var startingNodes = $("#starting-nodes").val() || [];
-                if (!preTyped || startingNodes.length > 1) {
-                    validationResult = new RDF.ValRes(); // aggregate results
-                    validationResult.status = RDF.DISPOSITION.PASS;
-                }
                 var promises = [];
                 startingNodes.forEach(function (startingNode) {
                     if (startingNode.charAt(0) == '_' && startingNode.charAt(1) == ':') {
@@ -1040,136 +1036,36 @@ ShExDemo = function() {
                         var p2 = iface.validator.validate(startingNode, ruleLabel, iface.graph,
                                                           RDF.ValidatorStuff(iface.schema.iriResolver,
                                                                              $("#opt-closed-shapes").is(":checked")).
-                                                          push(startingNode, instSh), true);
-                        p2.then(function(r) {
-                            var thisTest = RDF.Triple(RDF.BNode("FindTypesTest", pos0), instSh, startingNode);
-                            var fakeRule =
-                                new RDF.AtomicRule(false, false, false,
-                                                   new RDF.NameTerm(instSh, pos0),
-                                                   new RDF.ValueReference(ruleLabel, pos0),
-                                                   0, -1, {}, pos0);
-                            fakeRule.setLabel(RDF.BNode(RDF.Position0()));
-                            if (preTyped) {
-                                if (r.passed())
-                                    elt.append("<span class='success'>passed</span>");
-                                else
-                                    elt.append("<span class='error'>failed</span>");
-                                if (startingNodes.length > 1) {
+                                                          push(startingNode, instSh), true).
+                            then(function (r) {
+                                r.elt = elt; // write it into the r for later manipulation
+                                if (preTyped) {
                                     if (r.passed())
-                                        validationResult.matchedTree(fakeRule, thisTest, r);
+                                        elt.addClass("success").empty().
+                                        append(HEsc(startingNode + " matches " + niceRuleLabel));
                                     else
-                                        validationResult.error_noMatchTree(fakeRule, thisTest, r);
-                                } else
-                                    validationResult = r;
-                            }
-                            else {
-                                if (r.passed()) {
-                                    // add a fake rule with a value reference for oslc:instanceShape
-                                    elt.empty().append($('<div/>').text(startingNode + " is a " + niceRuleLabel + ".").html());
-                                    validationResult.matchedTree (fakeRule, thisTest, r);
+                                        elt.addClass("error").empty().
+                                        append(HEsc(startingNode + " fails " + niceRuleLabel));
                                 } else {
-                                    // Get rid of the message saying were checking this node.
-                                    var br = elt.next();
-                                    elt.remove();
-                                    br.remove();
+                                    if (r.passed()) {
+                                        // add a fake rule with a value reference for oslc:instanceShape
+                                        elt.empty().
+                                            append(HEsc(startingNode + " is a " + niceRuleLabel + "."));
+                                    } else {
+                                        // Get rid of the message saying were checking this node.
+                                        var br = elt.next();
+                                        elt.remove();
+                                        br.remove();
+                                    }
                                 }
-                            }
-                        });
+                                return r;
+                            });
                         promises.push(p2);
                     });
                 });
                 Promise.all(promises).
                     then(function (r) {
-                        if (!preTyped)
-                            for (var handler in schema.handlers)
-                                if ('endFindTypes' in schema.handlers[handler])
-                                    schema.handlers[handler]['endFindTypes']();
-
-                        var timeAfter = (new Date).getTime();
-
-                        $("#validation-messages")
-                            .attr("class", "message validation-color")
-                            .append(buildSizeAndTimeInfoHtml(
-                                "Validation time and speed",
-                                iface.graph.length(), "triples",
-                                timeAfter - timeBefore
-                            ));
-                        iface.message("Validation complete.");
-
-                        if (validationResult.passed() && iface.graph.length() != -1) { // -1 signals unknown length db @@ needs UI switch
-                            // replace with an encapsulating object with remaining triples.
-                            var triplesEncountered = validationResult.triples();
-                            validationResult = {
-                                origResults: validationResult,
-                                remainingTriples: iface.graph.triples.filter(
-                                    function (t) {
-                                        return triplesEncountered.indexOf(t) == -1;
-                                    }
-                                ),
-                                toString: function () {
-                                    return this.origResults.toString()
-                                },
-                                toHTML: function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                                    return this.origResults.toHTML(depth, schemaIdMap, dataIdMap, solutions, classNames);
-                                }
-                            };
-                        }
-
-                        var valResultsElement = iface.enableValidatorOutput();
-                        if (!validationResult) {
-                            iface.message("(There were no nodes to validate.)");
-                            valResultsElement.text("No nodes to validate.");
-                        } else if ($("#ctl-colorize").is(":checked")) {
-                            iface.mapResultsToInput(validationResult, valResultsElement);
-                        } else {
-                            valResultsElement.text(validationResult.toString(0));
-                        }
-
-                        function generatorInterface (gen, mediaType) {
-                            if (iface.validator.handlers[gen].text) {
-                                var win = gen+'window';
-                                var divId = gen+'Div';
-                                var useId = 'Use'+gen+'Button';
-                                var stopId = 'Stop'+gen+'Button';
-
-                                var link = "data:"+mediaType+";charset=utf-8;base64,"
-                                    + Base64.encode(iface.validator.handlers[gen].text);
-                                //$("#validation-messages").append($('<div><a href="' + link +'">'+gen+' output</a></div>')
-                                var options = 'width='+(window.innerWidth/3)
-                                    +' , height='+(window.innerHeight/3);
-                                var openFunc = function () {
-                                    return iface[win] = window.open(link , gen, options);
-                                }
-                                $("#validation-messages").append("<div id=\""+divId+"\"/>")
-                                var addUseButton = function (next, self) {
-                                    $("#"+divId+"").empty().append($('<div>View '+gen+' output as <button id="'+useId+'" href="#" >popup</button> or <a style="background-color: buttonface;" href="'
-                                                                     + link
-                                                                     +'">link</a>.</div>'));
-                                    $('#'+useId+'').click(function () {
-                                        openFunc();
-                                        next(self, next);
-                                    });
-                                };
-                                var delStopButton = function (next, self) {
-                                    $("#"+divId+"").empty().append($('<div><button id="'+stopId+'" href="#" >Stop updating '+gen+' popup</button>.</div>'));
-                                    $('#'+stopId+'').click(function () {
-                                        // iface[win].document.close();
-                                        iface[win] = undefined;
-                                        next(self, next);
-                                    });
-                                };
-                                if (!iface[win] || !openFunc()) {
-                                    addUseButton(delStopButton, addUseButton);
-                                } else {
-                                    delStopButton(addUseButton, delStopButton);
-                                }
-                                iface.validator.handlers[gen].text = null;
-                            }
-                        };
-                        generatorInterface('GenX', 'application/xml');
-                        generatorInterface('GenJ', 'application/json');
-                        generatorInterface('GenN', 'text/plain');
-                        generatorInterface('GenR', 'text/plain');
+                        finishValidation(r, preTyped, timeBefore);
                     }).catch(function (e) {
                         iface.renderError(e, "#validation .now");
                     }).catch(function (e) {
@@ -1210,7 +1106,7 @@ ShExDemo = function() {
                 iface.validateCore();
         },
 
-        mapResultsToInput: function(validationResult, valResultsElement) {
+        mapResultsToInput: function(r, valResultsElement, id) {
             // non-jquery functions from SimpleShExDemo
             function removeClass (type, list, className) {
                 if (list === undefined) return;
@@ -1224,48 +1120,22 @@ ShExDemo = function() {
             }
 
             var solutions = [];
-            valResultsElement.get(0).innerHTML
-                = validationResult.toHTML(0, iface.schema.idMap, iface.data.idMap, solutions,
-                                          { schema: 'schemaflow', data: 'dataflow',
-                                            addErrorClass: function(type, list) {
-                                                addClass(type, list, "error");
-                                            }}) + "\n";
-            {
-                // mark up all of the remaining triples.
-                if (validationResult.remainingTriples && validationResult.remainingTriples.length) {
-                    valResultsElement.append($("<br/><strong>Remaining triples:</strong>\n\n"));
-                    var pre = $("<pre>");
+            var markup = r.toHTML(0, iface.schema.idMap, iface.data.idMap, solutions,
+                                  { schema: 'schemaflow', data: 'dataflow',
+                                    addErrorClass: function(type, list) {
+                                        addClass(type, list, "error");
+                                    }});
+            var elt = $("<div id='"+id+"' style='border-left: solid 1em #ddf;'>"+markup+"</div>")
+            valResultsElement.append(elt);
 
-                    function highlight (tripleID) {
-                        iface.data.idMap.getMembers(tripleID).forEach(function (id) {
-                            $("#"+id).addClass("highlightTerms");
-                        });
-                    }
-                    function lowlight (tripleID) {
-                        iface.data.idMap.getMembers(tripleID).forEach(function (id) {
-                            $("#"+id).removeClass("highlightTerms");
-                        });
-                    }
-                    validationResult.remainingTriples.forEach(
-                        function (t) {
-                            var ts = t.toString();
-                            var to = t.s.toString(true) + " " + t.p.toString(true) + " " + t.o.toString(true) + " .";
-                            var ord = iface.data.idMap.getInt(ts);
-                            iface.data.idMap.getMembers(ord).forEach(
-                                function (id) { $("#"+id).addClass("remainingData"); }
-                            );
-                            pre.append("  ");
-                            pre.append($("<span  class='remainingData data'"
-                                         + ">"+to.replace(/</gm, '&lt;').replace(/>/gm, '&gt;')
-                                         + "</span>\n")
-                                       .mouseenter(function() {$(this).addClass("highlightTerms"); highlight(ord)})
-                                       .mouseleave(function() {$(this).removeClass("highlightTerms"); lowlight(ord)}));
-                            pre.append("\n");
-                        }
-                    );
-                    valResultsElement.append(pre);
+            if (r.passed() && iface.graph.length() != -1) { // -1 signals unknown length db @@ needs UI switch
+                // mark up all of the remaining triples.
+                var pre = $("<pre class='remainingDataContainer'>");
+                if (markupMissedTriples(pre, r)) {
+                    elt.append($("<br/><strong>Remaining triples:</strong>\n\n"));
+                    elt.append(pre);
                 } else {
-                    valResultsElement.append("No remaining triples.");
+                    elt.append("No remaining triples.");
                 }
             }
             var lastRule = [], lastTriple = [], lastSolution = [], rules = [], triples = [];
@@ -1577,4 +1447,129 @@ ShExDemo = function() {
     });
 
     return iface;
+
+    function markupMissedTriples (targetElement, r) {
+        // replace with an encapsulating object with remaining triples.
+        var triplesEncountered = r.triples();
+
+        var remaining = iface.graph.triples.filter(function (t) {
+            return triplesEncountered.indexOf(t) == -1;
+        });
+        remaining.forEach(function (t) {
+            var ts = t.toString();
+            var to = t.s.toString(true) + " " + t.p.toString(true) + " " + t.o.toString(true) + " .";
+            var tripleID = iface.data.idMap.getInt(ts);
+
+            iface.data.idMap.getMembers(tripleID).forEach(
+                function (id) { $("#"+id).addClass("remainingData"); }
+            );
+            targetElement.append("  ");
+            targetElement.append(
+                $("<span  class='remainingData data'"
+                  + ">"+to.replace(/</gm, '&lt;').replace(/>/gm, '&gt;')
+                  + "</span>\n")
+                    .mouseenter(function() {
+                        $(this).addClass("highlightTerms");
+                        iface.data.idMap.getMembers(tripleID).forEach(function (id) {
+                            $("#"+id).addClass("highlightTerms");
+                        });
+                    })
+                    .mouseleave(function() {
+                        $(this).removeClass("highlightTerms");
+                        iface.data.idMap.getMembers(tripleID).forEach(function (id) {
+                            $("#"+id).removeClass("highlightTerms");
+                        });
+                    })
+            );
+            targetElement.append("\n");
+        });
+        return remaining.length;
+    }
+
+                function finishValidation (results, preTyped, timeBefore) {
+                        if (!preTyped)
+                            for (var handler in schema.handlers)
+                                if ('endFindTypes' in schema.handlers[handler])
+                                    schema.handlers[handler]['endFindTypes']();
+
+                        var timeAfter = (new Date).getTime();
+
+                        iface.status("Validation complete.");
+                        $("#validation .now")
+                            .attr("class", "now message validation-color")
+                            .append(buildSizeAndTimeInfoHtml(
+                                "Validation time and speed",
+                                iface.graph.length(), "triples",
+                                timeAfter - timeBefore
+                            ));
+
+                        var valResultsElement = iface.enableValidatorOutput();
+                        if (results.length === 0) {
+                            iface.message("(There were no nodes to validate.)");
+                            valResultsElement.text("No nodes to validate.");
+                        } else if ($("#ctl-colorize").is(":checked")) {
+                            var resNo = 0;
+                            valResultsElement.empty();
+                            results.forEach(function (r) {
+                                var id = "resNo"+(resNo++);
+                                r.elt.html("<a href='#"+id+"'>"+r.elt.html()+"</a>");
+                                iface.mapResultsToInput(r, valResultsElement, id);
+                            })
+                        } else {
+                            var resNo = 0;
+                            valResultsElement.html(results.map(function (r) {
+                                var id = "resNo"+(resNo++);
+                                r.elt.html("<a href='#"+id+"'>"+r.elt.html()+"</a>");
+                                return "<span id='"+id+"' />"+HEsc(r.toString(0));
+                                // return HEsc(r.toString(0));
+                            }).join("\n\n\n"));
+                        }
+
+                        function generatorInterface (gen, mediaType) {
+                            if (iface.validator.handlers[gen].text) {
+                                var win = gen+'window';
+                                var divId = gen+'Div';
+                                var useId = 'Use'+gen+'Button';
+                                var stopId = 'Stop'+gen+'Button';
+
+                                var link = "data:"+mediaType+";charset=utf-8;base64,"
+                                    + Base64.encode(iface.validator.handlers[gen].text);
+                                //$("#validation .log").append($('<div><a href="' + link +'">'+gen+' output</a></div>')
+                                var options = 'width='+(window.innerWidth/3)
+                                    +' , height='+(window.innerHeight/3);
+                                var openFunc = function () {
+                                    return iface[win] = window.open(link , gen, options);
+                                }
+                                $("#validation .log").append("<div id=\""+divId+"\"/>")
+                                var addUseButton = function (next, self) {
+                                    $("#"+divId+"").empty().append($('<div>View '+gen+' output as <button id="'+useId+'" href="#" >popup</button> or <a style="background-color: buttonface;" href="'
+                                                                     + link
+                                                                     +'">link</a>.</div>'));
+                                    $('#'+useId+'').click(function () {
+                                        openFunc();
+                                        next(self, next);
+                                    });
+                                };
+                                var delStopButton = function (next, self) {
+                                    $("#"+divId+"").empty().append($('<div><button id="'+stopId+'" href="#" >Stop updating '+gen+' popup</button>.</div>'));
+                                    $('#'+stopId+'').click(function () {
+                                        // iface[win].document.close();
+                                        iface[win] = undefined;
+                                        next(self, next);
+                                    });
+                                };
+                                if (!iface[win] || !openFunc()) {
+                                    addUseButton(delStopButton, addUseButton);
+                                } else {
+                                    delStopButton(addUseButton, delStopButton);
+                                }
+                                iface.validator.handlers[gen].text = null;
+                            }
+                        };
+                        generatorInterface('GenX', 'application/xml');
+                        generatorInterface('GenJ', 'application/json');
+                        generatorInterface('GenN', 'text/plain');
+                        generatorInterface('GenR', 'text/plain');
+                    }
+
 };
