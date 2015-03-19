@@ -989,7 +989,7 @@ ShExDemo = function() {
 
             var preTyped = $("#opt-pre-typed").is(":checked");
             if (preTyped && !iface.validator.startRule) {
-                $("#validation .log").append($('<div/>').html() + "<span class='error'>No schema start rule against which to validate against.</span>" + "<br/>");
+                $("#validation .now").removeClass("progress").empty().append($('<div/>').html() + "<span class='error'>No schema start rule against which to validate.</span>" + "<br/>");
             } else {
                 var schema = iface.validator; // shortcut.
                 if (!preTyped)
