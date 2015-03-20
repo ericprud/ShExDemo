@@ -521,16 +521,6 @@ ShExDemo = function() {
                          ["text", e]
                         ]
                     ));
-                // $("#data .now").removeClass("progress").empty();
-                // iface.parseMessage("#data .log")
-                //     .addClass("error")
-                //     .empty()
-                //     .append(
-                //         e instanceof Array ? // [body, jqXHR]
-                //         "unable to query " + endpoint + "\n" + e[1].status + ": " + e[1].statusText :
-                //         e
-                //     );
-                // throw e; // let the caller know we failed.
             });
         },
 
@@ -650,8 +640,6 @@ ShExDemo = function() {
                  if (val)
                      $(selector).val(val);
              });
-
-
 
             // enablePre parses schema and data and validates if possible.
             if (iface.queryParms['colorize'] == "true") { // switch to pre after unhiding.
@@ -1036,30 +1024,29 @@ ShExDemo = function() {
                         var p2 = iface.validator.validate(startingNode, ruleLabel, iface.graph,
                                                           RDF.ValidatorStuff(iface.schema.iriResolver,
                                                                              $("#opt-closed-shapes").is(":checked")).
-                                                          push(startingNode, instSh), true).
-                            then(function (r) {
-                                r.elt = elt; // write it into the r for later manipulation
-                                if (preTyped) {
-                                    if (r.passed())
-                                        elt.addClass("success").empty().
-                                        append(HEsc(startingNode + " matches " + niceRuleLabel));
-                                    else
-                                        elt.addClass("error").empty().
-                                        append(HEsc(startingNode + " fails " + niceRuleLabel));
+                                                          push(startingNode, instSh), true).then(function (r) {
+                            r.elt = elt; // write it into the r for later manipulation
+                            if (preTyped) {
+                                if (r.passed())
+                                    elt.addClass("success").empty().
+                                    append(HEsc(startingNode + " matches " + niceRuleLabel));
+                                else
+                                    elt.addClass("error").empty().
+                                    append(HEsc(startingNode + " fails " + niceRuleLabel));
+                            } else {
+                                if (r.passed()) {
+                                    // add a fake rule with a value reference for oslc:instanceShape
+                                    elt.empty().
+                                        append(HEsc(startingNode + " is a " + niceRuleLabel + "."));
                                 } else {
-                                    if (r.passed()) {
-                                        // add a fake rule with a value reference for oslc:instanceShape
-                                        elt.empty().
-                                            append(HEsc(startingNode + " is a " + niceRuleLabel + "."));
-                                    } else {
-                                        // Get rid of the message saying were checking this node.
-                                        var br = elt.next();
-                                        elt.remove();
-                                        br.remove();
-                                    }
+                                    // Get rid of the message saying were checking this node.
+                                    var br = elt.next();
+                                    elt.remove();
+                                    br.remove();
                                 }
-                                return r;
-                            });
+                            }
+                            return r;
+                        });
                         promises.push(p2);
                     });
                 });
