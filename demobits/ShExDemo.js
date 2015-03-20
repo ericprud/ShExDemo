@@ -964,7 +964,7 @@ ShExDemo = function() {
             var preTyped = $("#opt-pre-typed").is(":checked");
             if (preTyped && !iface.validator.startRule) {
                 $("#validation .now").removeClass("progress").empty().append($('<div/>').html() + "<span class='error'>No schema start rule against which to validate.</span>" + "<br/>");
-            } else if (preTyped && iface.validator.startRule) {
+            } else {
                 var schema = iface.validator; // shortcut.
                 if (!preTyped)
                     for (var handler in schema.handlers)
