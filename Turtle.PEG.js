@@ -1,4 +1,30 @@
 {
+    // fake RDF interface to enable live debugging.
+    // console.log("start");
+    // RDF = {
+    //     Dataset: function () {
+    //         return {
+    //             triples: [],
+    //             addComment: function () {},
+    //             push: function (t) { this.triples.push(t); },
+    //             toString: function () { return this.triples.join("\n"); }
+    //         };
+    //     },
+    //     createIRIResolver: function () {
+    //         var map = {};
+    //         return {
+    //             setPrefix: function (pre, url) { map[pre] = url; },
+    //             getPrefix: function (pre) { return map[pre]; },
+    //             getAbsoluteIRI: function (r) { return r; }
+    //         };
+    //     },
+    //     createBNodeScope: function () { return {}; },
+    //     Position5: function () { return {}; },
+    //     IRI: function (l) { return l; },
+    //     RDFLiteral: function (v, l, d) { return v+"@"+l+"^^"+d; },
+    //     Comment: function () { return {}; },
+    //     Triple: function (s, p, o) { return s+" "+p+" "+o+" ."; }
+    // };
     function createStack () {
 	var ret = [];
 	ret.peek = function () { return this.slice(-1)[0]};
@@ -51,7 +77,7 @@ turtleDoc = _ statement* _ {
     return db;
 }
 
-statement       = directive _ / triples _ '.'
+statement       = directive _ / triples _ '.' _
 directive       = prefix / base / sparqlPrefix / sparqlBase
 prefix          = PREFIX _ pre:PNAME_NS _ i:IRIREF _ '.' { iriResolver.setPrefix(pre, i.lex); }
 base            = BASE _ i:IRIREF _ '.' { iriResolver.setBase(i.lex); }
@@ -136,11 +162,22 @@ String = STRING_LITERAL_LONG1 / STRING_LITERAL_LONG2 / STRING_LITERAL1 / STRING_
 
 // IRIs
 iri = IRIREF / PrefixedName
-PrefixedName = ln:PNAME_LN {
+PrefixedName999 = ln:PNAME_LN {
     return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(ln.prefix) + ln.lex), RDF.Position5(text(), line(), column(), offset(), ln.width));
 }
-    / p:PNAME_NS { return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1)); }
+    / p:PNAME_NS {
+    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1));
+}
+PrefixedName = ln:ERR_PNAME_LN {
+    // @@ test for valid PNAME_LN
+    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(ln.prefix) + ln.lex), RDF.Position5(text(), line(), column(), offset(), ln.width));
+}
+    / p:ERR_PNAME_NS {
+    // @@ test for valid PNAME_NS
+    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1));
+}
 BlankNode = BLANK_NODE_LABEL / ANON
+
 
 // Terminals:
 RDF_TYPE = 'a' { return RDF.IRI(RDF_NS+'type', RDF.Position5(text(), line(), column(), offset(), 1)); }
@@ -156,13 +193,14 @@ BASE = '@base'
 SPARQL_PREFIX = [Pp][Rr][Ee][Ff][Ii][Xx]
 SPARQL_BASE = [Bb][Aa][Ss][Ee]
 PNAME_NS = pre:PN_PREFIX? ':' { return pre ? pre : '' } // pre+'|' : '|';
-PNAME_LN = pre:PNAME_NS l:PN_LOCAL { 
+PNAME_LN         = pre:PNAME_NS l:PN_LOCAL {
     return {width: pre.length+1+l.length, prefix:pre, lex:l};
 }
-
-BLANK_NODE_LABEL = '_:' first:[a-zA-Z_] rest:[a-zA-Z0-9_]* {
+BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL2* {
     return RDF.BNode(bnodeScope.uniqueLabel(first+rest.join('')), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
 }
+BLANK_NODE_LABEL2 = l:'.' r:BLANK_NODE_LABEL2 { return l+r; }
+          / l:PN_CHARS r:BLANK_NODE_LABEL2? { return r ? l+r : l; }
 LANGTAG          = '@' s:([a-zA-Z]+ ('-' [a-zA-Z0-9]+)*) {
     s[1].splice(0, 0, '');
     var str = s[0].join('')+s[1].reduce(function(a,b){return a+b[0]+b[1].join('');});
@@ -220,8 +258,17 @@ ECHAR = '\\' r:[tbnrf"'\\] { // "
 }
 ANON             = '[' s:_ ']' { return RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column(), offset(), s.length+2)); }
 PN_CHARS_BASE = [A-Z] / [a-z]
+ / [\u00C0-\u00D6] / [\u00D8-\u00F6] / [\u00F8-\u02FF]
+ / [\u0370-\u037D] / [\u037F-\u1FFF]
+ / [\u200C-\u200D] / [\u2070-\u218F]
+ / [\u2C00-\u2FEF] // / [\u3001-\uD7FF]
+ / [\u3001-\uFFFD] // ouch, this stings!
+// anything else kills PEG
+// / [\uF900-\uFDCF] / [\uFDF0-\uFFFD] /
+// / [\uD800-\uDB7F] [\uDC00-\uDFFF] // UTF-16 for [#x10000-#xEFFFF]
+
 PN_CHARS_U = PN_CHARS_BASE / '_'
-PN_CHARS = PN_CHARS_U / '-' / [0-9]
+PN_CHARS = PN_CHARS_U / '-' / [0-9] / [\u00B7] / [\u0300-\u036F] / [\u203F-\u2040]
 PN_PREFIX = b:PN_CHARS_BASE r:PN_PREFIX2? { return r ? b+r : b; }
 PN_PREFIX2 = l:'.' r:PN_PREFIX2 { return l+r; }
            / l:PN_CHARS r:PN_PREFIX2? { return r ? l+r : l; }
@@ -234,7 +281,27 @@ PN_CHARS_colon_PLX = PN_CHARS / ':' / PLX
 PLX = PERCENT / PN_LOCAL_ESC
 PERCENT = '%' l:HEX r:HEX { return '%'+l+r; }
 HEX = [0-9] / [A-F] / [a-f]
-PN_LOCAL_ESC = '\\' r:[_~.!$&'()*+,;=/?#@%-] { return r; }
+PN_LOCAL_ESC = '\\' r:[_~.!$&'()*+,;=/?#@%-] { return r; } //'// for syntax highlighting gone awry
+
+
+// ERR_*: non-validating PN parser -- @@ needs runtime switch
+ERR_PNAME_NS = pre:ERR_PN_PREFIX? ':' { return pre ? pre : '' } // pre+'|' : '|';
+ERR_PNAME_LN         = pre:ERR_PNAME_NS l:ERR_PN_LOCAL {
+    return {width: pre.length+1+l.length, prefix:pre, lex:l};
+}
+ERR_PN_CHARS_BASE = [A-Z] / [a-z]
+ / [\u0080-\uFFFD] // anything
+ERR_PN_CHARS_U = ERR_PN_CHARS_BASE / '_'
+ERR_PN_CHARS = ERR_PN_CHARS_U / '-' / [0-9]
+ERR_PN_PREFIX = b:ERR_PN_CHARS_BASE r:ERR_PN_PREFIX2? { return r ? b+r : b; }
+ERR_PN_PREFIX2 = l:'.' r:ERR_PN_PREFIX2 { return l+r; }
+           / l:ERR_PN_CHARS r:ERR_PN_PREFIX2? { return r ? l+r : l; }
+ERR_PN_LOCAL = l:(ERR_PN_CHARS_U / ':' / [0-9] / PLX) r:ERR_PN_LOCAL2?
+{ return r ? l+r : l; }
+ERR_PN_LOCAL2 = l:'.' r:ERR_PN_LOCAL2 { return l+r; }
+          / l:ERR_PN_CHARS_colon_PLX r:ERR_PN_LOCAL2? { return r ? l+r : l; }
+ERR_PN_CHARS_colon_PLX = ERR_PN_CHARS / ':' / PLX
+
 
 _ = x:(WS / COMMENT)* { return ''; }
 WS               = [ \t\r\n]+ { return ''; }

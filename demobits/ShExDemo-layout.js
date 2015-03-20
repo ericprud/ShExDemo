@@ -319,7 +319,7 @@ function showState (o_Settings, key) {
 		,	slideTrigger_open:		"mouseover" 	// default
 		,	initClosed:			true
 		,	fxSettings_open:		{ easing: "easeOutQuint" }
-		,	onclose_start:			function (p1, p2, p3) { console.dir(p1); console.dir(p2); console.dir(p3); return true; }
+		//,	onclose_start:			function (p1, p2, p3) { console.dir(p1); console.dir(p2); console.dir(p3); return true; }
 		}
 	,	east: {
 			paneSelector:		"#controls"

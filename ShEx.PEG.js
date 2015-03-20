@@ -160,7 +160,7 @@ arc             = CONCOMITANT _ '@' _ l:label _ r:repeatCount? _ p:properties? _
     if (p) ret.setRuleID(p);
     return ret;
 }
-                / e:('!' _ )? a:('^' _ )? n:nameClass _ v:valueClass _ d:defahlt? _ r:repeatCount? _ p:properties? _ c:CodeMap {
+                / bang:('!' _ )? inverse:('^' _ )? addative:('+' _ )? n:nameClass _ v:valueClass _ d:defahlt? _ r:repeatCount? _ p:properties? _ c:CodeMap {
     if (d)
         throw peg$buildException('default (='+d.toString()+') not currently supported', null, peg$reportedPos);
     var width = v._pos.offset-offset()+v._pos.width;
@@ -168,7 +168,7 @@ arc             = CONCOMITANT _ '@' _ l:label _ r:repeatCount? _ p:properties? _
         width = r.ends-offset();
     else
         r = {min: 1, max: 1};
-    var ret = new RDF.AtomicRule(e?true:false, a?true:false, n, v, r.min, r.max, c, RDF.Position5(text(), line(), column(), offset(), width));
+    var ret = new RDF.AtomicRule(bang?true:false, inverse?true:false, addative?true:false, n, v, r.min, r.max, c, RDF.Position5(text(), line(), column(), offset(), width));
     if (p) ret.setRuleID(p);
     return ret;
 }
@@ -351,9 +351,11 @@ PNAME_LN = pre:PNAME_NS l:PN_LOCAL {
     return {width: pre.length+1+l.length, prefix:pre, lex:l};
 }
 
-BLANK_NODE_LABEL = '_:' first:[a-zA-Z_] rest:[a-zA-Z0-9_]* {
+BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL2* {
     return RDF.BNode(bnodeScope.uniqueLabel(first+rest.join('')), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
 }
+BLANK_NODE_LABEL2 = l:'.' r:BLANK_NODE_LABEL2 { return l+r; }
+          / l:PN_CHARS r:BLANK_NODE_LABEL2? { return r ? l+r : l; }
 LANGTAG          = '@' s:([a-zA-Z]+ ('-' [a-zA-Z0-9]+)*) {
     s[1].splice(0, 0, '');
     var str = s[0].join('')+s[1].reduce(function(a,b){return a+b[0]+b[1].join('');});
@@ -411,8 +413,16 @@ ECHAR = '\\' r:[tbnrf"'\\] { // "
 }
 ANON             = '[' s:_ ']' { return RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column(), offset(), s.length+2)); }
 PN_CHARS_BASE = [A-Z] / [a-z]
+ / [\u00C0-\u00D6] / [\u00D8-\u00F6] / [\u00F8-\u02FF]
+ / [\u0370-\u037D] / [\u037F-\u1FFF]
+ / [\u200C-\u200D] / [\u2070-\u218F]
+ / [\u2C00-\u2FEF] // / [\u3001-\uD7FF]
+ / [\u3001-\uFFFD] // ouch, this stings!
+// anything else kills PEG
+// / [\uF900-\uFDCF] / [\uFDF0-\uFFFD] /
+// / [\uD800-\uDB7F] [\uDC00-\uDFFF] // UTF-16 for [#x10000-#xEFFFF]
 PN_CHARS_U = PN_CHARS_BASE / '_'
-PN_CHARS = PN_CHARS_U / '-' / [0-9]
+PN_CHARS = PN_CHARS_U / '-' / [0-9] / [\u00B7] / [\u0300-\u036F] / [\u203F-\u2040]
 PN_PREFIX = b:PN_CHARS_BASE r:PN_PREFIX2? { return r ? b+r : b; }
 PN_PREFIX2 = l:'.' r:PN_PREFIX2 { return l+r; }
            / l:PN_CHARS r:PN_PREFIX2? { return r ? l+r : l; }

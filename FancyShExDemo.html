@@ -59,6 +59,7 @@
                   <li>nested shapes: <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20foaf%3Aname%20xsd%3Astring%2C%0A%20%20%20%20ex%3AbiologicalParent%20%7B%0A%20%20%20%20%20%20%20%20ex%3Agender%20(ex%3AMale)%2C%0A%20%20%20%20%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20ex%3AbiologicalParent%20%7B%0A%20%20%20%20%20%20%20%20ex%3Agender%20(ex%3AFemale)%2C%0A%20%20%20%20%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%20%20%20%20%20%20%7D%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20foaf%3Aname%20%22Sarah%20Ann%20Holmes%22%3B%0A%20%20%20%20ex%3AbiologicalParent%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AMale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Pat%20Jones%22%20%5D%2C%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AFemale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Gene%20Holmes%22%20%5D.">pass</a> <a href="FancyShExDemo?starting-nodes=%3CSomebody%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20foaf%3Aname%20xsd%3Astring%2C%0A%20%20%20%20ex%3AbiologicalParent%20%7B%0A%20%20%20%20%20%20%20%20ex%3Agender%20(ex%3AMale)%2C%0A%20%20%20%20%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20ex%3AbiologicalParent%20%7B%0A%20%20%20%20%20%20%20%20ex%3Agender%20(ex%3AFemale)%2C%0A%20%20%20%20%20%20%20%20foaf%3Aname%20xsd%3Astring%0A%20%20%20%20%20%20%7D%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20foaf%3A%20%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F%3E%0A%0A%3CSomebody%3E%0A%20%20%20%20foaf%3Aname%20%22Sarah%20Ann%20Holmes%22%3B%0A%20%20%20%20ex%3AbiologicalParent%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AMale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Pat%20Jones%22%20%5D%2C%0A%20%20%20%20%20%20%23%202nd%20biological%20parent%20with%20same%20gender%3A%0A%20%20%20%20%20%20%5B%20ex%3Agender%20ex%3AMale%3B%0A%20%20%20%20%20%20%20%20foaf%3Aname%20%22Gene%20Holmes%22%20%5D.">fail</a></li>
                   <li>named shapes: <a href="FancyShExDemo?starting-nodes=%3CSomeIssue%3E&amp;schema=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0Astart%20%3D%20%7B%0A%20%20%20%20ex%3AbirthDate%20xsd%3AdateTime%20%3F%2C%0A%20%20%20%20ex%3AgivenName%20xsd%3Astring%20%2B%2C%0A%20%20%20%20ex%3Abirthmarks%20xsd%3Astring%20*%2C%0A%20%20%20%20ex%3AbiologicalParentName%20xsd%3Astring%20%7B2%7D%0A%7D&amp;data=PREFIX%20ex%3A%20%3Chttp%3A%2F%2Fex.example%2F%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0A%0A%3CSomeIssue%3E%0A%20%20%20%20ex%3AbirthDate%20%221980-04-27T17%3A23%3A31%22%5E%5Exsd%3AdateTime%20%3B%0A%20%20%20%20ex%3AgivenName%20%22Sarah%22%2C%20%22Ann%22%3B%0A%20%20%20%20ex%3Abirthmarks%20%22posterior%20left%20shoulder%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22right%20cheek%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22left%20index%20finger%22%3B%0A%20%20%20%20ex%3AbiologicalParentName%20%22Pat%20Jones%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Gene%20Holmes%22%20.%0A%0A">pass</a></li>
                   <li><a href="FancyShExDemo?schemaURL=Examples/Issue-simple-annotated.shex&amp;dataURL=test/Issue-pass-date.ttl">annotated issue example</a></li>
+                  <li><a href="http://w3.org/brief/NDMz">node fulfilling multiple shapes</a></li>
                 </ul>
               </li>
               <!-- li>mode d'employ
@@ -91,6 +92,7 @@
                 features
                 <ul>
                   <li>recursive pattern: <a href="http://w3.org/brief/NDMx">foaf:knows/foaf:knows</a></li>
+                  <li>remote query: <a href="http://w3.org/brief/NDM0">DBPedia German cities</a> (select Data: Load/Query and then <button style="font-size:.5em">LOAD</button> and <button style="font-size:.5em">VALIDATE</button>)</li>
                 </ul>
               </li>
             </ul>
@@ -146,8 +148,7 @@
               <div>
                 <div id="colorize">
                     <input type="checkbox" id="ctl-colorize" tabindex="9"/> <label for="ctl-colorize">
-                    <span class="hasToolTip">
-                      <span style="color: #700;">c</span><span style="color: #510;">o</span><span style="color: #330;">l</span><span style="color: #150;">o</span><span style="color: #070;">r</span><span style="color: #051;">i</span><span style="color: #033;">z</span><span style="color: #015;">e</span><span style="color: #007;">d</span>
+                    <span class="hasToolTip"><span style="color: #700;">c</span><span style="color: #520;">o</span><span style="color: #340;">l</span><span style="color: #160;">o</span><span style="color: #061;">r</span><span style="color: #043;">i</span><span style="color: #025;">z</span><span style="color: #007;">e</span>
                       <span class="toolTip">
                         This syntax-highlights the schema and data.
                         It also permits one to click on a solution and see the associated data and the schema rule that matched it.
@@ -166,8 +167,6 @@
 
                     <h2>Validation:</h2>
                 <div>
-
-                <div id="validation">
                     <div id="settings">
                         <div id="options">
                             <input type="radio" name="mode" id="opt-pre-typed" value="pre-typed" checked="checked" />
@@ -214,7 +213,6 @@
                         </label>
                     </div>
                 </div>
-                </div>
 
                 <h2>Translations</h2>
                 <div>
@@ -232,9 +230,11 @@
                     </div>
                     <div style="clear:both"></div>
                 </div>
-                <h2>Validation messages:</h2>
                 <div>
-                <pre id="validation-messages" class="disabled">unexpected state</pre>
+                <h2>Validation messages:</h2>
+                <div id="validation">
+                  <div class="message"><div class="log"></div><div class="now progress">Waiting to validate.</div></div>
+                </div>
                 </div>
 	    </div>
     </div>
@@ -286,8 +286,8 @@
       <div id="data" class="column">
 	<ul id="data-tabs" class="ui-layout-north no-scrollbar no-resizer">
     <li><span class="task data">Data:</span></li>
-		<li><a href="#data-input">Text</a> <!--  message data-color --> </li>
-		<li><a href="#data-load" style="font-size:60%;">Load/<br/>Query</a></li>
+		<li><a id="data-text-tab" href="#data-input">Text</a> <!--  message data-color --> </li>
+		<li><a id="data-load-tab" href="#data-load" style="font-size:60%;">Load/<br/>Query</a></li>
     <li>
           <div class="message"><div class="log"></div><div class="now progress">Waiting for data.</div></div>
     </li>
@@ -312,7 +312,7 @@
 			  </div>
 			  <div class="ui-layout-content no-scrollbar">
 				<form id="data-get" action="GET">
-                  <p><button>GET</button> data URL: <input id="data-get-url" style="width:100%"></input></p>
+                  <p><button>VALIDATE</button> data URL: <input id="data-get-url" style="width:100%"></input></p>
                 </form>
 			  </div>
 			  <div class="ui-widget-header no-padding" >
@@ -320,8 +320,8 @@
 			  </div>
 			  <div class="ui-layout-content no-scrollbar">
 				<form id="data-query" action="GET">
-                  <p>SPARQL endpoint: &nbsp; &nbsp; (cache size: <input id="data-query-cache" value="10000" style="width:4em"></input> triples)<br/><input id="data-query-endpoint" style="width:100%"></input> </p>
-                  <p>SPARQL <button>SELECT</button>: <textarea id="data-query-select" cols="70" rows="20"></textarea></p>
+                  <p>SPARQL endpoint: &nbsp; &nbsp; (cache size: <input id="data-query-cache" value="10000" style="width:4em"></input> subjects)<br/><input id="data-query-endpoint" style="width:100%"></input> </p>
+                  <p>SPARQL <button id="data-query-load" type="submit">LOAD</button> <button id="data-query-validate" type="submit">VALIDATE</button>: <textarea id="data-query-select" cols="70" rows="20"></textarea></p>
                 </form>
 			  </div>
 			</div>
@@ -388,13 +388,15 @@
                 var oldEnableOutput = interactionInterface.enableValidatorOutput;
                 interactionInterface.enableValidatorOutput = function() {
                     var ret = oldEnableOutput();
-                    outerLayout.open('south');
+                    if (outerLayout)
+                        outerLayout.open('south');
                     return ret;
                 };
                 var oldDisableOutput = interactionInterface.disableValidatorOutput;
                 interactionInterface.disableValidatorOutput = function() {
                     var ret = oldDisableOutput();
-                    outerLayout.close('south');
+                    if (outerLayout)
+                        outerLayout.close('south');
                     return ret;
                 };
 
@@ -437,26 +439,67 @@
                          interactionInterface.handleDataUpdate);
                     return false;
                 };
-                var executeQuery = function (evt) {
+                var loadOrValidate = function (evt) {
+                    evt.preventDefault(); // redundant against return false?
+                    var focus = $( document.activeElement ).get(0);
+                    var action = $("#data-query-validate").is(":disabled") || focus.id === "data-query-load" ?
+                        "LOAD" :
+                        "VALIDATE"
                     $("#data .log").empty();
+                    $("#data .error").removeClass("error");
                     var query = $("#data-query-select").val();
-                    var m = query.match(/^(?:\s*(?:#.*?\n|PREFIX\s+[a-zA-Z0-9_-]+:\s*<.*?>|BASE\s+<.*?>)?)*(SELECT)|(CONSTRUCT)/i);
-                    if (m && m[2]) {
-                        var url = $("#data-query-endpoint").val();
-                        url += url.match(/\?/) ? '&' : '?';
-                        url += "query=";
-                        url += encodeURIComponent(query);
-                        $("#data-get-url").val(url);
-                        getData(evt);
+                    if (action === "LOAD") {
+                        var m = query.match(/^(?:\s*(?:#.*?\n|PREFIX\s+[a-zA-Z0-9_-]+:\s*<.*?>|BASE\s+<.*?>)?)*(SELECT)|(CONSTRUCT)/i);
+                        if (m && m[2]) {
+                            // Assume that a CONSTRUCT should be Load data call.
+                            var url = $("#data-query-endpoint").val();
+                            url += url.match(/\?/) ? '&' : '?';
+                            url += "query=";
+                            url += encodeURIComponent(query);
+                            $("#data-get-url").val(url);
+                            getData(evt);
+                        } else {
+                            // Load target nodes from a SPARQL query.
+                            var sparql = RDF.makeSPARQLInterface($("#data-query-endpoint").val());
+                            interactionInterface.loadSPARQLResults(query, sparql, parseInt($("#data-query-cache").val())).
+                                then(function () {
+                                    $("#data-query-validate").removeAttr('disabled');
+                                    interactionInterface.enableValidatorInput();
+                                    // console.log("loaded");
+                                }).
+                                catch(function (e) { // ignore -- failures logged by loadSPARQLResults
+                                    // console.log("failed");
+                                    interactionInterface.renderError(e, "#data .now");
+                                }).then(function () {
+                                    if ("clearCache" in interactionInterface.graph)
+                                        interactionInterface.graph.clearCache();
+                                });
+                        }
                     } else {
-                        var sparql = RDF.makeSPARQLInterface($("#data-query-endpoint").val());
-                        interactionInterface.loadSPARQLResults(query, sparql, parseInt($("#data-query-cache").val()));
+                        // Validate nodes loaded above.
+                        // interactionInterface.parseMessage("#data .now").empty();
+                        // $("#validation .log").empty();
+                        interactionInterface.validate();
                     }
                     return false;
                 };
                 $("#data-get").submit(getData);
 
-                $("#data-query").submit(executeQuery);
+                var newQuery = function () {
+                    $("#data-query-validate").attr('disabled','disabled');
+                    interactionInterface.disableValidatorOutput();
+                    interactionInterface.updateURLParameters();
+                    interactionInterface.updateURL();
+                    $("#starting-nodes option").remove();
+                    try {
+                        $("#starting-nodes").multiselect("refresh");
+                    } catch (e) {  } // ignore calls before it's initialized.
+                }
+
+                newQuery();
+                $("#data-query-endpoint").on('input', newQuery);
+                $("#data-query-select").on('input', newQuery);
+                $("#data-query").submit(loadOrValidate);
 
                 try {
                     prepareLayout(function (p1) {

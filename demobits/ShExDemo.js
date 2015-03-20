@@ -68,18 +68,7 @@ ShExDemo = function() {
     }
 
     function enableValidatorLink() {
-        $("#validation-messages").removeAttr("disabled");
-    }
-
-    function enableValidatorInput() {
-        $("#opt-pre-typed").removeAttr("disabled");
-        $("#opt-find-type").removeAttr("disabled");
-        $("#opt-disable-js").removeAttr("disabled");
-        $("#opt-closed-shapes").removeAttr("disabled");
-
-        // $("#settings input[name='mode']").change(); would trigger handleParameterUpdate() so:
-        if ($("#opt-pre-typed").is(":checked"))
-            $("#starting-nodes").removeAttr("disabled");
+        $("#validation .now").removeAttr("disabled");
     }
 
     function sanitizeEditable (element) {
@@ -111,6 +100,11 @@ ShExDemo = function() {
         return ret;
     }
 
+    // HTML escape.
+    function HEsc (s) {
+        return $('<div/>').text(s).html();
+    }
+
     // Interface object.
     // Can be used with just 
     //   $(document).ready(ShExDemo(RDF).loadAndStart());
@@ -129,11 +123,23 @@ ShExDemo = function() {
         dataSource: 1, // Text
 
         // Logging utilities
-        message: function (m) {
-            $("#validation-messages").append($('<div/>').text(m).html() + "<br/>");
+        status: function (m, target) {
+            var target = target || "#validation .now";
+            var elt = $("<span>"+$('<div/>').text(m).html()+"</span>");
+            $(target).empty().append(elt).append("<br/>");
+            return elt;
         },
-        error: function (m) {
-            $("#validation-messages").append($('<div/>').text(m).html() + "<br/>");
+        message: function (m, target) {
+            var target = target || "#validation .log";
+            var elt = $("<span>"+$('<div/>').text(m).html()+"</span>");
+            $(target).append(elt).append("<br/>");
+            return elt;
+        },
+        error: function (m, target) {
+            var target = target || "#validation .log";
+            var elt = $("<span>"+$('<div class="error"/>').text(m).html()+"</span>");
+            $(target).append(elt).append("<br/>");
+            return elt;
         },
 
         // setup popup stuff
@@ -433,40 +439,75 @@ ShExDemo = function() {
         },
         loadSPARQLResults: function (query, sparqlInterface, cacheSize) {
             var endpoint = sparqlInterface.getURL();
+            iface.disableValidatorOutput();
+            iface.parseMessage("#data .now").addClass("progress")
+                .text("Loading nodes from " + endpoint + "...");
             sparqlInterface.execute(query, {
                 // override error
             }).done(function (r) {
-                // // Loading non-endorsed links disables javascript extensions.
-                // if (/^([a-z]+:)?\/\//g.test(endpoint))
-                //     $('#opt-disable-js').attr('checked', true);
-                var nodes = r.solutions.map(function (soln) {
-                    return r.vars[0] in soln ? soln[r.vars[0]] : null;
-                }).filter(function (elt) {
-                    return elt !== null;
+                iface.parseMessage("#data .now").addClass("progress")
+                    .text("Finding unique nodes in "+r.solutions.length+" results...");
+                var nodes = [];
+                var m = {};
+                r.solutions.forEach(function (soln) {
+                    if (r.vars[0] in soln) {
+                        var v = soln[r.vars[0]];
+                        var s = v.toString();
+                        if (!(s in m)) {
+                            nodes.push(v);
+                            m[s] = undefined;
+                        }
+                    }
                 });
+
+                if (r.solutions.length/nodes.length > 1.5)
+                    iface.parseMessage("#data .log")
+                    .append($('<div/>').html() + "<span class='info'>Found "+nodes.length+" unique nodes out of "+r.solutions.length+" solutions, you may want to SELECT DISTINCT or SELECT REDUCED for more efficiency.</span>" + "<br/>");
+                iface.parseMessage("#data .now").addClass("progress")
+                    .text("Building selection interface...");
                 iface.graph = RDF.QueryDB(sparqlInterface, RDF.Dataset(), cacheSize);
                 $("#starting-nodes option").remove();
-                nodes.forEach(function (node) {
+                var newElts = nodes.map(function (node) {
                     var text = node.toString();
-                    $("#starting-nodes").append(
-                        $("<option value='"
-                          +(text.replace(/&/g, "&amp;").replace(/'/g, "&quot;"))
-                          +"' selected='selected'>"
-                          +(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
-                          +"</option>"));
+                    var amp = text.replace(/&/g, "&amp;");
+                    return "<option value='"
+                        +amp.replace(/'/g, "&quot;")
+                        +"' selected='selected'>"
+                        +amp.replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                        +"</option>";
                 });
+                var l = nodes.length
+                var guess =  (30.25104 -.03174637*l + .00719544*l*l)/1000;
+                iface.parseMessage("#data .now").addClass("progress")
+                    .text("Updating browser list; this will take around "+guess+" seconds...");
+                var start = Date.now();
+                $("#starting-nodes").append(newElts.join("")); // expensive opperation!
+                var end = Date.now();
+                console.log(newElts.length + ", " + (end - start));
                 $("#starting-nodes").multiselect("refresh");
                 iface.dataSource = iface.dataSources.Query;
-                iface.validate();
-            }).fail(function (jqXHR, textStatus, errorThrown) {
-                iface.parseMessage("#data .log")
-                    .addClass("error")
-                    .empty()
-                    .append("unable to query " + endpoint + "\n" + textStatus + "\n" + errorThrown);
+                iface.parseMessage("#data .now").removeClass("progress")
+                    .text("Loaded " + newElts.length + " nodes from " + endpoint);
+                $("#data-query-validate").removeAttr('disabled');
+                iface.enableValidatorInput()
+            }).fail(function (e) {
+                if (e instanceof Array) // [body, jqXHR, query, url]
+                    return Promise.reject(RDF.StructuredError(
+                        [["actionCategory", RDF.actionCategory.DATA],
+                         ["text", e[1].statusText+" on "],
+                         ['link', e[3],
+                          [["text", "GET"]]],
+                         ["code", e[1].status],
+                         ["text", " from " + endpoint]
+                        ]
+                    ));
+                else
+                    return Promise.reject(RDF.StructuredError(
+                        [["actionCategory", RDF.actionCategory.DATA],
+                         ["text", e]
+                        ]
+                    ));
             });
-            iface.parseMessage("#data .now").addClass("progress")
-                .text("Querying " + endpoint + "...");
-            iface.disableValidatorOutput();
         },
 
         loadData: function (url, id, done) {
@@ -577,6 +618,15 @@ ShExDemo = function() {
             if (iface.queryParms['closedShapes'] == "true")
                 $("#opt-closed-shapes").prop( "checked", true );
 
+            [["#data-get-url", "dataGetURL"],
+             ["#data-query-endpoint", "dataQueryEndpoint"],
+             ["#data-query-select", "dataQuerySelect"]].forEach(function (pair) {
+                 var selector = pair[0], parm = pair[1];
+                 var val = iface.queryParms[parm];
+                 if (val)
+                     $(selector).val(val);
+             });
+
             // enablePre parses schema and data and validates if possible.
             if (iface.queryParms['colorize'] == "true") { // switch to pre after unhiding.
                 $("#ctl-colorize").prop( "checked", true );
@@ -641,7 +691,8 @@ ShExDemo = function() {
                 var startingNodes = $("#starting-nodes").val();
                 if (startingNodes)
                     iface.queryParms['starting-nodes'] = startingNodes;
-                delete iface.queryParms['starting-nodes'];
+                else
+                    delete iface.queryParms['starting-nodes'];
             } else {
                 delete iface.queryParms['find-types'];
                 iface.queryParms['starting-nodes'] = [($("#starting-nodes").val() || []).join(' ')];
@@ -656,6 +707,22 @@ ShExDemo = function() {
             } else {
                 delete iface.queryParms['closedShapes'];
             }
+
+            [["#data-get-url", "dataGetURL"],
+             ["#data-query-endpoint", "dataQueryEndpoint"],
+             ["#data-query-select", "dataQuerySelect"]].forEach(function (pair) {
+                 var selector = pair[0], parm = pair[1];
+                 var val = $(selector).val();
+                 if (val) {
+                     iface.queryParms[parm] = [val];
+                     if (!$("#data-load").is(":visible")) {
+                         $("a#data-load-tab.ui-tabs-anchor").click(); // switch to data-load tab.
+                         iface.disableValidatorOutput();
+                     }
+                 } else {
+                     delete iface.queryParms[parm];
+                 }
+            });
         },
 
         handleParameterUpdate: function() {
@@ -675,10 +742,22 @@ ShExDemo = function() {
             iface.updateURLParameters();
         },
 
+        enableValidatorInput: function() {
+            $("#opt-pre-typed").removeAttr("disabled");
+            $("#opt-find-type").removeAttr("disabled");
+            $("#opt-disable-js").removeAttr("disabled");
+            $("#opt-closed-shapes").removeAttr("disabled");
+
+            // $("#settings input[name='mode']").change(); would trigger handleParameterUpdate() so:
+            if ($("#opt-pre-typed").is(":checked"))
+                $("#starting-nodes").removeAttr("disabled");
+        },
+
         /* Turn bits of validator on or off depending on schema and data
          * availability */
         disableValidatorOutput: function() {
-            $("#validation-messages").attr("class", "message disabled").text("Validator not available.");
+            $("#validation .log").empty();
+            $("#validation .now").attr("class", "now message disabled").text("Validator not available.");
             $("#starting-nodes").attr("disabled", "disabled");
             $("#opt-pre-typed").attr("disabled", "disabled");
             $("#opt-find-type").attr("disabled", "disabled");
@@ -753,7 +832,7 @@ ShExDemo = function() {
                 iface.validator = iface.schema.obj; // intuitive alias
                 enableValidatorLink();
                 if (iface.graph)
-                    enableValidatorInput();
+                    iface.enableValidatorInput();
                 var dtp = "data:text/plain;charset=utf-8;base64,";
                 if (iface.validator.startRule) {
                     $("#opt-pre-typed").removeAttr("disabled");
@@ -765,16 +844,16 @@ ShExDemo = function() {
                     else {
                         var startRuleText = iface.validator.startRule.toString(true);
                         $("#start-rule").text(startRuleText)
-                        .mouseenter(function () {
-                            $(this).addClass("ui-state-hover", 50);
-                            if ($("#ctl-colorize").is(":checked"))
-                                iface.schema.termStringToIds.get(startRuleText).map(function (id) { $("#"+id).addClass("ui-state-hover", 50) })
-                        })
-                        .mouseleave(function () {
-                            $(this).removeClass("ui-state-hover", 50);
-                            if ($("#ctl-colorize").is(":checked"))
-                                iface.schema.termStringToIds.get(startRuleText).map(function (id) { $("#"+id).removeClass("ui-state-hover", 50) })
-                        });
+                            .mouseenter(function () {
+                                $(this).addClass("ui-state-hover", 50);
+                                if ($("#ctl-colorize").is(":checked"))
+                                    iface.schema.termStringToIds.get(startRuleText).map(function (id) { $("#"+id).addClass("ui-state-hover", 50) })
+                            })
+                            .mouseleave(function () {
+                                $(this).removeClass("ui-state-hover", 50);
+                                if ($("#ctl-colorize").is(":checked"))
+                                    iface.schema.termStringToIds.get(startRuleText).map(function (id) { $("#"+id).removeClass("ui-state-hover", 50) })
+                            });
                     }
                 } else {
                     $("#opt-pre-typed").attr("disabled", "disabled");
@@ -829,7 +908,7 @@ ShExDemo = function() {
                 iface.graph = iface.data.obj; // intuitive alias
                 if (iface.validator) {
                     enableValidatorLink();
-                    enableValidatorInput();
+                    iface.enableValidatorInput();
                 }
                 var was = $("#starting-nodes").val() || [];
                 iface.selectNodesForValidation(was);
@@ -841,10 +920,10 @@ ShExDemo = function() {
                 // }
             } catch (e) {
                 if (typeof(e) !== 'object' || e.type !== "pending") {
-                    iface.parseMessage("#data .now")
-                    .removeClass("progress")
-                    .addClass("error")
-                    .append(buildErrorMessage(e, "#data", "Data"));
+                    iface.parseMessage("#data .now").
+                        removeClass("progress").
+                        addClass("error").
+                        append(buildErrorMessage(e, "#data", "Data"));
                 }
             }
 
@@ -862,182 +941,117 @@ ShExDemo = function() {
             last["#opt-closed-shapes"] = $("#opt-closed-shapes").is(":checked");
             last["#ctrl-colorize"] = $("#ctrl-colorize").is(":checked");
 
-            $("#validation-messages").text("");
-            $("#schema .textInput .error").removeClass("error");
-            $("#data .textInput .error").removeClass("error");
+            $("#validation .log").text("");
+            $("#validation .now").addClass("progress").text("validating...");
+            //$("#schema .textInput .error").removeClass("error");
+            //$("#data .textInput .error").removeClass("error");
 
-            try {
-                var timeBefore = (new Date).getTime();
-                iface.validator.termResults = {}; // clear out yester-cache
+            var timeBefore = (new Date).getTime();
+            iface.validator.termResults = {}; // clear out yester-cache
 
-                iface.validator.handlers = {
-                    GenX: RDF.GenXHandler(document.implementation, new XMLSerializer()),
-                    GenJ: RDF.GenJHandler({}),
-                    GenN: RDF.GenNHandler({}),
-                    GenR: RDF.GenRHandler({})
-                };
-                iface.validator.alwaysInvoke = {};
-                if (!$("#opt-disable-js").is(":checked"))
-                    iface.validator.handlers['js'] = RDF.jsHandler;
-                if (iface.validator.disableJavascript)
-                    iface.message("javascript disabled");
+            iface.validator.handlers = {
+                GenX: RDF.GenXHandler(document.implementation, new XMLSerializer()),
+                GenJ: RDF.GenJHandler({}),
+                GenN: RDF.GenNHandler({}),
+                GenR: RDF.GenRHandler({})
+            };
+            iface.validator.alwaysInvoke = {};
+            if (!$("#opt-disable-js").is(":checked"))
+                iface.validator.handlers['js'] = RDF.jsHandler;
+            if (iface.validator.disableJavascript)
+                iface.message("javascript disabled");
 
-                var validationResult
-                if ($("#opt-pre-typed").is(":checked") && !iface.validator.startRule) {
-                    $("#validation-messages").append($('<div/>').html() + "<span class='error'>No schema start rule against which to validate against.</span>" + "<br/>");
-                } else if ($("#opt-pre-typed").is(":checked") && iface.validator.startRule) {
-                    var startingNodes = $("#starting-nodes").val() || [];
-                    if (startingNodes.length > 1) {
-                        validationResult = new RDF.ValRes(); // aggregate results
-                        validationResult.status = RDF.DISPOSITION.PASS;
+            var preTyped = $("#opt-pre-typed").is(":checked");
+            if (preTyped && !iface.validator.startRule) {
+                $("#validation .now").removeClass("progress").empty().append($('<div/>').html() + "<span class='error'>No schema start rule against which to validate.</span>" + "<br/>");
+            } else if (preTyped && iface.validator.startRule) {
+                var schema = iface.validator; // shortcut.
+                if (!preTyped)
+                    for (var handler in schema.handlers)
+                        if ('beginFindTypes' in schema.handlers[handler])
+                            schema.handlers[handler]['beginFindTypes']();
+                var startingNodes = $("#starting-nodes").val() || [];
+                var results = [];
+                startingNodes.forEach(function (startingNode) { try {
+                    if (startingNode.charAt(0) == '_' && startingNode.charAt(1) == ':') {
+                        startingNode = RDF.BNode(startingNode.substr(2), RDF.Position0())
+                    } else {
+                        if (startingNode.charAt(0) != '<') {
+                            var colon = startingNode.indexOf(":");
+                            if (colon === -1)
+                                throw "pre-typed graph node must be a _:bnode, <iri>, or q:name";
+                            startingNode
+                                = '<'
+                                + iface.data.iriResolver.getPrefix(startingNode.substring(0,colon))
+                                + startingNode.substring(colon+1)
+                                + '>';
+                        }
+                        startingNode =
+                            RDF.IRI(iface.data.iriResolver.getAbsoluteIRI
+                                    (startingNode.substr(1,startingNode.length-2))
+                                    , RDF.Position0());
                     }
-                    for (var startingNodeNo = 0; startingNodeNo < startingNodes.length; startingNodeNo++) {
-                        var startingNode = startingNodes[startingNodeNo];
-                        if (startingNode.charAt(0) == '_' && startingNode.charAt(1) == ':') {
-                            startingNode = RDF.BNode(startingNode.substr(2), RDF.Position0())
-                        } else {
-                            if (startingNode.charAt(0) != '<') {
-                                var colon = startingNode.indexOf(":");
-                                if (colon === -1)
-                                    throw "pre-typed graph node must be a _:bnode, <iri>, or q:name";
-                                startingNode
-                                    = '<'
-                                    + iface.data.iriResolver.getPrefix(startingNode.substring(0,colon))
-                                    + startingNode.substring(colon+1)
-                                    + '>';
+                    var testAgainst =
+                        preTyped ?
+                        [iface.validator.startRule] :
+                        schema.ruleLabels.map(function (ruleLabel) {
+                            return schema.isVirtualShape[ruleLabel.toString()] ?
+                                null :
+                                ruleLabel;
+                        }).filter(function (ruleLabel) { return !!ruleLabel; });
+                    testAgainst.forEach(function (ruleLabel) {
+                        var pos0 = RDF.Position0();
+                        var niceRuleLabel = ruleLabel._ == "BNode" && ruleLabel == iface.validator.startRule ?
+                            "schema start rule" :
+                            ruleLabel.toString();
+                        var elt =
+                            iface.message("Validating " + startingNode + " as " + niceRuleLabel + ".");
+                        var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", pos0);
+                        var r = iface.validator.validate(startingNode, ruleLabel, iface.graph,
+                                                          RDF.ValidatorStuff(iface.schema.iriResolver,
+                                                                             $("#opt-closed-shapes").is(":checked")).
+                                                          push(startingNode, instSh), true);
+                        {
+                            r.elt = elt; // write it into the r for later manipulation
+                            if (preTyped) {
+                                if (r.passed())
+                                    elt.addClass("success").empty().
+                                    append(HEsc(startingNode + " matches " + niceRuleLabel));
+                                else
+                                    elt.addClass("error").empty().
+                                    append(HEsc(startingNode + " fails " + niceRuleLabel));
+                            } else {
+                                if (r.passed()) {
+                                    // add a fake rule with a value reference for oslc:instanceShape
+                                    elt.empty().
+                                        append(HEsc(startingNode + " is a " + niceRuleLabel + "."));
+                                } else {
+                                    // Get rid of the message saying were checking this node.
+                                    var br = elt.next();
+                                    elt.remove();
+                                    br.remove();
+                                }
                             }
-                            startingNode =
-                                RDF.IRI(iface.data.iriResolver.getAbsoluteIRI
-                                        (startingNode.substr(1,startingNode.length-2))
-                                        , RDF.Position0());
                         }
-                        iface.message("Validating " + startingNode + " as " + 
-                                      (iface.validator.startRule._ == "BNode"
-                                       ? "schema start rule"
-                                       : iface.validator.startRule.toString()) + ".");
-                        var r = iface.validator.validate(startingNode, iface.validator.startRule, iface.graph,
-                                                         {iriResolver: iface.schema.iriResolver,
-                                                          closedShapes: $("#opt-closed-shapes").is(":checked")}, true);
-                        if (r.passed())
-                            $("#validation-messages").append($('<div/>'
-                                                               + "<span class='success'>passed</span>"
-                                                               + "<br/>"));
-                        else
-                            $("#validation-messages").append($('<div/>'
-                                                               + "<span class='error'>failed</span>"
-                                                               + "<br/>"));
-                            //iface.message("failed");
-                            //$("#validation-messages").attr("class", "message error").text("failedXX");
-                        // iface.message("  " + (r.passed() ? "passed" : "<span class='error'>failed</span>"));
-                        if (startingNodes.length > 1) {
-                            validationResult.add(r);
-                            if (!r.passed())
-                                validationResult.status = RDF.DISPOSITION.FAIL;
-                        } else
-                            validationResult = r;
+                        results.push(r);
+                    })
+                    finishValidation(results, preTyped, timeBefore);
+                } catch (e) {
+                    try {
+                        iface.renderError(e, "#validation .now");
+                    } catch (e) {
+                        console.log("uncaught error in error handler: " + e);
+                        return e;
                     }
-                } else {
-                    iface.message("looking for types");
-                    validationResult = iface.validator.findTypes(iface.graph, {iriResolver: iface.schema.iriResolver,
-                                                                               closedShapes: $("#opt-closed-shapes").is(":checked")});
                 }
-
-                var timeAfter = (new Date).getTime();
-
-                $("#validation-messages")
-                    .attr("class", "message validation-color")
-                    .append(buildSizeAndTimeInfoHtml(
-                        "Validation time and speed",
-                        iface.graph.length(), "triples",
-                        timeAfter - timeBefore
-                    ));
-                iface.message("Validation complete.");
-
-                if (validationResult.passed() && iface.graph.length() != -1) { // -1 signals unknown length db @@ needs UI switch
-                    // replace with an encapsulating object with remaining triples.
-                    var triplesEncountered = validationResult.triples();
-                    validationResult = {
-                        origResults: validationResult,
-                        remainingTriples: iface.graph.triples.filter(
-                            function (t) {
-                                return triplesEncountered.indexOf(t) == -1;
-                            }
-                        ),
-                        toString: function () {
-                            return this.origResults.toString()
-                        },
-                        toHTML: function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                            return this.origResults.toHTML(depth, schemaIdMap, dataIdMap, solutions, classNames);
-                        }
-                    };
-                }
-
-                var valResultsElement = iface.enableValidatorOutput();
-                if (!validationResult) {
-                    iface.message("(There were no nodes to validate.)");
-                    valResultsElement.text("No nodes to validate.");
-                } else if ($("#ctl-colorize").is(":checked")) {
-                    iface.mapResultsToInput(validationResult, valResultsElement);
-                } else {
-                    valResultsElement.text(validationResult.toString(0));
-                }
-
-                function generatorInterface (gen, mediaType) {
-                    if (iface.validator.handlers[gen].text) {
-                        var win = gen+'window';
-                        var divId = gen+'Div';
-                        var useId = 'Use'+gen+'Button';
-                        var stopId = 'Stop'+gen+'Button';
-                        
-                        var link = "data:"+mediaType+";charset=utf-8;base64,"
-                            + Base64.encode(iface.validator.handlers[gen].text);
-                        //$("#validation-messages").append($('<div><a href="' + link +'">'+gen+' output</a></div>')
-                        var options = 'width='+(window.innerWidth/3)
-                            +' , height='+(window.innerHeight/3);
-                        var openFunc = function () {
-                            return iface[win] = window.open(link , gen, options);
-                        }
-                        $("#validation-messages").append("<div id=\""+divId+"\"/>")
-                        var addUseButton = function (next, self) {
-                            $("#"+divId+"").empty().append($('<div>View '+gen+' output as <button id="'+useId+'" href="#" >popup</button> or <a style="background-color: buttonface;" href="'
-                                                             + link
-                                                             +'">link</a>.</div>'));
-                            $('#'+useId+'').click(function () {
-                                openFunc();
-                                next(self, next);
-                            });
-                        };
-                        var delStopButton = function (next, self) {
-                            $("#"+divId+"").empty().append($('<div><button id="'+stopId+'" href="#" >Stop updating '+gen+' popup</button>.</div>'));
-                            $('#'+stopId+'').click(function () {
-                                // iface[win].document.close();
-                                iface[win] = undefined;
-                                next(self, next);
-                            });
-                        };
-                        if (!iface[win] || !openFunc()) {
-                            addUseButton(delStopButton, addUseButton);
-                        } else {
-                            delStopButton(addUseButton, delStopButton);
-                        }
-                        iface.validator.handlers[gen].text = null;
-                    }
-                };
-                generatorInterface('GenX', 'application/xml');
-                generatorInterface('GenJ', 'application/json');
-                generatorInterface('GenN', 'text/plain');
-                generatorInterface('GenR', 'text/plain');
-            } catch (e) {
-                $("#validation-messages").attr("class", "message error").text(e);
-            }
-            iface.updateURL();
+                iface.updateURL();
+            });}
         },
 
         // nodes: array of RDF nodes
         // sparqlInterface: URL of query engine
         validateOverSPARQL: function () {
             var nodes = $("#starting-nodes").val();
-            debugger;
             iface.parseMessage("#data .now").addClass("progress")
                 .text("Validating " + nodes.length + " node" + (nodes.length === 1 ? "" : "s") +
                       " at " + iface.graph.sparqlInterface.getURL() + "...");
@@ -1064,7 +1078,7 @@ ShExDemo = function() {
                 iface.validateCore();
         },
 
-        mapResultsToInput: function(validationResult, valResultsElement) {
+        mapResultsToInput: function(r, valResultsElement, id) {
             // non-jquery functions from SimpleShExDemo
             function removeClass (type, list, className) {
                 if (list === undefined) return;
@@ -1078,48 +1092,22 @@ ShExDemo = function() {
             }
 
             var solutions = [];
-            valResultsElement.get(0).innerHTML
-                = validationResult.toHTML(0, iface.schema.idMap, iface.data.idMap, solutions,
-                                          { schema: 'schemaflow', data: 'dataflow',
-                                            addErrorClass: function(type, list) {
-                                                addClass(type, list, "error");
-                                            }}) + "\n";
-            {
-                // mark up all of the remaining triples.
-                if (validationResult.remainingTriples && validationResult.remainingTriples.length) {
-                    valResultsElement.append($("<br/><strong>Remaining triples:</strong>\n\n"));
-                    var pre = $("<pre>");
+            var markup = r.toHTML(0, iface.schema.idMap, iface.data.idMap, solutions,
+                                  { schema: 'schemaflow', data: 'dataflow',
+                                    addErrorClass: function(type, list) {
+                                        addClass(type, list, "error");
+                                    }});
+            var elt = $("<div id='"+id+"' style='border-left: solid 1em #ddf;'>"+markup+"</div>")
+            valResultsElement.append(elt);
 
-                    function highlight (tripleID) {
-                        iface.data.idMap.getMembers(tripleID).forEach(function (id) {
-                            $("#"+id).addClass("highlightTerms");
-                        });
-                    }
-                    function lowlight (tripleID) {
-                        iface.data.idMap.getMembers(tripleID).forEach(function (id) {
-                            $("#"+id).removeClass("highlightTerms");
-                        });
-                    }
-                    validationResult.remainingTriples.forEach(
-                        function (t) {
-                            var ts = t.toString();
-                            var to = t.s.toString(true) + " " + t.p.toString(true) + " " + t.o.toString(true) + " .";
-                            var ord = iface.data.idMap.getInt(ts);
-                            iface.data.idMap.getMembers(ord).forEach(
-                                function (id) { $("#"+id).addClass("remainingData"); }
-                            );
-                            pre.append("  ");
-                            pre.append($("<span  class='remainingData data'"
-                                         + ">"+to.replace(/</gm, '&lt;').replace(/>/gm, '&gt;')
-                                         + "</span>\n")
-                                       .mouseenter(function() {$(this).addClass("highlightTerms"); highlight(ord)})
-                                       .mouseleave(function() {$(this).removeClass("highlightTerms"); lowlight(ord)}));
-                            pre.append("\n");
-                        }
-                    );
-                    valResultsElement.append(pre);
+            if (r.passed() && iface.graph.length() != -1) { // -1 signals unknown length db @@ needs UI switch
+                // mark up all of the remaining triples.
+                var pre = $("<pre class='remainingDataContainer'>");
+                if (markupMissedTriples(pre, r)) {
+                    elt.append($("<br/><strong>Remaining triples:</strong>\n\n"));
+                    elt.append(pre);
                 } else {
-                    valResultsElement.append("No remaining triples.");
+                    elt.append("No remaining triples.");
                 }
             }
             var lastRule = [], lastTriple = [], lastSolution = [], rules = [], triples = [];
@@ -1325,11 +1313,13 @@ ShExDemo = function() {
         },
 
         enableTextarea: function() {
-            $("#schema, #data").each(function(el) {
+            $("#schema, #data-input").each(function(el) {
                 //$(this).find("textarea.textInput").val($(this).find("pre").get(0).innerText);
-                $(this).find("textarea.textInput").val($(this).find("pre").text());
-                $(this).find("pre").css("display", "none").removeClass("textInput");
-                $(this).find("textarea.textInput").addClass("textInput").css("display", "block");
+                var from = $(this).find("pre");
+                var to = $(this).find("textarea");
+                to.val(from.text());
+                from.css("display", "none").removeClass("textInput");
+                to.addClass("textInput").css("display", "block");
             });
         },
 
@@ -1349,13 +1339,209 @@ ShExDemo = function() {
             var panelHeightPx = iface.getPanelHeight();
             $("#schema .textInput").outerHeight(panelHeightPx);
             $("#data .textInput").outerHeight(panelHeightPx);
-        }
+        },
 
+        renderError: function (e, target) {
+                        var html = null;
+                        if (typeof e == "object" && e._ == "StructuredError") {
+                            if (e.actionCategory === RDF.actionCategory.DATA)
+                                target = "#data .now";
+                            else if (e.actionCategory === RDF.actionCategory.SCHEMA)
+                                target = "#schema .now";
+                            html = e.toHTML();
+                        } else {
+                            html = $('<div/>').text(e).html();
+                        }
+
+                        // if (target) {
+                        //     iface.parseMessage(target).addClass("error").
+                        //     append("<p>error "+e.actionCategory+"</p>");
+                        // }
+                        $(target).removeClass("progress").empty().addClass("error").
+                            append($("<span class='error'>error: "+
+                                     html+
+                                     "</span><br/>"));
+                        $('.popup').click(function(event) {
+                            event.preventDefault();
+                            window.open($(this).attr("href"), "popupWindow", "width=600,height=600,scrollbars=yes");
+                        });
+                        //$("#validation .now").attr("class", "message error").append("error:"+e).append($("<br/>"));
+                    }
+    };
+
+    // Inject a jquery-dependent toHTML into every RDF.StructuredError.
+    RDF.StructuredError_proto.toHTML = function () {
+        var ob = this;
+        function nest (a) {
+            var target =
+                a[0][0] == "NestedError" && a[0][1] === RDF.actionCateogyr.SCHEMA ?
+                "#schema .now" :
+                a[0][0] == "NestedError" && a[0][1] === RDF.actionCateogyr.DATA ?
+                "#data .now" :
+                "#validation .now";
+            return a.map(function (p) {
+                if (p[0] == "code")
+                    return "<pre style='margin: 0;'>"+$('<div/>').text(p[1]).html()+"</pre>";
+                if (p[0] == "link")
+                    return "<a href='"+p[1]+"' class='popup'>"+nest(p[2])+"</a>";
+                if (p[0] == "SyntaxError") {
+                    debugger;
+                    textValue("#data", p[2]);
+                    return buildErrorMessage(p[1], "#data", "Data");
+                }
+                if (p[0] == "NestedError") {
+                    debugger;
+                    try {
+                        return "<br/>"+p[1].toHTML();
+                    } catch (e) {
+                        try {
+                            return p[1].toString();
+                        } catch (e) {
+                            return JSON.stringify(p[1]);
+                        }
+                    }
+                }
+                return ""+p[1];
+            }).join("");
+        };
+        return nest(this.data);
     };
 
     $.fn.slideFadeToggle = function(easing, callback) {
         return this.animate({ opacity: 'toggle', height: 'toggle' }, 'fast', easing, callback);
     };
 
+    $("pre.textInput").click(function () {
+        if ($("#ctl-colorize").is(":checked")) {
+            $("#ctl-colorize").attr('checked', false);
+            iface.enableTextarea();
+        }
+    });
+
     return iface;
+
+    function markupMissedTriples (targetElement, r) {
+        // replace with an encapsulating object with remaining triples.
+        var triplesEncountered = r.triples();
+
+        var remaining = iface.graph.triples.filter(function (t) {
+            return triplesEncountered.indexOf(t) == -1;
+        });
+        remaining.forEach(function (t) {
+            var ts = t.toString();
+            var to = t.s.toString(true) + " " + t.p.toString(true) + " " + t.o.toString(true) + " .";
+            var tripleID = iface.data.idMap.getInt(ts);
+
+            iface.data.idMap.getMembers(tripleID).forEach(
+                function (id) { $("#"+id).addClass("remainingData"); }
+            );
+            targetElement.append("  ");
+            targetElement.append(
+                $("<span  class='remainingData data'"
+                  + ">"+to.replace(/</gm, '&lt;').replace(/>/gm, '&gt;')
+                  + "</span>\n")
+                    .mouseenter(function() {
+                        $(this).addClass("highlightTerms");
+                        iface.data.idMap.getMembers(tripleID).forEach(function (id) {
+                            $("#"+id).addClass("highlightTerms");
+                        });
+                    })
+                    .mouseleave(function() {
+                        $(this).removeClass("highlightTerms");
+                        iface.data.idMap.getMembers(tripleID).forEach(function (id) {
+                            $("#"+id).removeClass("highlightTerms");
+                        });
+                    })
+            );
+            targetElement.append("\n");
+        });
+        return remaining.length;
+    }
+
+                function finishValidation (results, preTyped, timeBefore) {
+                        if (!preTyped)
+                            for (var handler in schema.handlers)
+                                if ('endFindTypes' in schema.handlers[handler])
+                                    schema.handlers[handler]['endFindTypes']();
+
+                        var timeAfter = (new Date).getTime();
+
+                        iface.status("Validation complete.");
+                        $("#validation .now")
+                            .attr("class", "now message validation-color")
+                            .append(buildSizeAndTimeInfoHtml(
+                                "Validation time and speed",
+                                iface.graph.length(), "triples",
+                                timeAfter - timeBefore
+                            ));
+
+                        var valResultsElement = iface.enableValidatorOutput();
+                        if (results.length === 0) {
+                            iface.message("(There were no nodes to validate.)");
+                            valResultsElement.text("No nodes to validate.");
+                        } else if ($("#ctl-colorize").is(":checked")) {
+                            var resNo = 0;
+                            valResultsElement.empty();
+                            results.forEach(function (r) {
+                                var id = "resNo"+(resNo++);
+                                r.elt.html("<a href='#"+id+"'>"+r.elt.html()+"</a>");
+                                iface.mapResultsToInput(r, valResultsElement, id);
+                            })
+                        } else {
+                            var resNo = 0;
+                            valResultsElement.html(results.map(function (r) {
+                                var id = "resNo"+(resNo++);
+                                r.elt.html("<a href='#"+id+"'>"+r.elt.html()+"</a>");
+                                return "<span id='"+id+"' />"+HEsc(r.toString(0));
+                                // return HEsc(r.toString(0));
+                            }).join("\n\n\n"));
+                        }
+
+                        function generatorInterface (gen, mediaType) {
+                            if (iface.validator.handlers[gen].text) {
+                                var win = gen+'window';
+                                var divId = gen+'Div';
+                                var useId = 'Use'+gen+'Button';
+                                var stopId = 'Stop'+gen+'Button';
+
+                                var link = "data:"+mediaType+";charset=utf-8;base64,"
+                                    + Base64.encode(iface.validator.handlers[gen].text);
+                                //$("#validation .log").append($('<div><a href="' + link +'">'+gen+' output</a></div>')
+                                var options = 'width='+(window.innerWidth/3)
+                                    +' , height='+(window.innerHeight/3);
+                                var openFunc = function () {
+                                    return iface[win] = window.open(link , gen, options);
+                                }
+                                $("#validation .log").append("<div id=\""+divId+"\"/>")
+                                var addUseButton = function (next, self) {
+                                    $("#"+divId+"").empty().append($('<div>View '+gen+' output as <button id="'+useId+'" href="#" >popup</button> or <a style="background-color: buttonface;" href="'
+                                                                     + link
+                                                                     +'">link</a>.</div>'));
+                                    $('#'+useId+'').click(function () {
+                                        openFunc();
+                                        next(self, next);
+                                    });
+                                };
+                                var delStopButton = function (next, self) {
+                                    $("#"+divId+"").empty().append($('<div><button id="'+stopId+'" href="#" >Stop updating '+gen+' popup</button>.</div>'));
+                                    $('#'+stopId+'').click(function () {
+                                        // iface[win].document.close();
+                                        iface[win] = undefined;
+                                        next(self, next);
+                                    });
+                                };
+                                if (!iface[win] || !openFunc()) {
+                                    addUseButton(delStopButton, addUseButton);
+                                } else {
+                                    delStopButton(addUseButton, delStopButton);
+                                }
+                                iface.validator.handlers[gen].text = null;
+                            }
+                        };
+                        generatorInterface('GenX', 'application/xml');
+                        generatorInterface('GenJ', 'application/json');
+                        generatorInterface('GenN', 'text/plain');
+                        generatorInterface('GenR', 'text/plain');
+                    }
+
 };
