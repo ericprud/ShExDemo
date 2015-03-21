@@ -593,7 +593,7 @@ ShExDemo = function() {
         allDataIsLoaded: function() {
             setHandler($("#schema .textInput"), iface.queueSchemaUpdate);
             setHandler($("#data .textInput"), iface.queueDataUpdate);
-            setHandler($("#ctl-colorize, #starting-node, #opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes"),
+            setHandler($("#ctl-colorize, #starting-node, #opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes, #opt-async"),
                        iface.handleParameterUpdate);
 
             iface.layoutPanelHeights();
@@ -602,7 +602,7 @@ ShExDemo = function() {
             $("#apology").hide();
             $("#main").show();
             $("#schema .textInput, #data .textInput, #starting-node,"
-              +"#opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes").removeAttr("disabled");
+              +"#opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes, #opt-async").removeAttr("disabled");
             $("#schema .textInput").focus(); // set focus after removeAttr("disabled").
             if (iface.queryParms['find-types']) { // switch to pre after unhiding.
                 $("#opt-pre-typed").prop( "checked", false );
@@ -631,6 +631,8 @@ ShExDemo = function() {
 
             if (iface.queryParms['closedShapes'] == "true")
                 $("#opt-closed-shapes").prop( "checked", true );
+            if (iface.queryParms['async'] == "true")
+                $("#opt-async").prop( "checked", true );
 
             [["#data-get-url", "dataGetURL"],
              ["#data-query-endpoint", "dataQueryEndpoint"],
@@ -721,6 +723,11 @@ ShExDemo = function() {
             } else {
                 delete iface.queryParms['closedShapes'];
             }
+            if ($("#opt-async").is(":checked")) {
+                iface.queryParms['async'] = ["true"];
+            } else {
+                delete iface.queryParms['async'];
+            }
 
             [["#data-get-url", "dataGetURL"],
              ["#data-query-endpoint", "dataQueryEndpoint"],
@@ -731,6 +738,7 @@ ShExDemo = function() {
                      iface.queryParms[parm] = [val];
                      if (!$("#data-load").is(":visible")) {
                          $("a#data-load-tab.ui-tabs-anchor").click(); // switch to data-load tab.
+                         $("#opt-async").click(); // @@ enable async due to a pending bug
                          iface.disableValidatorOutput();
                      }
                  } else {
@@ -744,6 +752,7 @@ ShExDemo = function() {
                && $("#opt-pre-typed").is(":checked") === last["#opt-pre-typed"]
                && $("#opt-disable-js").is(":checked") === last["#opt-disable-js"]
                && $("#opt-closed-shapes").is(":checked") === last["#opt-closed-shapes"]
+               && $("#opt-async").is(":checked") === last["#opt-async"]
                && $("#ctrl-colorize").is(":checked") === last["#ctrl-colorize"])
                 return;
 
@@ -761,6 +770,7 @@ ShExDemo = function() {
             $("#opt-find-type").removeAttr("disabled");
             $("#opt-disable-js").removeAttr("disabled");
             $("#opt-closed-shapes").removeAttr("disabled");
+            $("#opt-async").removeAttr("disabled");
 
             // $("#settings input[name='mode']").change(); would trigger handleParameterUpdate() so:
             if ($("#opt-pre-typed").is(":checked"))
@@ -777,6 +787,7 @@ ShExDemo = function() {
             $("#opt-find-type").attr("disabled", "disabled");
             $("#opt-disable-js").attr("disabled", "disabled");
             $("#opt-closed-shapes").attr("disabled", "disabled");
+            $("#opt-async").attr("disabled", "disabled");
 
             $("#valResults").addClass("disabled").text("Validation results not available.");
             $("#valResults-header").attr("class", "disabled");
@@ -953,6 +964,7 @@ ShExDemo = function() {
             last["#opt-pre-typed"]  = $("#opt-pre-typed").is(":checked");
             last["#opt-disable-js"] = $("#opt-disable-js").is(":checked");
             last["#opt-closed-shapes"] = $("#opt-closed-shapes").is(":checked");
+            last["#opt-async"] = $("#opt-async").is(":checked");
             last["#ctrl-colorize"] = $("#ctrl-colorize").is(":checked");
 
             $("#validation .log").text("");
