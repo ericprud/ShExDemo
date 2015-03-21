@@ -439,24 +439,27 @@ ShExDemo = function() {
         },
         loadSPARQLResults: function (query, sparqlInterface, cacheSize) {
             function idle (parm) {
-                return new Promise(function (resolve) {
-                    window.setTimeout(function () {
-                        resolve(parm);
-                    }, 0);
-                });
+                if ($("#opt-async").is(":checked"))
+                    return new Promise(function (resolve) {
+                        window.setTimeout(function () {
+                            resolve(parm);
+                        }, 0);
+                    });
+                else
+                    return parm;
             }
             var endpoint = sparqlInterface.getURL();
             iface.disableValidatorOutput();
             iface.parseMessage("#data .now").addClass("progress")
                 .text("Loading nodes from " + endpoint + "...");
-            return sparqlInterface.execute(query, {
-            }).then(function (r) {
-                return idle(r);
-            }).then(function (r) {
+
+            function notifySearchingNodes (r) {
                 iface.parseMessage("#data .now").addClass("progress")
                     .text("Finding unique nodes in "+r.solutions.length+" results...");
                 return idle(r);
-            }).then(function (r) {
+            }
+
+            function searchNodes (r) {
                 var nodes = [];
                 var m = {};
                 r.solutions.forEach(function (soln) {
@@ -476,7 +479,9 @@ ShExDemo = function() {
                 iface.parseMessage("#data .now").addClass("progress")
                     .text("Building selection interface...");
                 return idle(nodes);
-            }).then(function (nodes) {
+            }
+
+            function buildSelectList (nodes) {
                 iface.graph = RDF.QueryDB(sparqlInterface, RDF.Dataset(), cacheSize);
                 $("#starting-nodes option").remove();
                 var newElts = nodes.map(function (node) {
@@ -493,7 +498,9 @@ ShExDemo = function() {
                 iface.parseMessage("#data .now").addClass("progress")
                     .text("Updating browser list; this will take around "+guess+" seconds...");
                 return idle(newElts);
-            }).then(function (newElts) {
+            }
+
+            function updateInterface (newElts) {
                 var start = Date.now();
                 $("#starting-nodes").append(newElts.join("")); // expensive opperation!
                 var end = Date.now();
@@ -504,7 +511,9 @@ ShExDemo = function() {
                     .text("Loaded " + newElts.length + " nodes from " + endpoint);
                 $("#data-query-validate").removeAttr('disabled');
                 iface.enableValidatorInput()
-            }).catch(function (e) {
+            }
+
+            function handleError (e) {
                 if (e instanceof Array) // [body, jqXHR, query, url]
                     return Promise.reject(RDF.StructuredError(
                         [["actionCategory", RDF.actionCategory.DATA],
@@ -521,7 +530,28 @@ ShExDemo = function() {
                          ["text", e]
                         ]
                     ));
-            });
+            }
+
+            if ($("#opt-async").is(":checked"))
+                return sparqlInterface.execute(query, {
+                    async: true
+                }).then(function (r) {
+                    return idle(r);
+                }).then(notifySearchingNodes).then(searchNodes).then(buildSelectList).then(updateInterface).catch(handleError);
+            else
+                try {
+                    var r = null;
+                    sparqlInterface.execute(query, {async: false, done: function (res) {
+                        r = res;
+                    }, fail: handleError});
+                    notifySearchingNodes(r);
+                    var nodes = searchNodes(r);
+                    var newElts = buildSelectList(nodes);
+                    updateInterface(newElts);
+                    return null; // no promise means it's already done.
+                } catch (e) {
+                    handleError(e);
+                }
         },
 
         loadData: function (url, id, done) {
@@ -593,8 +623,13 @@ ShExDemo = function() {
         allDataIsLoaded: function() {
             setHandler($("#schema .textInput"), iface.queueSchemaUpdate);
             setHandler($("#data .textInput"), iface.queueDataUpdate);
-            setHandler($("#ctl-colorize, #starting-node, #opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes, #opt-async"),
+            setHandler($("#ctl-colorize, #starting-node, #opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes"),
                        iface.handleParameterUpdate);
+            setHandler($("#opt-async"), function () {
+                if ("clearCache" in iface.graph)
+                    iface.graph.clearCache();
+                iface.handleParameterUpdate();
+            });
 
             iface.layoutPanelHeights();
             $(window).resize(iface.handleResize);
@@ -738,7 +773,6 @@ ShExDemo = function() {
                      iface.queryParms[parm] = [val];
                      if (!$("#data-load").is(":visible")) {
                          $("a#data-load-tab.ui-tabs-anchor").click(); // switch to data-load tab.
-                         $("#opt-async").click(); // @@ enable async due to a pending bug
                          iface.disableValidatorOutput();
                      }
                  } else {
@@ -997,7 +1031,42 @@ ShExDemo = function() {
                         if ('beginFindTypes' in schema.handlers[handler])
                             schema.handlers[handler]['beginFindTypes']();
                 var startingNodes = $("#starting-nodes").val() || [];
-                var promises = [];
+                var testAgainst =
+                    preTyped ?
+                    [iface.validator.startRule] :
+                    schema.ruleLabels.map(function (ruleLabel) {
+                        return schema.isVirtualShape[ruleLabel.toString()] ?
+                            null :
+                            ruleLabel;
+                    }).filter(function (ruleLabel) { return !!ruleLabel; });
+                var resOrPromises = iface.iterateNodesAndLabels(startingNodes, testAgainst, schema, preTyped, timeBefore);
+                if ($("#opt-async").is(":checked"))
+                    Promise.all(resOrPromises).
+                    then(function (r) {
+                        finishValidation(r, preTyped, timeBefore);
+                    }).catch(function (e) {
+                        iface.renderError(e, "#validation .now");
+                    }).catch(function (e) {
+                        console.log("uncaught error in error handler: " + e);
+                        return e;
+                    });
+                else
+                    try {
+                        finishValidation(resOrPromises, preTyped, timeBefore);
+                    } catch (e) {
+                        try {
+                            iface.renderError(e, "#validation .now");
+                        } catch (e) {
+                            console.log("uncaught error in error handler: " + e);
+                            return e;
+                        }
+                    }
+            }
+            iface.updateURL();
+        },
+
+        iterateNodesAndLabels: function (startingNodes, testAgainst, schema, preTyped, timeBefore) {
+            var resOrPromises = [];
                 startingNodes.forEach(function (startingNode) {
                     if (startingNode.charAt(0) == '_' && startingNode.charAt(1) == ':') {
                         startingNode = RDF.BNode(startingNode.substr(2), RDF.Position0())
@@ -1017,14 +1086,6 @@ ShExDemo = function() {
                                     (startingNode.substr(1,startingNode.length-2))
                                     , RDF.Position0());
                     }
-                    var testAgainst =
-                        preTyped ?
-                        [iface.validator.startRule] :
-                        schema.ruleLabels.map(function (ruleLabel) {
-                            return schema.isVirtualShape[ruleLabel.toString()] ?
-                                null :
-                                ruleLabel;
-                        }).filter(function (ruleLabel) { return !!ruleLabel; });
                     testAgainst.forEach(function (ruleLabel) {
                         var pos0 = RDF.Position0();
                         var niceRuleLabel = ruleLabel._ == "BNode" && ruleLabel == iface.validator.startRule ?
@@ -1033,10 +1094,16 @@ ShExDemo = function() {
                         var elt =
                             iface.message("Validating " + startingNode + " as " + niceRuleLabel + ".");
                         var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", pos0);
-                        var p2 = iface.validator.validate(startingNode, ruleLabel, iface.graph,
+                        var resOrPromise = iface.validator.validate(startingNode, ruleLabel, iface.graph,
                                                           RDF.ValidatorStuff(iface.schema.iriResolver,
-                                                                             $("#opt-closed-shapes").is(":checked")).
-                                                          push(startingNode, instSh), true).then(function (r) {
+                                                                             $("#opt-closed-shapes").is(":checked"),
+                                                                             $("#opt-async").is(":checked")).
+                                                          push(startingNode, instSh), true);
+                        if ($("#opt-async").is(":checked"))
+                            resOrPromises.push(resOrPromise.then(post));
+                        else
+                            resOrPromises.push(post(resOrPromise));
+                        function post (r) {
                             r.elt = elt; // write it into the r for later manipulation
                             if (preTyped) {
                                 if (r.passed())
@@ -1058,22 +1125,12 @@ ShExDemo = function() {
                                 }
                             }
                             return r;
-                        });
-                        promises.push(p2);
+                        }
                     });
                 });
-                Promise.all(promises).
-                    then(function (r) {
-                        finishValidation(r, preTyped, timeBefore);
-                    }).catch(function (e) {
-                        iface.renderError(e, "#validation .now");
-                    }).catch(function (e) {
-                        console.log("uncaught error in error handler: " + e);
-                        return e;
-                    });
-                iface.updateURL();
-            }
+            return resOrPromises;
         },
+
 
         // nodes: array of RDF nodes
         // sparqlInterface: URL of query engine

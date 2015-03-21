@@ -470,19 +470,26 @@
                         } else {
                             // Load target nodes from a SPARQL query.
                             var sparql = RDF.makeSPARQLInterface($("#data-query-endpoint").val());
-                            interactionInterface.loadSPARQLResults(query, sparql, parseInt($("#data-query-cache").val())).
-                                then(function () {
-                                    $("#data-query-validate").removeAttr('disabled');
-                                    interactionInterface.enableValidatorInput();
-                                    // console.log("loaded");
-                                }).
-                                catch(function (e) { // ignore -- failures logged by loadSPARQLResults
-                                    // console.log("failed");
-                                    interactionInterface.renderError(e, "#data .now");
-                                }).then(function () {
-                                    if ("clearCache" in interactionInterface.graph)
-                                        interactionInterface.graph.clearCache();
-                                });
+                            var nullOrPromise = interactionInterface.loadSPARQLResults(query, sparql, parseInt($("#data-query-cache").val()));
+                            if (nullOrPromise)
+                                nullOrPromise.then(loaded).catch(failed).then(done);
+                            else {
+                                try { loaded(); } catch (e) { failed(e); }
+                                done();
+                            }
+                            function loaded () {
+                                $("#data-query-validate").removeAttr('disabled');
+                                interactionInterface.enableValidatorInput();
+                                // console.log("loaded");
+                            }
+                            function failed (e) { // ignore -- failures logged by loadSPARQLResults
+                                // console.log("failed");
+                                interactionInterface.renderError(e, "#data .now");
+                            }
+                            function done () {
+                                if ("clearCache" in interactionInterface.graph)
+                                    interactionInterface.graph.clearCache();
+                            }
                         }
                     } else {
                         // Validate nodes loaded above.
