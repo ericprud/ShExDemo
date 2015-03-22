@@ -3677,24 +3677,27 @@ RDF = {
                 resOrPromise = rule.validate(this, point, false, db, validatorStuff);
 
                 // Make sure we used all of the closedSubGraph.
-                if (validatorStuff.closedShapes && res.passed()) {
+                if (validatorStuff.closedShapes) {
                     if (validatorStuff.async)
                         resOrPromise = resOrPromise.then(checkRemaining).catch(function (e) {
                             debugger;
                             return Promise.reject(e);
                         });
                     else
-                        checkRemaining(res);
+                        checkRemaining(resOrPromise);
                     function checkRemaining (res) {
-                        var remaining = closedSubGraph.filter(function (t) {
-                            var r = res.triples();
-                            for (var i = 0; i < r.length; ++i)
-                                if (r[i] === t)
-                                    return false;
-                            return true;
-                        });
-                        if (remaining.length)
-                        { res.status = RDF.DISPOSITION.FAIL; res.error_noMatchExtra(rule, remaining); }
+                        if (res.passed()) {
+                            var remaining = closedSubGraph.filter(function (t) {
+                                var r = res.triples();
+                                for (var i = 0; i < r.length; ++i)
+                                    if (r[i] === t)
+                                        return false;
+                                return true;
+                            });
+                            if (remaining.length)
+                            { res.status = RDF.DISPOSITION.FAIL; res.error_noMatchExtra(rule, remaining); }
+                        }
+                        return res;
                     }
                 }
                 this.termResults[key] = resOrPromise;
