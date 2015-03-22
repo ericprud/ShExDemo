@@ -2625,10 +2625,6 @@ RDF = {
             for (var i = 0; i < this.disjoints.length; ++i) {
                 var disj = this.disjoints[i];
                 var resOrPromise = disj.validate(schema, point, inOpt, db, validatorStuff);
-                if (validatorStuff.async)
-                    promises.push(resOrPromise.then(testExclusiveness));
-                else
-                    testExclusiveness(resOrPromise);
                 function testExclusiveness (r) {
                     if (r.status == RDF.DISPOSITION.FAIL)
                         failures.push(r);
@@ -2641,6 +2637,10 @@ RDF = {
                             ++indefCount;
                     }
                 }
+                if (validatorStuff.async)
+                    promises.push(resOrPromise.then(testExclusiveness));
+                else
+                    testExclusiveness(resOrPromise);
             }
             var _OrRule = this;
             return validatorStuff.async ? Promise.all(promises).then(checkResult) : checkResult();
