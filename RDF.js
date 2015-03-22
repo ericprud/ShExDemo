@@ -2628,7 +2628,7 @@ RDF = {
                 if (validatorStuff.async)
                     promises.push(resOrPromise.then(testExclusiveness));
                 else
-                    testExclusiveness(r);
+                    testExclusiveness(resOrPromise);
                 function testExclusiveness (r) {
                     if (r.status == RDF.DISPOSITION.FAIL)
                         failures.push(r);
