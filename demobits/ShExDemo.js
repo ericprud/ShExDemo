@@ -1039,28 +1039,28 @@ ShExDemo = function() {
                             null :
                             ruleLabel;
                     }).filter(function (ruleLabel) { return !!ruleLabel; });
-                var resOrPromises = iface.iterateNodesAndLabels(startingNodes, testAgainst, schema, preTyped, timeBefore);
-                if ($("#opt-async").is(":checked"))
-                    Promise.all(resOrPromises).
-                    then(function (r) {
-                        finishValidation(r, preTyped, timeBefore);
-                    }).catch(function (e) {
-                        iface.renderError(e, "#validation .now");
-                    }).catch(function (e) {
-                        console.log("uncaught error in error handler: " + e);
-                        return e;
-                    });
-                else
-                    try {
-                        finishValidation(resOrPromises, preTyped, timeBefore);
-                    } catch (e) {
-                        try {
+                try {
+                    var resOrPromises = iface.iterateNodesAndLabels(startingNodes, testAgainst, schema, preTyped, timeBefore);
+                    if ($("#opt-async").is(":checked"))
+                        Promise.all(resOrPromises).
+                        then(function (r) {
+                            finishValidation(r, preTyped, timeBefore);
+                        }).catch(function (e) {
                             iface.renderError(e, "#validation .now");
-                        } catch (e) {
+                        }).catch(function (e) {
                             console.log("uncaught error in error handler: " + e);
                             return e;
-                        }
+                        });
+                    else
+                        finishValidation(resOrPromises, preTyped, timeBefore);
+                } catch (e) {
+                    try {
+                        iface.renderError(e, "#validation .now");
+                    } catch (e) {
+                        console.log("uncaught error in error handler: " + e);
+                        return e;
                     }
+                }
             }
             iface.updateURL();
         },
