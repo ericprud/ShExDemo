@@ -504,7 +504,6 @@ ShExDemo = function() {
                 var start = Date.now();
                 $("#starting-nodes").append(newElts.join("")); // expensive opperation!
                 var end = Date.now();
-                console.log(newElts.length + ", " + (end - start));
                 $("#starting-nodes").multiselect("refresh");
                 iface.dataSource = iface.dataSources.Query;
                 iface.parseMessage("#data .now").removeClass("progress")
@@ -642,13 +641,19 @@ ShExDemo = function() {
             if (iface.queryParms['find-types']) { // switch to pre after unhiding.
                 $("#opt-pre-typed").prop( "checked", false );
                 $("#opt-find-type").prop( "checked", true );
-            }
-            else if (iface.queryParms['starting-nodes']) { // switch to pre after unhiding.
+            } else {
                 $("#opt-pre-typed").prop( "checked", true );
                 $("#opt-find-type").prop( "checked", false );
+            }
 
+            if (iface.queryParms['starting-nodes']) { // switch to pre after unhiding.
 
-                var startingNodes = iface.queryParms['starting-nodes'][0].split(' ');
+                var startingNodes = []; // flatmap the n parms with space-separated entries.
+                startingNodes = startingNodes.concat.apply(
+                    startingNodes, iface.queryParms['starting-nodes'].map(function (s) {
+                        return s.split(/ /);
+                    })
+                );
                 if (startingNodes) {
                     // build a temporary selection list available at $("#starting-nodes").val()
                     $("#starting-nodes option").remove();
@@ -1162,7 +1167,7 @@ ShExDemo = function() {
                 iface.validateCore();
         },
 
-        mapResultsToInput: function(r, valResultsElement, id) {
+        mapResultsToInput: function(r, valResultsElement, id, title) {
             // non-jquery functions from SimpleShExDemo
             function removeClass (type, list, className) {
                 if (list === undefined) return;
@@ -1181,7 +1186,8 @@ ShExDemo = function() {
                                     addErrorClass: function(type, list) {
                                         addClass(type, list, "error");
                                     }});
-            var elt = $("<div id='"+id+"' style='border-left: solid 1em #ddf;'>"+markup+"</div>")
+            var clss = r.passed() ? "success" : "error";
+            var elt = $("<div id='"+id+"' class='resultsDiv' style='border-left: solid 1em #ddf; margin-bottom: 2ex;'><span class='"+clss+"'>"+title+":</span><br/>"+markup+"</div>")
             valResultsElement.append(elt);
 
             if (r.passed() && iface.graph.length() != -1) { // -1 signals unknown length db @@ needs UI switch
@@ -1568,17 +1574,20 @@ ShExDemo = function() {
                             valResultsElement.empty();
                             results.forEach(function (r) {
                                 var id = "resNo"+(resNo++);
-                                r.elt.html("<a href='#"+id+"'>"+r.elt.html()+"</a>");
-                                iface.mapResultsToInput(r, valResultsElement, id);
+                                var title = r.elt.html();
+                                r.elt.html("<a href='#"+id+"'>"+title+"</a>");
+                                iface.mapResultsToInput(r, valResultsElement, id, title);
                             })
                         } else {
                             var resNo = 0;
                             valResultsElement.html(results.map(function (r) {
                                 var id = "resNo"+(resNo++);
-                                r.elt.html("<a href='#"+id+"'>"+r.elt.html()+"</a>");
-                                return "<span id='"+id+"' />"+HEsc(r.toString(0));
+                                var title = r.elt.html();
+                                r.elt.html("<a href='#"+id+"'>"+title+"</a>");
+                                var clss = r.passed() ? "success" : "error";
+                                return "<span id='"+id+"' class='"+clss+"'>"+title+":</span>\n"+HEsc(r.toString(0));
                                 // return HEsc(r.toString(0));
-                            }).join("\n\n\n"));
+                            }).join("\n<hr>\n"));
                         }
 
                         function generatorInterface (gen, mediaType) {
