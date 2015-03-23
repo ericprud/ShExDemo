@@ -2453,8 +2453,7 @@ RDF = {
             var passes = [];
             var empties = [];
             var resOrPromises = []; // list of results or promises of results.
-            for (var i = 0; i < this.conjoints.length; ++i) {
-                var conj = this.conjoints[i];
+            this.conjoints.forEach(function (conj) {
                 var resOrPromise = conj.validate(schema, point, inOpt, db, validatorStuff);
                 if (validatorStuff.async)
                     resOrPromises.push(resOrPromise.then(testConjunct));
@@ -2473,7 +2472,7 @@ RDF = {
                         empties.push(r);
                     return r;
                 }
-            }
+            });
             var _AndRule = this;
             return validatorStuff.async ?
                 Promise.all(resOrPromises).then(testAggregate) :
@@ -2622,9 +2621,12 @@ RDF = {
             var indefCount = 0;
             var failures = [];
             var promises = [];
-            for (var i = 0; i < this.disjoints.length; ++i) {
-                var disj = this.disjoints[i];
+            this.disjoints.forEach(function (disj) {
                 var resOrPromise = disj.validate(schema, point, inOpt, db, validatorStuff);
+                if (validatorStuff.async)
+                    promises.push(resOrPromise.then(testExclusiveness));
+                else
+                    testExclusiveness(resOrPromise);
                 function testExclusiveness (r) {
                     if (r.status == RDF.DISPOSITION.FAIL)
                         failures.push(r);
@@ -2637,11 +2639,7 @@ RDF = {
                             ++indefCount;
                     }
                 }
-                if (validatorStuff.async)
-                    promises.push(resOrPromise.then(testExclusiveness));
-                else
-                    testExclusiveness(resOrPromise);
-            }
+            });
             var _OrRule = this;
             return validatorStuff.async ? Promise.all(promises).then(checkResult) : checkResult();
             function checkResult () {
