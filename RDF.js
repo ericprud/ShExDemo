@@ -985,10 +985,10 @@ RDF = {
                     var context = '';
                     if (s._ === "BNode") {
                         var t = validatorStuff.pointStack; // for readability
-                        for (var i = t.length-1; i && t[i][1]._ === "BNode"; --i) {
+                        for (var i = t.length-1; i && t[i].node._ === "BNode"; --i) {
                             context +=
-                                (t[i-1][1]._ === "IRI" ? t[i-1][1].toString() : ("?s"+i))+
-                                " "+t[i][0].toString()+
+                                (t[i-1].node._ === "IRI" ? t[i-1].node.toString() : ("?s"+i))+
+                                " "+t[i].predicate.toString()+
                                 " ?s"+(i-1)+" .\n";
                         }
                     }
@@ -1320,7 +1320,7 @@ RDF = {
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             var ret = new RDF.ValRes();
             schema.dispatch(0, 'enter', rule.codes, rule, t);
-            var nestedValidatorStuff = validatorStuff.push(point, rule.nameClass.term); // !!!! s/rule.nameClass.term/t.p/
+            var nestedValidatorStuff = validatorStuff.push(point, this.label, rule.nameClass.term); // !!!! s/rule.nameClass.term/t.p/
             var resOrPromise = schema.validatePoint(point, this.label, db, nestedValidatorStuff, true);
             return validatorStuff.async ? resOrPromise.then(post) : post(resOrPromise);
             function post (r) {
@@ -3653,7 +3653,6 @@ RDF = {
             };
             return {idMap:idMap, termStringToIds:termStringToIds};
         };
-        this.termResults = {}; // temp cache hack -- makes schema validation non-reentrant
         this.validatePoint = function (point, as, db, validatorStuff, subShapes) {
             // cyclic recursion guard says "am i verifying point as an as in this closure mode?"
             // with closure: start=<a> <a> { <p1> @<a> } / <s1> <p1> <s1> .
@@ -3661,11 +3660,12 @@ RDF = {
             var asStr = as.toString();
             if (!(asStr in this.ruleMap))
                 throw "rule " + asStr + " not found in schema";
-            var key = point.toString() + ' @' + asStr + "," + subShapes;
-            var resOrPromise = this.termResults[key];
+            var key = point.toString() + ' @' + asStr; //  + "," + subShapes
+            var resOrPromise = validatorStuff.termResults.get(key);
             if (resOrPromise === undefined) {
-                this.termResults[key] = new RDF.ValRes(); // temporary empty solution
-                this.termResults[key].status = RDF.DISPOSITION.PASS; // matchedEmpty(this.ruleMap[asStr]);
+                var tmp = new RDF.ValRes(); // temporary empty solution
+                tmp.status = RDF.DISPOSITION.PASS; // matchedEmpty(this.ruleMap[asStr]);
+                validatorStuff.termResults.provisional(key, validatorStuff.async ? Promise.resolve(tmp) : tmp, validatorStuff.pointStack);
 
                 var closedSubGraph;
                 if (validatorStuff.closedShapes)
@@ -3698,9 +3698,9 @@ RDF = {
                         return res;
                     }
                 }
-                this.termResults[key] = resOrPromise;
+                validatorStuff.termResults.finalize(key, resOrPromise);
             }
-            return resOrPromise;
+            return validatorStuff.async ? resOrPromise.then(function (res) { return Promise.resolve(res); }) : resOrPromise;
         };
 
         this.closeShapes = function (point, as, db, validatorStuff, subShapes) {
@@ -3782,7 +3782,7 @@ RDF = {
                         // var closedSubGraph = db.triplesMatching(s, null, null); @@ needed?
 
                         var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0());
-                        var nestedValidatorStuff = validatorStuff.push(s, instSh);
+                        var nestedValidatorStuff = validatorStuff.push(s, ruleLabel, instSh);
                         var resOrPromise = schema.validate(s, ruleLabel, db, nestedValidatorStuff, false);
                         if (validatorStuff.async) {
                             resOrPromise.then(postValidate).catch(function (e) {
@@ -4486,19 +4486,57 @@ SELECT ?s ?p ?o {\n\
         }
     },
 
-    ValidatorStuff: function (iriResolver, closedShapes, async) {
+    TermResults: function () {
+        return {
+            cache: {},
+            hits: {},
+            stacks: {},
+            get: function (key) {
+                if (key in this.cache) this.hits[key] = undefined; return this.cache[key];
+            },
+            provisional: function (key, value, stack) {
+                this.cache[key] = value; this.stacks[key] = stack;
+            },
+            finalize: function (key, value) {
+                this.cache[key] = value;
+            },
+            getModel: function () {
+                var ret = [];
+                var _TermResults = this;
+                Object.keys(this.stacks).forEach(function (k) {
+                    _TermResults.stacks[k].forEach(function (frame) {
+                        var key = frame.node.toString()+" @"+frame.shape.toString();
+                        ret.push({node:frame.node,
+                                  shape:frame.shape,
+                                  res:_TermResults.cache[key].passed(),
+                                  key: key
+                                 });
+                    });
+                });
+                ret.forEach(function (ob) {
+                    delete _TermResults.cache[ob.key];
+                    delete _TermResults.hits[ob.key];
+                    delete _TermResults.stacks[ob.key];
+                });
+                return ret;
+            }
+        };
+    },
+
+    ValidatorStuff: function (iriResolver, closedShapes, async, termResults) {
         return {
             _: 'ValidatorStuff',
             iriResolver: iriResolver,
             closedShapes: closedShapes,
             async: async,
             pointStack: [],
-            push: function (node, predicate) {
-                var nestedValidatorStuff = RDF.ValidatorStuff(this.iriResolver, this.closedShapes, this.async);
+            termResults: termResults,
+            push: function (node, shape, predicate) {
+                var nestedValidatorStuff = RDF.ValidatorStuff(this.iriResolver, this.closedShapes, this.async, this.termResults);
                 this.pointStack.forEach(function (elt) {
                     nestedValidatorStuff.pointStack.push(elt);
                 });
-                nestedValidatorStuff.pointStack.push([predicate, node]);
+                nestedValidatorStuff.pointStack.push({node: node, predicate:predicate, shape:shape});
                 return nestedValidatorStuff;
             }
         };

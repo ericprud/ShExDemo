@@ -1048,11 +1048,12 @@ ShExDemo = function() {
                             ruleLabel;
                     }).filter(function (ruleLabel) { return !!ruleLabel; });
                 try {
-                    var resOrPromises = iface.iterateNodesAndLabels(startingNodes, testAgainst, schema, preTyped, timeBefore);
+                    var pair = iface.iterateNodesAndLabels(startingNodes, testAgainst, schema, preTyped, timeBefore);
+                    var resOrPromises = pair[0], modelIntersection = pair[1];
                     if ($("#opt-async").is(":checked"))
                         Promise.all(resOrPromises).
                         then(function (r) {
-                            finishValidation(r, preTyped, timeBefore);
+                            finishValidation(r, preTyped, modelIntersection, timeBefore);
                         }).catch(function (e) {
                             iface.renderError(e, "#validation .now");
                         }).catch(function (e) {
@@ -1060,7 +1061,7 @@ ShExDemo = function() {
                             return e;
                         });
                     else
-                        finishValidation(resOrPromises, preTyped, timeBefore);
+                        finishValidation(resOrPromises, preTyped, modelIntersection, timeBefore);
                 } catch (e) {
                     try {
                         iface.renderError(e, "#validation .now");
@@ -1075,6 +1076,8 @@ ShExDemo = function() {
 
         iterateNodesAndLabels: function (startingNodes, testAgainst, schema, preTyped, timeBefore) {
             var resOrPromises = [];
+            var termResults = RDF.TermResults();
+            var modelIntersection = null;
                 startingNodes.forEach(function (startingNode) {
                     if (startingNode.charAt(0) == '_' && startingNode.charAt(1) == ':') {
                         startingNode = RDF.BNode(startingNode.substr(2), RDF.Position0())
@@ -1102,15 +1105,18 @@ ShExDemo = function() {
                         var elt =
                             iface.message("Validating " + startingNode + " as " + niceRuleLabel + ".");
                         var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", pos0);
-                        var resOrPromise = iface.validator.validate(startingNode, ruleLabel, iface.graph,
-                                                          RDF.ValidatorStuff(iface.schema.iriResolver,
-                                                                             $("#opt-closed-shapes").is(":checked"),
-                                                                             $("#opt-async").is(":checked")).
-                                                          push(startingNode, instSh), true);
+                        var vs = RDF.ValidatorStuff(iface.schema.iriResolver,
+                                                    $("#opt-closed-shapes").is(":checked"),
+                                                    $("#opt-async").is(":checked"),
+                                                    termResults).
+                            push(startingNode, ruleLabel, instSh);
+                        var resOrPromise = iface.validator.validate(startingNode, ruleLabel, iface.graph, vs, true);
+                        // termResults = {}; // clear out yester-cache
+
                         if ($("#opt-async").is(":checked"))
-                            resOrPromises.push(resOrPromise.then(post));
+                            resOrPromises.push(resOrPromise.then(post, startingNode, ruleLabel));
                         else
-                            resOrPromises.push(post(resOrPromise));
+                            resOrPromises.push(post(resOrPromise, startingNode, ruleLabel));
                         function post (r) {
                             r.elt = elt; // write it into the r for later manipulation
                             if (preTyped) {
@@ -1132,11 +1138,30 @@ ShExDemo = function() {
                                     br.remove();
                                 }
                             }
+
+                            r.model = vs.termResults.getModel().filter(function (tr) {
+                                return !(tr.node === startingNode && tr.shape === ruleLabel);
+                            });
+                            // console.log(r.model.map(function (tr) { return tr.key+"->"+tr.res; }).join("\n"));
+                            if (modelIntersection === null)
+                                modelIntersection = r.model.filter(function (tr) {
+                                    return tr.res === false;
+                                });
+                            else {
+                                var seen = r.model.filter(function (tr) {
+                                    return tr.res === false;
+                                }).map(function (tr) {
+                                    return tr.key;
+                                });
+                                modelIntersection = modelIntersection.filter(function (tr) {
+                                    return seen.indexOf(tr.key) !== -1;
+                                });
+                            }
                             return r;
                         }
                     });
                 });
-            return resOrPromises;
+            return [resOrPromises, modelIntersection];
         },
 
 
@@ -1170,7 +1195,7 @@ ShExDemo = function() {
                 iface.validateCore();
         },
 
-        mapResultsToInput: function(r, valResultsElement, id, title) {
+        mapResultsToInput: function(r, valResultsElement, id, title, inAllModels) {
             // non-jquery functions from SimpleShExDemo
             function removeClass (type, list, className) {
                 if (list === undefined) return;
@@ -1190,7 +1215,8 @@ ShExDemo = function() {
                                         addClass(type, list, "error");
                                     }});
             var clss = r.passed() ? "success" : "error";
-            var elt = $("<div id='"+id+"' class='resultsDiv' style='border-left: solid 1em #ddf; margin-bottom: 2ex;'><span class='"+clss+"'>"+title+":</span><br/>"+markup+"</div>")
+            modelStr = iface.makeModelStr(r.model, inAllModels);
+            var elt = $("<div id='"+id+"' class='resultsDiv' style='border-left: solid 1em #ddf; margin-bottom: 2ex;'><span class='"+clss+"'>"+title+":</span>"+modelStr+"<br/>"+markup+"</div>")
             valResultsElement.append(elt);
 
             var remainingTripleIDs = null;
@@ -1478,7 +1504,19 @@ ShExDemo = function() {
                             window.open($(this).attr("href"), "popupWindow", "width=600,height=600,scrollbars=yes");
                         });
                         //$("#validation .now").attr("class", "message error").append("error:"+e).append($("<br/>"));
-                    }
+                    },
+
+    makeModelStr: function (model, inAllModels) {
+        var thisModelDelta = model.filter(function (tr) {
+            return inAllModels.indexOf(tr.key) === -1;
+        });
+        return thisModelDelta ?
+            (" assuming " + thisModelDelta.map(function (tr) {
+                return HEsc(tr.node.toString())+(tr.res ? " matches " :  " fails ")+HEsc(tr.shape.toString());
+            }).join(", ")) :
+        "";
+    }
+
     };
 
     // Inject a jquery-dependent toHTML into every RDF.StructuredError.
@@ -1568,7 +1606,7 @@ ShExDemo = function() {
         return remainingTripleIDs;
     }
 
-                function finishValidation (results, preTyped, timeBefore) {
+                function finishValidation (results, preTyped, modelIntersection, timeBefore) {
                         if (!preTyped)
                             for (var handler in schema.handlers)
                                 if ('endFindTypes' in schema.handlers[handler])
@@ -1586,6 +1624,11 @@ ShExDemo = function() {
                             ));
 
                         var valResultsElement = iface.enableValidatorOutput();
+                        var inAllModels = modelIntersection.filter(function (tr) {
+                            return tr.res === false;
+                        }).map(function (tr) {
+                            return tr.key;
+                        });
                         if (results.length === 0) {
                             iface.message("(There were no nodes to validate.)");
                             valResultsElement.text("No nodes to validate.");
@@ -1599,7 +1642,7 @@ ShExDemo = function() {
                                 r.elt.html("<a href='#"+id+"'>"+title+"</a>");
 
                                 // Render result in the results pane.
-                                var remainingTripleIDs = iface.mapResultsToInput(r, valResultsElement, id, title);
+                                var remainingTripleIDs = iface.mapResultsToInput(r, valResultsElement, id, title, inAllModels);
                                 if (remainingTripleIDs) {
                                 if (allRemainingTripleIDs === null)
                                     allRemainingTripleIDs = remainingTripleIDs;
@@ -1623,7 +1666,8 @@ ShExDemo = function() {
                                 var title = r.elt.html();
                                 r.elt.html("<a href='#"+id+"'>"+title+"</a>");
                                 var clss = r.passed() ? "success" : "error";
-                                return "<span id='"+id+"' class='"+clss+"'>"+title+":</span>\n"+HEsc(r.toString(0));
+                                var modelStr = iface.makeModelStr(r.model, inAllModels);
+                                return "<span id='"+id+"' class='"+clss+"'>"+title+":</span>"+modelStr+"\n"+HEsc(r.toString(0));
                                 // return HEsc(r.toString(0));
                             }).join("\n<hr>\n"));
                         }
