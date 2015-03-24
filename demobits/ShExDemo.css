@@ -106,6 +106,7 @@ h2 { margin: 0; border: none; }
 .hilightRule { border-top: 1px solid #8fc; border-bottom: 1px solid #8fc; border-left: .25em solid #8fc; border-right: .25em solid #8fc; background-color: #fea; }
 .hilightData { border-top: 1px solid #7bf; border-bottom: 1px solid #7bf; border-left: .25em solid #7bf; border-right: .25em solid #7bf; background-color: #fea; }
 .remainingData { background-color: #dae; border: thin solid #dae; }
+.allRemainingData { background-color: #fdf; border: thin solid #ece; }
 .remainingDataContainer {
   margin: 0;
 }

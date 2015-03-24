@@ -1190,12 +1190,27 @@ ShExDemo = function() {
             var elt = $("<div id='"+id+"' class='resultsDiv' style='border-left: solid 1em #ddf; margin-bottom: 2ex;'><span class='"+clss+"'>"+title+":</span><br/>"+markup+"</div>")
             valResultsElement.append(elt);
 
+            var remainingTripleIDs = null;
             if (r.passed() && iface.graph.length() != -1) { // -1 signals unknown length db @@ needs UI switch
                 // mark up all of the remaining triples.
                 var pre = $("<pre class='remainingDataContainer'>");
-                if (markupMissedTriples(pre, r)) {
+                remainingTripleIDs = markupMissedTriples(pre, r, id)
+                if (remainingTripleIDs.length) {
                     elt.append($("<br/><strong>Remaining triples:</strong>\n\n"));
                     elt.append(pre);
+                    function eachRemaining (add) {
+                        remainingTripleIDs.forEach(function (tripleID) {
+                            iface.data.idMap.getMembers(tripleID).forEach(function (id) {
+                                if (add)
+                                    $("#"+id).addClass("remainingData");
+                                else
+                                    $("#"+id).removeClass("remainingData");
+                            });
+                        });
+                    }
+                    pre.hover(function () { eachRemaining(1); },
+                              function () { eachRemaining(0); });
+
                 } else {
                     elt.append("No remaining triples.");
                 }
@@ -1384,6 +1399,7 @@ ShExDemo = function() {
                 }
             });
             $("#valStatus").empty().append($("<p><strong>result navigation enabled</strong> — use ctrl-↑ and ctrl-↓ to browse results.</p>"));
+            return remainingTripleIDs;
         },
 
         enablePre: function() {
@@ -1510,21 +1526,18 @@ ShExDemo = function() {
 
     return iface;
 
-    function markupMissedTriples (targetElement, r) {
+    function markupMissedTriples (targetElement, r, id) {
         // replace with an encapsulating object with remaining triples.
         var triplesEncountered = r.triples();
 
         var remaining = iface.graph.triples.filter(function (t) {
             return triplesEncountered.indexOf(t) == -1;
         });
-        remaining.forEach(function (t) {
+        var remainingTripleIDs = remaining.map(function (t) {
             var ts = t.toString();
             var to = t.s.toString(true) + " " + t.p.toString(true) + " " + t.o.toString(true) + " .";
             var tripleID = iface.data.idMap.getInt(ts);
 
-            iface.data.idMap.getMembers(tripleID).forEach(
-                function (id) { $("#"+id).addClass("remainingData"); }
-            );
             targetElement.append("  ");
             targetElement.append(
                 $("<span  class='remainingData data'"
@@ -1544,8 +1557,9 @@ ShExDemo = function() {
                     })
             );
             targetElement.append("\n");
+            return tripleID;
         });
-        return remaining.length;
+        return remainingTripleIDs;
     }
 
                 function finishValidation (results, preTyped, timeBefore) {
@@ -1572,12 +1586,27 @@ ShExDemo = function() {
                         } else if ($("#ctl-colorize").is(":checked")) {
                             var resNo = 0;
                             valResultsElement.empty();
+                            var allRemainingTripleIDs = null;
                             results.forEach(function (r) {
                                 var id = "resNo"+(resNo++);
                                 var title = r.elt.html();
                                 r.elt.html("<a href='#"+id+"'>"+title+"</a>");
-                                iface.mapResultsToInput(r, valResultsElement, id, title);
-                            })
+                                var remainingTripleIDs = iface.mapResultsToInput(r, valResultsElement, id, title);
+                                if (remainingTripleIDs) {
+                                if (allRemainingTripleIDs === null)
+                                    allRemainingTripleIDs = remainingTripleIDs;
+                                else
+                                    allRemainingTripleIDs = allRemainingTripleIDs.filter(function (tid) {
+                                        return remainingTripleIDs.indexOf(tid) !== -1;
+                                    });
+                                }
+                            });
+                            if (allRemainingTripleIDs)
+                                allRemainingTripleIDs.forEach(function (tripleID) {
+                                    iface.data.idMap.getMembers(tripleID).forEach(
+                                        function (id) { $("#"+id).addClass("allRemainingData"); }
+                                    );
+                                });
                         } else {
                             var resNo = 0;
                             valResultsElement.html(results.map(function (r) {
