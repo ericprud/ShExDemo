@@ -161,7 +161,7 @@
                 </div>
                     <div id="permalink">
                         <a href="#">permalink</a> <input type="checkbox" id="ctl-keep-history"/> <label for="ctl-keep-history">add to history</label><br/>
-                         <input type="checkbox" id="ctl-accordion"/> <label for="ctl-accordion">accordion-style control pane</label>
+                         <!-- input type="checkbox" id="ctl-accordion"/> <label for="ctl-accordion">accordion-style control pane</label -->
                     </div>
               </div>
 
@@ -357,20 +357,20 @@
 
             // Layout-related stuff.
             $(document).ready(function () {
-                $("#ctl-accordion").change(function () {
-                    if (this.checked)
-                        $("#controls-accordion").accordion({ heightStyle: "fill" });
-                    else
-                        $("#controls-accordion").children().each(function (ord, elt) {
-                            $(elt).off();
-                            var i = this.attributes.length;
-                            while( i-- )
-                                this.removeAttributeNode(this.attributes[i]);
-                            $(elt).children().filter(function (ord, elt) {
-                                return $(elt).hasClass("ui-accordion-header-icon");
-                            }).remove();
-                        });
-                });
+                // $("#ctl-accordion").change(function () {
+                //     if (this.checked)
+                //         $("#controls-accordion").accordion({ heightStyle: "fill" });
+                //     else
+                //         $("#controls-accordion").children().each(function (ord, elt) {
+                //             $(elt).off();
+                //             var i = this.attributes.length;
+                //             while( i-- )
+                //                 this.removeAttributeNode(this.attributes[i]);
+                //             $(elt).children().filter(function (ord, elt) {
+                //                 return $(elt).hasClass("ui-accordion-header-icon");
+                //             }).remove();
+                //         });
+                // });
 
                 // override getPanelHeight() for jquery.layout.
                 interactionInterface.getPanelHeight = function () {
