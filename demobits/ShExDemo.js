@@ -266,6 +266,9 @@ ShExDemo = function() {
                 },
                 close: function () {
                     // initiates validation
+                    // get all labels from the select.
+                    var labels = $("#starting-nodes option").map(function (ord, elt) { return $(elt).text(); })
+                    highlightData(labels, "ui-state-hover", false, 0);
                     $("#settings input[name='mode']").change();
                 },
                 checkAll: function() {
