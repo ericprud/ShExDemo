@@ -1192,12 +1192,16 @@ ShExDemo = function() {
 
             var remainingTripleIDs = null;
             if (r.passed() && iface.graph.length() != -1) { // -1 signals unknown length db @@ needs UI switch
-                // mark up all of the remaining triples.
+                // Make a container for remaining triples.
                 var pre = $("<pre class='remainingDataContainer'>");
+                // remainingTripleIDs will return a list of ordinals for the remaining triples.
                 remainingTripleIDs = markupMissedTriples(pre, r, id)
                 if (remainingTripleIDs.length) {
                     elt.append($("<br/><strong>Remaining triples:</strong>\n\n"));
+                    // Render remaining triples in results.
                     elt.append(pre);
+
+                    // Hovering over the remaining triples block highlights those triples in the data.
                     function eachRemaining (add) {
                         remainingTripleIDs.forEach(function (tripleID) {
                             iface.data.idMap.getMembers(tripleID).forEach(function (id) {
@@ -1210,7 +1214,6 @@ ShExDemo = function() {
                     }
                     pre.hover(function () { eachRemaining(1); },
                               function () { eachRemaining(0); });
-
                 } else {
                     elt.append("No remaining triples.");
                 }
@@ -1586,11 +1589,13 @@ ShExDemo = function() {
                         } else if ($("#ctl-colorize").is(":checked")) {
                             var resNo = 0;
                             valResultsElement.empty();
-                            var allRemainingTripleIDs = null;
+                            var allRemainingTripleIDs = null; // null or intersection of missed triples.
                             results.forEach(function (r) {
                                 var id = "resNo"+(resNo++);
                                 var title = r.elt.html();
                                 r.elt.html("<a href='#"+id+"'>"+title+"</a>");
+
+                                // Render result in the results pane.
                                 var remainingTripleIDs = iface.mapResultsToInput(r, valResultsElement, id, title);
                                 if (remainingTripleIDs) {
                                 if (allRemainingTripleIDs === null)
@@ -1601,6 +1606,7 @@ ShExDemo = function() {
                                     });
                                 }
                             });
+                            // Highlight triples not touched in any result.
                             if (allRemainingTripleIDs)
                                 allRemainingTripleIDs.forEach(function (tripleID) {
                                     iface.data.idMap.getMembers(tripleID).forEach(
