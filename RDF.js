@@ -494,8 +494,8 @@ RDF = {
                 }
                 return str(this.s) + ' ' + str(this.p) + ' ' + str(this.s) + '.';
             },
-            colorize: function (charmap, idMap, termStringToIds) {
-                var tripleId = "t"+idMap.add(this.toString());
+            colorize: function (charmap, idMap, termStringToIds, idPrefix) {
+                var tripleId = idPrefix+idMap.add(this.toString());
                 // Assignid permits only one XML ID for a given term *rendering*.
                 idMap.addMember(this.s.assignId(charmap, tripleId+"_s"));
                 termStringToIds.add(this.s.toString(true), tripleId+"_s");
@@ -753,17 +753,17 @@ RDF = {
                 } else
                     return this.triples.map(function (t) { return t.toString(); }).join("\n");
             },
-            colorize: function (charmap) {
+            colorize: function (charmap, idPrefix) {
                 var idMap = IntStringMap();
                 var termStringToIds = StringIdMap();
                 if (this.triples === null)
                     for (si in this.SPO)
                         for (pi in this.SPO[si])
                             for (oi in this.SPO[si][pi])
-                                this.SPO[si][pi][oi][0].colorize(charmap, idMap, termStringToIds);
+                                this.SPO[si][pi][oi][0].colorize(charmap, idMap, termStringToIds, idPrefix);
                 else
                     for (var iTriple = 0; iTriple < this.triples.length; ++iTriple)
-                        this.triples[iTriple].colorize(charmap, idMap, termStringToIds);
+                        this.triples[iTriple].colorize(charmap, idMap, termStringToIds, idPrefix);
                 var commentId = "tc";
                 //this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
                 for (var iComment = 0; iComment < this.comments.length; ++iComment) {
@@ -1742,8 +1742,8 @@ RDF = {
             Object.keys(this.codes).map(function (k) { ret += " " + AtomicRule.codes[k].toString(); });
             return ret;
         };
-        this.colorize = function (charmap, idMap, termStringToIds) {
-            var ruleId = "r" + idMap.add(this.toKey());
+        this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
+            var ruleId = idPrefix + idMap.add(this.toKey());
             this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
             if (this.valueClass._ == 'ValueReference') { // not very OO
                 this.valueClass.label.assignId(charmap, ruleId+"_ref");
@@ -2011,8 +2011,8 @@ RDF = {
             Object.keys(this.codes).map(function (k) { ret += " " + ConcomitantRule.codes[k].toString(); });
             return ret;
         };
-        this.colorize = function (charmap, idMap, termStringToIds) {
-            var ruleId = "r" + idMap.add(this.toKey());
+        this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
+            var ruleId = idPrefix + idMap.add(this.toKey());
             this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
             if (this.valueClass._ == 'ValueReference') { // not very OO
                 this.valueClass.label.assignId(charmap, ruleId+"_ref");
@@ -2230,8 +2230,8 @@ RDF = {
             Object.keys(this.codes).map(function (k) { ret += ' %' + k + '{' + UnaryRule.codes[k] + '%}'; });
             return ret;
         };
-        this.colorize = function (charmap, idMap, termStringToIds) {
-            this.rule.colorize(charmap, idMap, termStringToIds);
+        this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
+            this.rule.colorize(charmap, idMap, termStringToIds, idPrefix);
             // var ruleId = "r" + idMap.add(this.toKey());
             // // ugh, toString() in order to get offsets for charmap inserts
             // var ret = "(" + rule.toString(); + ")";
@@ -2341,8 +2341,8 @@ RDF = {
         this.toString = function (orig) {
             return '& ' + this.include.toString(orig);
         };
-        this.colorize = function (charmap, idMap, termStringToIds) {
-            // @@@ hilight include this.rule.colorize(charmap, idMap, termStringToIds);
+        this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
+            // @@@ hilight include this.rule.colorize(charmap, idMap, termStringToIds, idPrefix);
         };
         this.validate = function (schema, point, inOpt, db, validatorStuff) {
             return schema.validatePoint(point, this.include, db, validatorStuff, false);
@@ -2390,7 +2390,7 @@ RDF = {
         this.toString = function () {
             return "";
         };
-        this.colorize = function (charmap, idMap, termStringToIds) {
+        this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
         };
         this.validate = function (schema, point, inOpt, db, validatorStuff) {
             var ret = new RDF.ValRes();
@@ -2435,11 +2435,11 @@ RDF = {
                 return '    ' + conj.toString(orig);
             }).join(",\n");
         };
-        this.colorize = function (charmap, idMap, termStringToIds) {
+        this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
             // var ruleId = "r" + idMap.add(this.toKey());
             for (var i = 0; i < this.conjoints.length; ++i) {
                 var conj = this.conjoints[i];
-                conj.colorize(charmap, idMap, termStringToIds);
+                conj.colorize(charmap, idMap, termStringToIds, idPrefix);
             }
         };
 
@@ -2604,11 +2604,11 @@ RDF = {
                 return '(' + disj.toString(orig) + ')';
             }).join("|\n") + ')';
         },
-        this.colorize = function (charmap, idMap, termStringToIds) {
+        this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
             // var ruleId = "r" + idMap.add(this.toKey());
             for (var i = 0; i < this.disjoints.length; ++i) {
                 var disj = this.disjoints[i];
-                disj.colorize(charmap, idMap, termStringToIds);
+                disj.colorize(charmap, idMap, termStringToIds, idPrefix);
             }
         };
         // ∃!x -> true if there's exactly one x in vs
@@ -3622,7 +3622,7 @@ RDF = {
         this.addComment = function (c) {
             this.comments.push(c);
         },
-        this.colorize = function (charmap) {
+        this.colorize = function (charmap, idPrefix) {
             var idMap = IntStringMap();
             var termStringToIds = StringIdMap();
             var ruleId = "init";
@@ -3635,7 +3635,7 @@ RDF = {
             });
             for (var i = 0; i < this.ruleLabels.length; ++i) {
                 var label = this.ruleLabels[i];
-                this.ruleMap[label.toString()].colorize(charmap, idMap, termStringToIds);
+                this.ruleMap[label.toString()].colorize(charmap, idMap, termStringToIds, idPrefix);
                 // colorizing assigns ids; add to term map after colorizing
                 termStringToIds.add(label.toString(true), label.id);
             }
@@ -3644,7 +3644,7 @@ RDF = {
                 termStringToIds.add(this.startRule.toString(true), this.startRule.id);
             }
             // for (var label in this.ruleMap)
-            //     this.ruleMap[label].colorize(charmap, idMap, termStringToIds);
+            //     this.ruleMap[label].colorize(charmap, idMap, termStringToIds, idPrefix);
             var commentId = "sc";
             for (var i = 0; i < this.comments.length; ++i) {
                 var comment = this.comments[i];

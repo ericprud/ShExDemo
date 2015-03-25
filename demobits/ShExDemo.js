@@ -845,7 +845,7 @@ ShExDemo = function() {
         //   data = iface.runParser("#data", "Data", "data-color", function(text, iriResolver) {
         //     return TurtleParser.parse(text, {iriResolver: iriResolver});
         //   })
-        runParser: function(id, label, colorClass, parse) {
+        runParser: function(id, label, colorClass, idPrefix, parse) {
             var now = textValue(id);
 
             last[id + " .textInput"] = now;
@@ -882,7 +882,7 @@ ShExDemo = function() {
                 var element = $(id + " pre").get(0);
                 var textMap = new CharMap(now);
                 textMap.HTMLescape();
-                var t = ret.obj.colorize(textMap);
+                var t = ret.obj.colorize(textMap, idPrefix);
                 ret.idMap = t.idMap;
                 ret.termStringToIds = t.termStringToIds;
                 element.innerHTML = textMap.getText();
@@ -894,9 +894,10 @@ ShExDemo = function() {
             $("#view a").addClass("disabled");
             iface.validator = null;
             try {
-                iface.schema = iface.runParser("#schema", "Schema", "schema-color", function(text, iriResolver) {
-                    return ShExParser.parse(text, {iriResolver: iriResolver});
-                });
+                iface.schema = iface.runParser("#schema", "Schema", "schema-color", "r",
+                                               function(text, iriResolver) {
+                                                   return ShExParser.parse(text, {iriResolver: iriResolver});
+                                               });
                 iface.validator = iface.schema.obj; // intuitive alias
                 enableValidatorLink();
                 if (iface.graph)
@@ -970,9 +971,10 @@ ShExDemo = function() {
                 return true;
             iface.graph = null;
             try {
-                iface.data = iface.runParser("#data", "Data", "data-color", function(text, iriResolver) {
-                    return TurtleParser.parse(text, {iriResolver: iriResolver});
-                });
+                iface.data = iface.runParser("#data", "Data", "data-color", "t",
+                                             function(text, iriResolver) {
+                                                 return TurtleParser.parse(text, {iriResolver: iriResolver});
+                                             });
                 iface.graph = iface.data.obj; // intuitive alias
                 if (iface.validator) {
                     enableValidatorLink();
