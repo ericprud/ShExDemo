@@ -4081,7 +4081,7 @@ SELECT ?s ?p ?o {\n\
     },
 
     ValRes: function () {
-        function renderRule (rule, triple, depth, schemaIdMap, dataIdMap, solutions, classNames) { 
+        function renderRule (rule, triple, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
             var sOrdinal = solutions.length;
             var rs = rule.toString(true);
             var rOrdinal = schemaIdMap.getInt(rule.toKey());
@@ -4098,7 +4098,7 @@ SELECT ?s ?p ?o {\n\
             }
 
             var ret = pad(depth)
-                + "<span id=\"s"+sOrdinal+"\" onClick='hilight(["+sOrdinal+"], ["+rOrdinal+"], ["+tOrdinal+"]);'>";
+                + "<span id=\""+solnIDPrefix+sOrdinal+"\" onClick='hilight(\""+solnIDPrefix+"\", ["+sOrdinal+"], ["+rOrdinal+"], ["+tOrdinal+"]);'>";
 
             ret += "<span class='" + (classNames['schema'] || 'schema') + "'>"
                 + rs.replace(/</gm, '&lt;').replace(/>/gm, '&gt;')
@@ -4113,7 +4113,7 @@ SELECT ?s ?p ?o {\n\
             ret += "</span>";
             return ret;
         }
-        function renderFailure (rule, triple, depth, schemaIdMap, dataIdMap, solutions, classNames, lead, mid) {
+        function renderFailure (rule, triple, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames, lead, mid) {
             var sOrdinal = solutions.length;
             var rs = rule.toString();
             var rOrdinal = schemaIdMap.getInt(rule.toKey());
@@ -4140,7 +4140,7 @@ SELECT ?s ?p ?o {\n\
             if (tOrdinal !== '') newSolution["triple"] = tOrdinal;
 
             var ret = pad(depth)
-                + "<span id=\"s"+sOrdinal+"\" onClick='hilight(["+sOrdinal+"], ["+rOrdinal+"], ["+tOrdinal+"]);' class=\"error\">" + lead;
+                + "<span id=\""+solnIDPrefix+sOrdinal+"\" onClick='hilight(\""+solnIDPrefix+"\", ["+sOrdinal+"], ["+rOrdinal+"], ["+tOrdinal+"]);' class=\"error\">" + lead;
 
             if (triple)
                 ret += "<span class='" + (classNames['data'] || 'data') + "'>"
@@ -4161,8 +4161,8 @@ SELECT ?s ?p ?o {\n\
                 return pad(depth) + this.rule.toString() + " matched by "
                     + this.triple.toString();
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return renderRule(this.rule, this.triple, depth, schemaIdMap, dataIdMap, solutions, classNames);
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return renderRule(this.rule, this.triple, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
             };
             this.postInvoke = function (schema, validatorStuff) {
                 schema.dispatch(1, 'link', this.rule.codes, null, this.triple);
@@ -4180,9 +4180,9 @@ SELECT ?s ?p ?o {\n\
                 return pad(depth) + this.rule.toString() + " matched by "
                     + this.triple.toString() + "\n" + this.r.toString(depth+1);
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return renderRule(this.rule, this.triple, depth, schemaIdMap, dataIdMap, solutions, classNames)
-                    + "\n" + this.r.toHTML(depth+1, schemaIdMap, dataIdMap, solutions, classNames);
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return renderRule(this.rule, this.triple, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames)
+                    + "\n" + this.r.toHTML(depth+1, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
             };
             this.postInvoke = function (schema, validatorStuff) {
                 schema.dispatch(1, 'link', this.rule.codes, null, this.triple);
@@ -4204,8 +4204,8 @@ SELECT ?s ?p ?o {\n\
             this.toString = function (depth) {
                 return pad(depth) + this.rule.toString() + " permitted to not match";
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return pad(depth) + renderRule(this.rule, undefined, depth, schemaIdMap, dataIdMap, solutions, classNames) + " permitted to not match";
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return pad(depth) + renderRule(this.rule, undefined, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) + " permitted to not match";
             };
             this.postInvoke = function (schema, validatorStuff) {
                 return [];
@@ -4219,8 +4219,8 @@ SELECT ?s ?p ?o {\n\
             this.toString = function (depth) {
                 return this.r.toString(depth);
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return this.r.toHTML(depth, schemaIdMap, dataIdMap, solutions, classNames);
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return this.r.toHTML(depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
             };
             this.postInvoke = function (schema, validatorStuff) {
                 schema.dispatch(1, 'enter', this.rule.codes, this.rule, {o:this.point});
@@ -4299,8 +4299,8 @@ SELECT ?s ?p ?o {\n\
                 return pad(depth) + "expected " + this.triple.toString()
                     + " to match " + this.rule.toString();
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return renderFailure(this.rule, this.triple, depth, schemaIdMap, dataIdMap, solutions, classNames, "expected ", " to match ");
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return renderFailure(this.rule, this.triple, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames, "expected ", " to match ");
             }
         },
         this.error_noMatch = function (rule, triple)  {
@@ -4313,9 +4313,9 @@ SELECT ?s ?p ?o {\n\
                     + " to match " + this.rule.toString()
                     + "\n" + r.toString(depth+1);
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return renderFailure(this.rule, this.triple, depth, schemaIdMap, dataIdMap, solutions, classNames, "expected ", " to match ")
-                    + "\n" + this.r.toHTML(depth+1, schemaIdMap, dataIdMap, solutions, classNames);
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return renderFailure(this.rule, this.triple, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames, "expected ", " to match ")
+                    + "\n" + this.r.toHTML(depth+1, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
             }
         },
         this.error_noMatchTree = function (rule, triple, r)  {
@@ -4328,8 +4328,8 @@ SELECT ?s ?p ?o {\n\
                 return pad(depth) + "expected " + this.triples.toString()
                     + " to be covered by " + this.rule.toString();
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return renderFailure(this.rule, this.triples[0], depth, schemaIdMap, dataIdMap, solutions, classNames, "expected ", " to be covered by ");
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return renderFailure(this.rule, this.triples[0], depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames, "expected ", " to be covered by ");
             }
         },
         this.error_noMatchExtra = function (rule, triples, r)  {
@@ -4342,8 +4342,8 @@ SELECT ?s ?p ?o {\n\
                 return pad(depth) + "expected object of " + this.triple.toString()
                     + " to match value of " + this.rule.toString();
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return renderFailure(this.rule, this.triple, depth, schemaIdMap, dataIdMap, solutions, classNames, "expected object of ", " to match value of ");
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return renderFailure(this.rule, this.triple, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames, "expected object of ", " to match value of ");
             }
         },
         this.error_wrongValue = function (rule, triple)  {
@@ -4357,12 +4357,12 @@ SELECT ?s ?p ?o {\n\
                         return m.toString(depth+1)+"\n";
                     }).join("") + "    ]]";
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
                 var sOrdinal = solutions.length;
                 solutions.push({}); // @@ needed?
 
                 var ret = pad(depth)
-                    + "<span id=\"s"+sOrdinal+"\" onClick='hilight(["+sOrdinal+"], [], []);' class=\"error\">"
+                    + "<span id=\""+solnIDPrefix+sOrdinal+"\" onClick='hilight(\""+solnIDPrefix+"\", ["+sOrdinal+"], [], []);' class=\"error\">"
                     + "eval of {" + this.codeObj + "} rejected [[\n"
                     + solution.matches.map(function (m) {
                         return m.toString(2).replace(/</gm, '&lt;').replace(/>/gm, '&gt;')+"\n";
@@ -4381,8 +4381,8 @@ SELECT ?s ?p ?o {\n\
                     + " exceeds max cardinality " + this.max
                     + " of " + this.rule.toString();
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return renderFailure(this.rule, this.triple, depth, schemaIdMap, dataIdMap, solutions, classNames, "", " exceeds max cardinality " + this.max + " of ");
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return renderFailure(this.rule, this.triple, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames, "", " exceeds max cardinality " + this.max + " of ");
             }
         },
         this.error_aboveMax = function (max, rule, triple)  {
@@ -4394,8 +4394,8 @@ SELECT ?s ?p ?o {\n\
                 return pad(depth) + "expected at least " + this.min
                     + " matches of " + this.rule.toString();
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return pad(depth) + renderFailure(this.rule, undefined, depth, schemaIdMap, dataIdMap, solutions, classNames, "expected at least " + this.min + " matches of ", "");
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return pad(depth) + renderFailure(this.rule, undefined, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames, "expected at least " + this.min + " matches of ", "");
             }
         },
         this.error_belowMin = function (min, rule) {
@@ -4409,10 +4409,10 @@ SELECT ?s ?p ?o {\n\
                         return pad(depth+1) + f.toString(depth+1);
                     }).join("\n|  ") + "]]";
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return pad(depth) + renderFailure(this.rule, undefined, depth, schemaIdMap, dataIdMap, solutions, classNames, "no matches of ", "")
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return pad(depth) + renderFailure(this.rule, undefined, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames, "no matches of ", "")
                     + "[[" + this.failures.map(function (f) {
-                        return pad(depth+1) + f.toHTML(depth+1, schemaIdMap, dataIdMap, solutions, classNames);
+                        return pad(depth+1) + f.toHTML(depth+1, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
                     }).join("\n|  ") + "]]";
             }
         },
@@ -4431,13 +4431,13 @@ SELECT ?s ?p ?o {\n\
                         return pad(depth+1) + f.toString(depth+1);
                     }).join("\n|  ") + "]]";
             };
-            this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
-                return pad(depth) + renderFailure(this.rule, undefined, depth, schemaIdMap, dataIdMap, solutions, classNames, "mixed matches of ", "\n")
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return pad(depth) + renderFailure(this.rule, undefined, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames, "mixed matches of ", "\n")
                     + "passed: [[" + this.passes.map(function (f) {
-                        return pad(depth+1) + f.toHTML(depth+1, schemaIdMap, dataIdMap, solutions, classNames);
+                        return pad(depth+1) + f.toHTML(depth+1, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
                     }).join("\n|  ") + "]]\n"
                     + "empty: [[" + this.empties.map(function (f) {
-                        return pad(depth+1) + f.toHTML(depth+1, schemaIdMap, dataIdMap, solutions, classNames);
+                        return pad(depth+1) + f.toHTML(depth+1, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
                     }).join("\n|  ") + "]]";
             }
         },
@@ -4476,12 +4476,12 @@ SELECT ?s ?p ?o {\n\
             }).join("\n");
             return ret + "\n" + p + "}";
         },
-        this.toHTML = function (depth, schemaIdMap, dataIdMap, solutions, classNames) {
+        this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
             var p = pad(depth);
             var ret = p + (this.passed() ? "PASS {\n" : "<span class='error'>FAIL</span> {\n");
             if (this.errors.length > 0)
-                ret += "Errors:\n" + this.errors.map(function (e) { return ' ☹ ' + p + e.toHTML(depth+1, schemaIdMap, dataIdMap, solutions, classNames) + "\n"; }).join("") + "Matches:\n";
-            ret += this.matches.map(function (m) { return m.toHTML(depth+1, schemaIdMap, dataIdMap, solutions, classNames); }).join("\n");
+                ret += "Errors:\n" + this.errors.map(function (e) { return ' ☹ ' + p + e.toHTML(depth+1, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) + "\n"; }).join("") + "Matches:\n";
+            ret += this.matches.map(function (m) { return m.toHTML(depth+1, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames); }).join("\n");
             return ret + "\n" + p + "}";
         }
     },

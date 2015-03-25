@@ -121,6 +121,7 @@ ShExDemo = function() {
         GenRwindow: undefined,
         dataSources: { Text: 1, Query: 2 },
         dataSource: 1, // Text
+        curSolnSetIDPrefix: null,
 
         // Logging utilities
         status: function (m, target) {
@@ -1209,7 +1210,7 @@ ShExDemo = function() {
             }
 
             var solutions = [];
-            var markup = r.toHTML(0, iface.schema.idMap, iface.data.idMap, solutions,
+            var markup = r.toHTML(0, id+"-", iface.schema.idMap, iface.data.idMap, solutions,
                                   { schema: 'schemaflow', data: 'dataflow',
                                     addErrorClass: function(type, list) {
                                         addClass(type, list, "error");
@@ -1272,7 +1273,9 @@ ShExDemo = function() {
                 if (!rules[r]) rules[r] = {triples:[], solutions:[]};
 
             // ugly window.hilight while i search for workaround.
-            hilight = function (solutionList, schemaList, dataList) {
+            hilight = function (solnSetIDPrefix, solutionList, schemaList, dataList) {
+
+                // See if two lits have the same elements.
                 function sameElements (left, right) {
                     if (left === undefined) return right === undefined ? true : false;
                     if (right === undefined) return false;
@@ -1284,13 +1287,14 @@ ShExDemo = function() {
                 }
 
                 // Turn off current highlighting.
-                removeClass("s", lastSolution, "hilightSolution");
+                removeClass(iface.curSolnSetIDPrefix, lastSolution, "hilightSolution");
                 removeClass("r", lastRule, "hilightRule");
                 if (iface.data.idMap)
                     for (var i = 0; i < lastTriple.length; ++i)
                         removeClass("", iface.data.idMap.getMembers(lastTriple[i]), "hilightData");
 
-                if (sameElements(lastRule, schemaList) &&
+                if (iface.curSolnSetIDPrefix === solnSetIDPrefix &&
+                    sameElements(lastRule, schemaList) &&
                     sameElements(lastTriple, dataList) &&
                     sameElements(lastSolution, solutionList)) {
 
@@ -1309,7 +1313,7 @@ ShExDemo = function() {
                         document.getElementById("curData").value = dataList[dataList.length-1];
 
                     // Highlight the indicated solution, rule and data elements.
-                    addClass("s", solutionList, "hilightSolution");
+                    addClass(solnSetIDPrefix, solutionList, "hilightSolution");
                     addClass("r", schemaList, "hilightRule");
                     for (var i = 0; i < dataList.length; ++i)
                         if (dataList[i] != null)
@@ -1320,22 +1324,25 @@ ShExDemo = function() {
                     lastTriple = dataList;
                     lastSolution = solutionList;
                 }
+
+                // Set solution no for up and down keys
+                iface.curSolnSetIDPrefix = solnSetIDPrefix;
             };
 
-            function down () {
+            function down (solnSetIDPrefix) {
                 var f = $(document.activeElement)[0];
                 if (f === $("#schema .textInput")[0]) {
                     var i = document.getElementById("curRule").value;
                     if (++i < rules.length)
-                        hilight(rules[i].solutions, [i], rules[i].triples);
+                        hilight(solnSetIDPrefix, rules[i].solutions, [i], rules[i].triples);
                 } else if (f === $("#data .textInput")[0]) {
                     var i = document.getElementById("curData").value;
                     if (++i < triples.length)
-                        hilight(triples[i].solutions, triples[i].rules, [i]);
+                        hilight(solnSetIDPrefix, triples[i].solutions, triples[i].rules, [i]);
                 } else {
                     var i = document.getElementById("curSolution").value;
                     if (++i < solutions.length)
-                        hilight([i], solutions[i].rule === undefined ? [] : [solutions[i].rule], solutions[i].triple === undefined ? [] : [solutions[i].triple]);
+                        hilight(solnSetIDPrefix, [i], solutions[i].rule === undefined ? [] : [solutions[i].rule], solutions[i].triple === undefined ? [] : [solutions[i].triple]);
                 }
             }
             // function goTo () {
@@ -1343,22 +1350,22 @@ ShExDemo = function() {
             //     if (s < 0 || s > solutions.length-1)
             //         s = 0;
             //     document.getElementById("curSolution").value = s;
-            //     hilight([s], [solutions[s].rule], [solutions[s].triple]);
+            //     hilight(solnSetIDPrefix, [s], [solutions[s].rule], [solutions[s].triple]);
             // }
-            function up () {
+            function up (solnSetIDPrefix) {
                 var f = $(document.activeElement)[0];
                 if (f === $("#schema .textInput")[0]) {
                     var i = document.getElementById("curRule").value;
                     if (--i >= 0)
-                        hilight(rules[i].solutions, [i], rules[i].triples);
+                        hilight(solnSetIDPrefix, rules[i].solutions, [i], rules[i].triples);
                 } else if (f === $("#data .textInput")[0]) {
                     var i = document.getElementById("curData").value;
                     if (--i >= 0)
-                        hilight(triples[i].solutions, triples[i].rules, [i]);
+                        hilight(solnSetIDPrefix, triples[i].solutions, triples[i].rules, [i]);
                 } else {
                     var i = document.getElementById("curSolution").value;
                     if (--i >= 0)
-                        hilight([i], solutions[i].rule === undefined ? [] : [solutions[i].rule], solutions[i].triple === undefined ? [] : [solutions[i].triple]);
+                        hilight(solnSetIDPrefix, [i], solutions[i].rule === undefined ? [] : [solutions[i].rule], solutions[i].triple === undefined ? [] : [solutions[i].triple]);
                 }
             }
             // document.getElementById("keysSolution").onkeydown = function () {
@@ -1369,7 +1376,7 @@ ShExDemo = function() {
             // document.getElementById("curSolution").onchange = function () { goTo(); }
             // document.getElementById("down").onclick = function () { down(); }
 
-            function keydown(e) {
+            function keydown(e, solnSetIDPrefix) {
                 function buttonKeys (e) {
                     e = e || window.event;
                     var keyCode = e.keyCode || e.which;
@@ -1416,10 +1423,10 @@ ShExDemo = function() {
                 if (e.ctrlKey && !e.shiftKey)
                     switch (keyCode) {
                     case arrow.up:
-                        up();
+                        up(solnSetIDPrefix);
                         return false;
                     case arrow.down:
-                        down();
+                        down(solnSetIDPrefix);
                         return false;
                     }
                 return buttonKeys(e);
@@ -1427,7 +1434,7 @@ ShExDemo = function() {
             $("body").keydown(function (ev) {
                 if (ev.timeStamp != iface.lastKeyDownTime) {
                     iface.lastKeyDownTime = ev.timeStamp;
-                    return keydown(ev)
+                    return keydown(ev, iface.curSolnSetIDPrefix); // set by last hilight() call
                 }
             });
             $("#valStatus").empty().append($("<p><strong>result navigation enabled</strong> — use ctrl-↑ and ctrl-↓ to browse results.</p>"));
