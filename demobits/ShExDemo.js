@@ -1028,7 +1028,7 @@ ShExDemo = function() {
             };
             iface.validator.alwaysInvoke = {};
             if (!$("#opt-disable-js").is(":checked"))
-                iface.validator.handlers['js'] = RDF.jsHandler;
+                iface.validator.handlers['js'] = RDF.jsHandler();
             if (iface.validator.disableJavascript)
                 iface.message("javascript disabled");
 

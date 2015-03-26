@@ -2749,17 +2749,20 @@ RDF = {
 
     // Example (unsafe) javascript semantic action handler.
     // Can be used like: schema.eventHandlers = {js: RDF.jsHandler};
-    jsHandler: {
-        _callback: function (code, valRes, context) {
-            eval("function action(_) {" + code + "}");
-            ret = action(context, { message: function (msg) { RDF.message(msg); } });
-            var status = RDF.DISPOSITION.PASS;
-            if (ret === false)
-            { status = RDF.DISPOSITION.FAIL; valRes.error_badEval(code); }
-            return status;
-        },
-        begin: function (code, valRes, context) { return this._callback(code, valRes, context); },
-        post: function (code, valRes, context) { return this._callback(code, valRes, context); }
+    jsHandler: function () {
+        return {
+            when: 0,
+            _callback: function (code, valRes, context) {
+                eval("function action(_) {" + code + "}");
+                ret = action(context, { message: function (msg) { RDF.message(msg); } });
+                var status = RDF.DISPOSITION.PASS;
+                if (ret === false)
+                { status = RDF.DISPOSITION.FAIL; valRes.error_badEval(code); }
+                return status;
+            },
+            begin: function (code, valRes, context) { return this._callback(code, valRes, context); },
+            post: function (code, valRes, context) { return this._callback(code, valRes, context); }
+        }
     },
 
     // Example XML generator.
