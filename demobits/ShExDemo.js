@@ -816,8 +816,7 @@ ShExDemo = function() {
             $("#opt-async").removeAttr("disabled");
 
             // $("#settings input[name='mode']").change(); would trigger handleParameterUpdate() so:
-            if ($("#opt-pre-typed").is(":checked"))
-                $("#starting-nodes").removeAttr("disabled");
+            try{$("#starting-nodes").multiselect("enable");} catch (e) {} // may not yet be initialized
         },
 
         /* Turn bits of validator on or off depending on schema and data
@@ -825,7 +824,7 @@ ShExDemo = function() {
         disableValidatorOutput: function() {
             $("#validation .log").empty();
             $("#validation .now").attr("class", "now message disabled").text("Validator not available.");
-            $("#starting-nodes").attr("disabled", "disabled");
+            try{$("#starting-nodes").multiselect("disable");} catch (e) {} // may not yet be initialized
             $("#opt-pre-typed").attr("disabled", "disabled");
             $("#opt-find-type").attr("disabled", "disabled");
             $("#opt-disable-js").attr("disabled", "disabled");
@@ -1533,16 +1532,18 @@ ShExDemo = function() {
                         //$("#validation .now").attr("class", "message error").append("error:"+e).append($("<br/>"));
                     },
 
-    makeModelStr: function (model, inAllModels) {
-        var thisModelDelta = model.filter(function (tr) {
-            return inAllModels.indexOf(tr.key) === -1;
-        });
-        return thisModelDelta.length ?
-            (" assuming " + thisModelDelta.map(function (tr) {
-                return HEsc(tr.node.toString())+(tr.res ? " matches " :  " fails ")+HEsc(tr.shape.toString());
-            }).join(", ")) :
-        "";
-    }
+        makeModelStr: function (model, inAllModels) {
+            // We only care about solutions that were negative in this
+            // model but not all models.
+            var thisModelDelta = model.filter(function (tr) {
+                return tr.res === false && inAllModels.indexOf(tr.key) === -1;
+            });
+            return thisModelDelta.length ?
+                (" assuming " + thisModelDelta.map(function (tr) {
+                    return HEsc(tr.node.toString())+(tr.res ? " matches " :  " fails ")+HEsc(tr.shape.toString());
+                }).join(", ")) :
+            "";
+        }
 
     };
 
@@ -1651,11 +1652,17 @@ ShExDemo = function() {
                             ));
 
                         var valResultsElement = iface.enableValidatorOutput();
+
+                        // inAllModels is a list of the nodes that
+                        // were presumed to PASS for a recursive
+                        // validation but turned out to FAIL.
                         var inAllModels = modelIntersection.filter(function (tr) {
                             return tr.res === false;
                         }).map(function (tr) {
+                            // Just keep the key, e.g. "<http://ex.example/#c> @<T>".
                             return tr.key;
                         });
+
                         if (results.length === 0) {
                             iface.message("(There were no nodes to validate.)");
                             valResultsElement.text("No nodes to validate.");
