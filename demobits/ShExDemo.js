@@ -1060,7 +1060,7 @@ ShExDemo = function() {
                         }).catch(function (e) {
                             iface.renderError(e, "#validation .now");
                         }).catch(function (e) {
-                            console.log("uncaught error in error handler: " + e);
+                            alert("uncaught error in error handler: " + e);
                             return e;
                         });
                     else
@@ -1069,7 +1069,7 @@ ShExDemo = function() {
                     try {
                         iface.renderError(e, "#validation .now");
                     } catch (e) {
-                        console.log("uncaught error in error handler: " + e);
+                        alert("uncaught error in error handler: " + e);
                         return e;
                     }
                 }
@@ -1198,24 +1198,40 @@ ShExDemo = function() {
                 iface.validateCore();
         },
 
-        mapResultsToInput: function(r, valResultsElement, solnSetID, title, inAllModels) {
+        mapResultsToInput: function(r, valResultsElement, solnSetID, solutionsToRuleAndTriple, title, inAllModels) {
             // non-jquery functions from SimpleShExDemo
             function removeClass (type, list, className) {
                 if (list === undefined) return;
                 for (var i = 0; i < list.length; ++i)
                     document.getElementById(type + list[i]).classList.remove(className);
             }
-            function addClass (type, list, className) {
+            function addClass (type, list, className, container) {
                 if (list === undefined) return;
-                for (var i = 0; i < list.length; ++i)
-                    document.getElementById(type + list[i]).classList.add(className);
+                for (var i = 0; i < list.length; ++i) {
+                    var elt = $("#"+type+list[i]);
+                    elt.addClass(className);
+                    if (container) {
+                        // smooth out .scrollIntoView with:
+                        // http://stackoverflow.com/questions/1805808/how-do-i-scroll-a-row-of-a-table-into-view-element-scrollintoview-using-jquery#answer-3782959
+                        var containerTop = container.scrollTop();
+                        var containerBottom = containerTop + container.height();
+                        var elemTop = elt.get(0).offsetTop;
+                        var elemBottom = elemTop + elt.height();
+                        if (elemTop < containerTop) {
+                            container.scrollTop(elemTop);
+                        } else if (elemBottom > containerBottom) {
+                            container.scrollTop(elemBottom - container.height());
+                        }
+                    }
+                }
             }
 
-            var solutions = [];
-            var markup = r.toHTML(0, solnSetID+"-", iface.schema.idMap, iface.data.idMap, solutions,
+            var solnSetIDPrefix = solnSetID+"-";
+            var solutions = solutionsToRuleAndTriple[solnSetIDPrefix] = [];
+            var markup = r.toHTML(0, solnSetIDPrefix, iface.schema.idMap, iface.data.idMap, solutions,
                                   { schema: 'schemaflow', data: 'dataflow',
                                     addErrorClass: function(type, list) {
-                                        addClass(type, list, "error");
+                                        addClass(type, list, "error", null);
                                     }});
             var clss = r.passed() ? "success" : "error";
             modelStr = iface.makeModelStr(r.model, inAllModels);
@@ -1315,11 +1331,11 @@ ShExDemo = function() {
                         document.getElementById("curData").value = dataList[dataList.length-1];
 
                     // Highlight the indicated solution, rule and data elements.
-                    addClass(solnSetIDPrefix, solutionList, "hilightSolution");
-                    addClass("r", schemaList, "hilightRule");
+                    addClass(solnSetIDPrefix, solutionList, "hilightSolution", $("#results"));
+                    addClass("r", schemaList, "hilightRule", $("#schema .textInput"));
                     for (var i = 0; i < dataList.length; ++i)
                         if (dataList[i] != null)
-                            addClass("", iface.data.idMap.getMembers(dataList[i]), "hilightData");
+                            addClass("", iface.data.idMap.getMembers(dataList[i]), "hilightData", $("#data .textInput"));
 
                     // Write down current state.
                     lastRule = schemaList;
@@ -1343,16 +1359,17 @@ ShExDemo = function() {
                         hilight(solnSetIDPrefix, triples[i].solutions, triples[i].rules, [i]);
                 } else {
                     var i = document.getElementById("curSolution").value;
-                    if (++i < solutions.length)
-                        hilight(solnSetIDPrefix, [i], solutions[i].rule === undefined ? [] : [solutions[i].rule], solutions[i].triple === undefined ? [] : [solutions[i].triple]);
+                    var slns = solutionsToRuleAndTriple[solnSetIDPrefix];
+                    if (++i < slns.length)
+                        hilight(solnSetIDPrefix, [i], slns[i].rule === undefined ? [] : [slns[i].rule], slns[i].triple === undefined ? [] : [slns[i].triple]);
                 }
             }
             // function goTo () {
             //     var s = document.getElementById("curSolution").value;
-            //     if (s < 0 || s > solutions.length-1)
+            //     if (s < 0 || s > slns.length-1)
             //         s = 0;
             //     document.getElementById("curSolution").value = s;
-            //     hilight(solnSetIDPrefix, [s], [solutions[s].rule], [solutions[s].triple]);
+            //     hilight(solnSetIDPrefix, [s], [slns[s].rule], [slns[s].triple]);
             // }
             function up (solnSetIDPrefix) {
                 var f = $(document.activeElement)[0];
@@ -1366,8 +1383,9 @@ ShExDemo = function() {
                         hilight(solnSetIDPrefix, triples[i].solutions, triples[i].rules, [i]);
                 } else {
                     var i = document.getElementById("curSolution").value;
+                    var slns = solutionsToRuleAndTriple[solnSetIDPrefix];
                     if (--i >= 0)
-                        hilight(solnSetIDPrefix, [i], solutions[i].rule === undefined ? [] : [solutions[i].rule], solutions[i].triple === undefined ? [] : [solutions[i].triple]);
+                        hilight(solnSetIDPrefix, [i], slns[i].rule === undefined ? [] : [slns[i].rule], slns[i].triple === undefined ? [] : [slns[i].triple]);
                 }
             }
             // document.getElementById("keysSolution").onkeydown = function () {
@@ -1645,13 +1663,15 @@ ShExDemo = function() {
                             var resNo = 0;
                             valResultsElement.empty();
                             var allRemainingTripleIDs = null; // null or intersection of missed triples.
+                            var solutionsToRuleAndTriple = {};
                             results.forEach(function (r) {
                                 var solnSetID = "resNo"+(resNo++);
                                 var title = r.elt.html();
                                 r.elt.html("<a href='#"+solnSetID+"'>"+title+"</a>");
 
                                 // Render result in the results pane.
-                                var remainingTripleIDs = iface.mapResultsToInput(r, valResultsElement, solnSetID, title, inAllModels);
+                                solutionsToRuleAndTriple[solnSetID] = [];
+                                var remainingTripleIDs = iface.mapResultsToInput(r, valResultsElement, solnSetID, solutionsToRuleAndTriple, title, inAllModels);
                                 if (remainingTripleIDs) {
                                 if (allRemainingTripleIDs === null)
                                     allRemainingTripleIDs = remainingTripleIDs;
