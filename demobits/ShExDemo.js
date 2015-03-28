@@ -403,8 +403,6 @@ ShExDemo = function() {
                     }).catch(function(err) {
                         alert("Completely unexpected error loading data: \""+err+"\nPlease file a bug with the URL that produced this error");
                     }).then(function() {
-                        delete iface.queryParms['schemaURL'];
-                        delete iface.queryParms['dataURL'];
                         iface.loadDirectData();
                     });
             }
@@ -437,8 +435,6 @@ ShExDemo = function() {
                 });
 
             // Query parms will be rebuilt on event timeouts.
-            delete iface.queryParms['schema'];
-            delete iface.queryParms['data'];
             iface.allDataIsLoaded();
         },
         loadSPARQLResults: function (query, sparqlInterface, cacheSize) {
@@ -719,6 +715,16 @@ ShExDemo = function() {
         },
 
         handleSchemaUpdate: function () {
+            var now = textValue('#schema');
+            // Early return if nothing's changed.
+            if (last['#schema .textInput'] === now)
+                return;
+            last['#schema .textInput'] = now;
+
+            // Reflect changed text in ['schema'] (not ['schemaURL']).
+            delete iface.queryParms['schemaURL'];
+            iface.queryParms['schema'] = [now];
+
             iface.parseSchema() && iface.graph && iface.validate();
         },
         queueSchemaUpdate: function (ev) {
@@ -732,6 +738,16 @@ ShExDemo = function() {
         },
 
         handleDataUpdate: function () {
+            var now = textValue('#data');
+            // Early return if nothing's changed.
+            if (last['#data .textInput'] === now)
+                return;
+            last['#data .textInput'] = now;
+
+            // Reflect changed text in ['data'] (not ['dataURL']).
+            delete iface.queryParms['dataURL'];
+            iface.queryParms['data'] = [now];
+
             iface.dataSource = iface.dataSources.Text;
             iface.parseData() && iface.validator && iface.validate();
         },
@@ -847,9 +863,6 @@ ShExDemo = function() {
         runParser: function(id, label, colorClass, idPrefix, parse) {
             var now = textValue(id);
 
-            last[id + " .textInput"] = now;
-            iface.queryParms[id.substr(1)] = [now];
-            
             var m = now.match(/^GET\s+(\S+)\s+$/);
             if (m) {
                 iface.loadData(m[1], id, arguments.callee.caller.caller);
