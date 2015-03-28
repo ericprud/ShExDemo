@@ -2894,7 +2894,7 @@ RDF = {
             },
             end: function (code, valRes, context) {
                 var now = this._stack.pop();
-                RDF.message(this._doc);
+                // console.dir(this._doc);
                 if (this._stack.length) { // in a findtypes container
                     if (context.status == RDF.DISPOSITION.PASS)
                         this._stack[this._stack.length-1].bottom.appendChild(now.top);
@@ -3007,7 +3007,7 @@ RDF = {
                 this._stack.push(this._doc);
             },
             end: function (code, valRes, context) {
-                RDF.message(this._doc);
+                // console.dir(this._doc);
                 this.text = JSON.stringify(this._doc);
             },
             enter: function (code, valRes, context) {
@@ -3525,7 +3525,7 @@ RDF = {
                 this.link = _add;
                 this.visit = _add;
                 this.end = function (code, valRes, context) {
-                    RDF.message(doc);
+                    // console.dir(doc);
                     this.text = doc.map(function (t) {
                         return t.toString()+"\n";
                     }).join('');
