@@ -291,3 +291,7 @@ font-size: 70% !important;
 .ui-widget .editparent { /* override jquery.theme.ui.css:24 */
   font-size: 91% !important;
 }
+
+.ui-layout-pane {
+  overflow: visible !important;
+}
