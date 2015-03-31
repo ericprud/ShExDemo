@@ -2238,18 +2238,13 @@ RDF = {
         };
         this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
             this.rule.colorize(charmap, idMap, termStringToIds, idPrefix);
-            // var ruleId = "r" + idMap.add(this.toKey());
-            // // ugh, toString() in order to get offsets for charmap inserts
-            // var ret = "(" + rule.toString(); + ")";
-            // if (this.opt) {
-            //     ret += '?';
-            // }
-            // if (this.codes)
-            //     Object.keys(this.codes).map(function (k) {
-            //         charmap.insertBefore(this._pos.offset, "<span id='"+ruleId+"' class='code'>", ret.length);
-            //         ret += ' %' + k + '{' + this.codes[k] + '%}'; 
-            //         charmap.insertBefore(this._pos.offset, "</span>", ret.length);
-            //     })
+            var ruleId = idPrefix + idMap.add(this.toKey());
+            var _UnaryRule = this;
+            Object.keys(this.codes).map(function (k) {
+                var code = _UnaryRule.codes[k];
+                charmap.insertBefore(code._pos.offset, "<span id='"+ruleId+"_"+k+"' class='code'>", 0);
+                charmap.insertAfter(code._pos.offset+code._pos.width, "</span>", 0);
+            });
         };
         // GroupRule: v=validity(r,p,g,{min(contextCard.min, opt.min), max(contextCard.max, opt.max)); if(𝕗|𝜃) return v;
         // if(∅) {if(contextCard.min === 0) return ∅ else if (opt) return 𝕡 else return 𝕗}; return dispatch('post', );
