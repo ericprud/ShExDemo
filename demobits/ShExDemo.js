@@ -1067,8 +1067,8 @@ ShExDemo = function() {
                     var resOrPromises = pair[0], modelIntersection = pair[1];
                     if ($("#opt-async").is(":checked"))
                         Promise.all(resOrPromises).
-                        then(function (r) {
-                            finishValidation(r, preTyped, modelIntersection, timeBefore);
+                        then(function (results) {
+                            renderAllResults(results, preTyped, modelIntersection, timeBefore);
                         }).catch(function (e) {
                             iface.renderError(e, "#validation .now");
                         }).catch(function (e) {
@@ -1076,7 +1076,7 @@ ShExDemo = function() {
                             return e;
                         });
                     else
-                        finishValidation(resOrPromises, preTyped, modelIntersection, timeBefore);
+                        renderAllResults(resOrPromises, preTyped, modelIntersection, timeBefore);
                 } catch (e) {
                     try {
                         iface.renderError(e, "#validation .now");
@@ -1647,7 +1647,7 @@ ShExDemo = function() {
         return remainingTripleIDs;
     }
 
-                function finishValidation (results, preTyped, modelIntersection, timeBefore) {
+                function renderAllResults (results, preTyped, modelIntersection, timeBefore) {
                         if (!preTyped)
                             for (var handler in schema.handlers)
                                 if ('endFindTypes' in schema.handlers[handler])
