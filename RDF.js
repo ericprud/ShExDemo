@@ -325,7 +325,7 @@ RDF = {
     DISPOSITION: {
         PASS :      {value: 1, name: "pass"      }, 
         FAIL:       {value: 3, name: "fail"      }, 
-        NONE:       {value: 0, name: "empty"     },
+        NONE:       {value: 0, name: "none"      },
         ZERO:       {value: 2, name: "indefinite"},
         EXOR :      {value: 1, name: "error"     }
     },
@@ -1339,14 +1339,14 @@ RDF = {
         this.SPARQLobjectTest = function (prefixes) {
             return "(isIRI(?o) || isBlank(?o))";
         },
-        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
-            inOpt = 1;
-            var ret = RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
+            contextCard.min = 0;
+            var ret = RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
             var lead1 = pad(depth, '    ');
             var lead2 = pad(depth+1, '    ');
         var countSelect = '';
         var counter = undefined;
-        if (inOpt) {
+        if (contextCard.min === 0) {
             counter = counters.incr(label.lex + "_c");
             countSelect = " (COUNT(*) AS " + counter + ")";
         }
@@ -1454,8 +1454,8 @@ RDF = {
             if (s == "<http://www.w3.org/2013/ShEx/ns#BNode>") return "isBlank(?o)";
             return "(isLiteral(?o) && dataterm(?o) = " + defix(this.term, prefixes) + ")";
         },
-        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
-            return RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
+            return RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
@@ -1517,8 +1517,8 @@ RDF = {
             if (s == "<http://www.w3.org/2013/ShEx/ns#BNode>") return "isBlank(?o)";
             return "(isLiteral(?o) && datatype(?o) = " + defix(this.type, prefixes) + ")";
         },
-        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
-            return RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
+            return RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
@@ -1581,8 +1581,8 @@ RDF = {
                 return "?o = " + defix(v.term, prefixes);
             }).join(" || ") + ")";
         },
-        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
-            return RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
+            return RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
@@ -1636,8 +1636,8 @@ RDF = {
                 return "?o !" + v.asSPARQLfilter(prefixes);
             }).join(" && ") + ")";
         },
-        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
-            return RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
+            return RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
@@ -1691,9 +1691,9 @@ RDF = {
                 }).join(" && ") + ")";
             return ret;
         },
-        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, card, code) {
+        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
             // throw "SPARQLobjectJoin of ValuePattern " + this.toString() + " needs attention.";
-            return RDF.arcTest(schema, label, prefixes, depth, counters, inOpt, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            return RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             // throw "SPARQLobjectJoin of ValuePattern " + this.toString() + " needs attention.";
@@ -1758,11 +1758,11 @@ RDF = {
                 charmap.insertAfter(code._pos.offset+code._pos.width, "</span>", 0);
             });
         };
-        // only returns ∅|𝜃 if inOpt
-        // ArcRule: if (inOpt ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
+        // only returns ∅|𝜃 if contextCard.min === 0
+        // ArcRule: if (contextCard.min === 0 ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
         // if(SIZE(matchName)<min|>max) return 𝕗;
-        // vs=matchName.map(valueClass(v,_,g,false)); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        // vs=matchName.map(valueClass(v,_,g,{min:1, max:1})); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
+        this.validate = function (schema, point, contextCard, db, validatorStuff) {
             var matched = 0;
             var ret = new RDF.ValRes();
             ret.status = RDF.DISPOSITION.PASS;
@@ -1791,8 +1791,8 @@ RDF = {
                     return _AtomicRule.nameClass.match(t.p);
                 });
                 var pet = null;
-                if (inOpt && matchName.length === 0)
-                { ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE; ret.matchedEmpty(_AtomicRule);
+                if (contextCard.min === 0 && matchName.length === 0)
+                { ret.status = this.min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE; ret.matchedEmpty(_AtomicRule);
                   if (validatorStuff.async) pet = Promise.resolve(ret);
                 }
                 else if (matchName.length < _AtomicRule.min)
@@ -1829,15 +1829,21 @@ RDF = {
                             promises.push(resOrPromise);
                     });
                     function postTest () {
-                        if (inOpt && passes.length === 0) {
+                        if (contextCard.min === 0 && passes.length === 0) {
                             ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
                             ret.matchedEmpty(_AtomicRule);
                         } else if (passes.length < _AtomicRule.min) {
                             ret.status = RDF.DISPOSITION.FAIL;
                             ret.error_belowMin(_AtomicRule.min, _AtomicRule);
+                        } else if (contextCard.max === undefined || contextCard.max >= passes.length) {
+                            ret.status = RDF.DISPOSITION.PASS;
                         } else if (_AtomicRule.max !== null && passes.length > _AtomicRule.max) {
                             ret.status = RDF.DISPOSITION.FAIL;
                             ret.error_aboveMax(_AtomicRule.max, _AtomicRule, passes[_AtomicRule.max].r);
+                            var t;
+                            while (t = passes.shift()) { // @@hack: move passes to fails so they get added below.
+                                fails.push(t);
+                            }
                         }
                         if (ret.status == RDF.DISPOSITION.FAIL) {
                             for (var iFails1 = 0; iFails1 < fails.length; ++iFails1)
@@ -1878,14 +1884,14 @@ RDF = {
                     return handleNegation(ret);
             }
         };
-        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
+        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
             var lead = pad(depth, '    ');
             var ret =
-                this.valueClass.SPARQLobjectJoin(schema, label, prefixes, depth, counters, inOpt,
+                this.valueClass.SPARQLobjectJoin(schema, label, prefixes, depth, counters, contextCard,
                                                  this.nameClass.SPARQLpredicate(prefixes),
                                                  this.nameClass.SPARQLpredicateTest(prefixes),
                                                  // if we are in an optional, we mustn't test card constraints.
-                                                 inOpt ? undefined : {min:this.min, max:this.max},
+                                                 contextCard.min === 0 ? undefined : {min:this.min, max:this.max},
                                                  this.codes.sparql);
             ret.min = this.min;
             ret.max = this.max;
@@ -2027,11 +2033,11 @@ RDF = {
                 charmap.insertAfter(code._pos.offset+code._pos.width, "</span>", 0);
             });
         };
-        // only returns ∅|𝜃 if inOpt
-        // Concomittant: if (inOpt ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
+        // only returns ∅|𝜃 if contextCard.min === 0
+        // Concomittant: if (contextCard.min === 0 ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
         // if(SIZE(matchName)<min|>max) return 𝕗;
-        // vs=matchName.map(valueClass(v,_,g,false)); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        // vs=matchName.map(valueClass(v,_,g,{min:1, max:1})); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
+        this.validate = function (schema, point, contextCard, db, validatorStuff) {
             var matched = 0;
             var ret = new RDF.ValRes();
             ret.status = RDF.DISPOSITION.PASS;
@@ -2048,7 +2054,7 @@ RDF = {
                     ];
                 throw RDF.StructuredError(message);
             }
-            if (inOpt && matchName.length === 0)
+            if (contextCard.min === 0 && matchName.length === 0)
                 { ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE; ret.matchedEmpty(_ConcomitantRule);
                   return validatorStuff.async ? Promise.resolve(ret) : ret;
                 }
@@ -2083,7 +2089,7 @@ RDF = {
                         promises.push(resOrPromise);
                 });
                 function postTest () {
-                    if (inOpt && passes.length === 0) {
+                    if (contextCard.min === 0 && passes.length === 0) {
                         ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
                         ret.matchedEmpty(_ConcomitantRule);
                     } else if (passes.length < _ConcomitantRule.min) {
@@ -2109,10 +2115,10 @@ RDF = {
                 }
             }
         };
-        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
+        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
             var lead = pad(depth, '    ');
             var ret =
-                this.valueClass.SPARQLobjectJoin(schema, label, prefixes, depth, counters, inOpt,
+                this.valueClass.SPARQLobjectJoin(schema, label, prefixes, depth, counters, contextCard,
                                                  "?p",
                                                  "true",
                                                  // if we are in an optional, we mustn't test card constraints.
@@ -2245,12 +2251,17 @@ RDF = {
             //         charmap.insertBefore(this._pos.offset, "</span>", ret.length);
             //     })
         };
-        // GroupRule: v=validity(r,p,g,inOpt|opt); if(𝕗|𝜃) return v;
-        // if(∅) {if(inOpt) return ∅ else if (opt) return 𝕡 else return 𝕗}; return dispatch('post', );
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        // GroupRule: v=validity(r,p,g,{min(contextCard.min, opt.min), max(contextCard.max, opt.max)); if(𝕗|𝜃) return v;
+        // if(∅) {if(contextCard.min === 0) return ∅ else if (opt) return 𝕡 else return 𝕗}; return dispatch('post', );
+        this.validate = function (schema, point, contextCard, db, validatorStuff) {
             var _UnaryRule = this;
             schema.dispatch(0, 'enter', this.codes, this, {o:point}); // !! lie! it's the *subject*!
-            var resOrPromise = this.rule.validate(schema, point, inOpt || this.opt, db, validatorStuff);
+            var resOrPromise = this.rule.validate(schema, point,
+                                                  {min:Math.min(contextCard.min,this.opt.min),
+                                                   max:this.opt.max === undefined ?
+                                                   undefined :
+                                                   Math.max(contextCard.max, this.opt.max)},
+                                                  db, validatorStuff);
             return validatorStuff.async ? resOrPromise.then(post) : post(resOrPromise);
             function post (v) {
                 schema.dispatch(0, 'exit', _UnaryRule.codes, this, null);
@@ -2260,21 +2271,21 @@ RDF = {
                 if (v.status == RDF.DISPOSITION.FAIL || v.status == RDF.DISPOSITION.ZERO)
                     ; // v.status = RDF.DISPOSITION.FAIL; -- avoid dispatch below
                 else if (v.status == RDF.DISPOSITION.NONE) {
-                    // if (inOpt) v.status = RDF.DISPOSITION.NONE; else
-                    if (_UnaryRule.opt)
-                        v.status = RDF.DISPOSITION.PASS;
+                    // if (contextCard.min === 0) v.status = RDF.DISPOSITION.NONE; else
+                    if (_UnaryRule.opt.min === 0)
+                        ret.status = RDF.DISPOSITION.PASS;
                     else
-                        v.status = RDF.DISPOSITION.FAIL;
+                        ret.status = RDF.DISPOSITION.FAIL;
                 } else if (v.status != RDF.DISPOSITION.FAIL)
-                    v.status = schema.dispatch(0, 'post', _UnaryRule.codes, v, v.matches);
+                    ret.status = schema.dispatch(0, 'post', _UnaryRule.codes, v, v.matches);
                 return ret;
             }
         };
-        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
+        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
             var lead = pad(depth, '    ');
         var countSelect = '';
         var counter = undefined;
-        if (inOpt) {
+        if (contextCard.min === 0) {
             counter = counters.incr(label.lex + "_c");
             countSelect = " (COUNT(*) AS " + counter + ")";
         }
@@ -2344,11 +2355,11 @@ RDF = {
         this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
             // @@@ hilight include this.rule.colorize(charmap, idMap, termStringToIds, idPrefix);
         };
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
-            return schema.validatePoint(point, this.include, db, validatorStuff, false);
+        this.validate = function (schema, point, contextCard, db, validatorStuff) {
+            return schema.validatePoint(point, this.include, db, validatorStuff, {min:1, max:1});
         };
-        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
-            return schema.ruleMap[this.include].SPARQLvalidation(schema, label, prefixes, depth, counters, false);
+        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
+            return schema.ruleMap[this.include].SPARQLvalidation(schema, label, prefixes, depth, counters, {min:1, max:1});
         },
         this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
             return schema.ruleMap[this.include].SPARQLdataDump(schema, label, prefixes, depth, variables);
@@ -2392,12 +2403,12 @@ RDF = {
         };
         this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
         };
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        this.validate = function (schema, point, contextCard, db, validatorStuff) {
             var ret = new RDF.ValRes();
-            ret.status = inOpt ? RDF.DISPOSITION.NONE : RDF.DISPOSITION.PASS; // nod agreeably
+            ret.status = contextCard.min === 0 ? RDF.DISPOSITION.NONE : RDF.DISPOSITION.PASS; // nod agreeably
             return validatorStuff.async ? Promise.resolve(ret) : ret;
         };
-        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
+        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
             return new RDF.QueryClause(undefined, "");
         },
         this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
@@ -2446,7 +2457,7 @@ RDF = {
         // AndRule: vs=conjoints.map(validity(_,p,g,o)); if(∃𝕗) return 𝕗;
         // if(∃𝕡∧∃∅) return 𝕗; if(∄𝕡∧∄∅) return 𝜃 else if(∃𝕡) return 𝕡 else return ∅
         // Note, this FAILs an empty disjunction.
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        this.validate = function (schema, point, contextCard, db, validatorStuff) {
             var ret = new RDF.ValRes();
             var seenFail = false;
             var allPass = RDF.DISPOSITION.PASS;
@@ -2454,7 +2465,7 @@ RDF = {
             var empties = [];
             var resOrPromises = []; // list of results or promises of results.
             this.conjoints.forEach(function (conj) {
-                var resOrPromise = conj.validate(schema, point, inOpt, db, validatorStuff);
+                var resOrPromise = conj.validate(schema, point, contextCard, db, validatorStuff);
                 if (validatorStuff.async)
                     resOrPromises.push(resOrPromise.then(testConjunct));
                 else
@@ -2492,20 +2503,20 @@ RDF = {
                 return ret;
             }
         };
-        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
+        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
             var ret = '';
             var subs = [];
             var firstNonZero = undefined;
             for (var i = 0; i < this.conjoints.length; ++i) {
-                var sub = this.conjoints[i].SPARQLvalidation(schema, label, prefixes, depth, counters, inOpt);
+                var sub = this.conjoints[i].SPARQLvalidation(schema, label, prefixes, depth, counters, contextCard);
                 ret += sub.sparql;
-                if (inOpt) {
+                if (contextCard.min === 0) {
                     subs.push(sub);
                     if (firstNonZero === undefined && sub.min !== 0)
                         firstNonZero = i;
                 }
             }
-            if (inOpt) {
+            if (contextCard.min === 0) {
                 var empty = subs.map(function (s) {
                     return s.counter + "=0";
                 }).join(" && ");
@@ -2519,7 +2530,7 @@ RDF = {
             }
 
             var qc;
-            if (inOpt) {
+            if (contextCard.min === 0) {
                 qc = new RDF.QueryClause(subs[firstNonZero].variable, ret);
                 qc.min = subs[firstNonZero].min;
                 qc.max = subs[firstNonZero].max;
@@ -2614,41 +2625,49 @@ RDF = {
         // ∃!x -> true if there's exactly one x in vs
         // OrRule: vs=disjoints.map(validity(_,p,g,o)); if(∄𝕡∧∄∅∧∄𝜃) return 𝕗;
         // if(∃!𝕡) return 𝕡; if(∃!𝜃) return 𝜃 else return 𝕗;
-        this.validate = function (schema, point, inOpt, db, validatorStuff) {
+        this.validate = function (schema, point, contextCard, db, validatorStuff) {
             var ret = new RDF.ValRes();
             var allErrors = true;
             var passCount = 0;
-            var indefCount = 0;
+            var zeroCount = 0;
+            var noneCount = 0;
             var failures = [];
             var promises = [];
             this.disjoints.forEach(function (disj) {
-                var resOrPromise = disj.validate(schema, point, inOpt, db, validatorStuff);
+                var resOrPromise = disj.validate(schema, point, contextCard, db, validatorStuff);
                 if (validatorStuff.async)
                     promises.push(resOrPromise.then(testExclusiveness));
                 else
                     testExclusiveness(resOrPromise);
                 function testExclusiveness (r) {
-                    if (r.status == RDF.DISPOSITION.FAIL)
-                        failures.push(r);
-                    else {
+                    if (r.status == RDF.DISPOSITION.FAIL) {
+                        if (r.errors.length === 1 && r.errors[0]._ === "RuleFailMax")
+                            passCount += 2;
+                        else
+                            failures.push(r);
+                    } else {
                         allErrors = false;
                         ret.add(r);
                         if (r.status == RDF.DISPOSITION.PASS)
                             ++passCount;
                         else if (r.status == RDF.DISPOSITION.ZERO)
-                            ++indefCount;
+                            ++zeroCount;
+                        else if (r.status == RDF.DISPOSITION.NONE)
+                            ++noneCount;
                     }
                 }
             });
             var _OrRule = this;
             return validatorStuff.async ? Promise.all(promises).then(checkResult) : checkResult();
             function checkResult () {
-                if (allErrors || passCount > 1)
+                if (allErrors || (contextCard.max !== undefined && passCount > contextCard.max))
                     ret.status = RDF.DISPOSITION.FAIL;
                 else if (passCount)
                     ret.status = RDF.DISPOSITION.PASS;
-                else if (indefCount)
+                else if (zeroCount)
                     ret.status = RDF.DISPOSITION.ZERO;
+                else if (noneCount)
+                    ret.status = RDF.DISPOSITION.NONE;
                 else
                     ret.status = RDF.DISPOSITION.FAIL;
                 if (ret.status === RDF.DISPOSITION.FAIL)
@@ -2656,12 +2675,12 @@ RDF = {
                 return ret;
             }
         };
-        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, inOpt) {
+        this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
             var lead1 = pad(depth, '    ');
             var lead2 = pad(depth+1, '    ');
         var countSelect = '';
         var counter = undefined;
-        if (inOpt) {
+        if (contextCard.min === 0) {
             counter = counters.incr(label.lex + "_c");
             countSelect = " (COUNT(*) AS " + counter + ")";
         }
@@ -2669,7 +2688,7 @@ RDF = {
             for (var i = 0; i < this.disjoints.length; ++i) {
                 if (i !== 0)
                     ret += lead2 + "} UNION {\n";
-                ret += this.disjoints[i].SPARQLvalidation(schema, label, prefixes, depth+2, counters, inOpt).sparql;
+                ret += this.disjoints[i].SPARQLvalidation(schema, label, prefixes, depth+2, counters, contextCard).sparql;
             }
             ret += lead2 + "}\n" +
                 lead1 + "} GROUP BY ?" + label.lex + " HAVING (COUNT(*) = 1)}\n"; // make sure we pass only one side of the union
@@ -3675,7 +3694,7 @@ RDF = {
                     closedSubGraph = db.triplesMatching(point, null, null);
 
                 var rule = subShapes ? this.getRuleMapClosure(as) : this.ruleMap[asStr];
-                resOrPromise = rule.validate(this, point, false, db, validatorStuff);
+                resOrPromise = rule.validate(this, point, {min:1, max:1}, db, validatorStuff);
 
                 // Make sure we used all of the closedSubGraph.
                 if (validatorStuff.closedShapes) {
@@ -3888,7 +3907,7 @@ RDF = {
             };
             try {
                 return prepend
-                    + func(this.ruleMap[start], this, this.startRule, prefixes, 1, counters, false).sparql
+                    + func(this.ruleMap[start], this, this.startRule, prefixes, 1, counters, {min:1, max:1}).sparql
                     + append;
             } catch (e) {
                 var m = "failed to generate SPARQL validation query because:\n" + e;
@@ -3898,22 +3917,22 @@ RDF = {
         };
         this.SPARQLvalidation = function (prefixes) {
             return this.SPARQLvalidation2(
-                function (rule, schema, label, prefixes, depth, counters, inOpt) {
-                    return rule.SPARQLvalidation(schema, label, prefixes, depth, counters, inOpt);
+                function (rule, schema, label, prefixes, depth, counters, contextCard) {
+                    return rule.SPARQLvalidation(schema, label, prefixes, depth, counters, contextCard);
                 }, prefixes,
                 RDF.SPARQLprefixes(prefixes) + "ASK {\n", "}\n");
         }
         this.SPARQLremainingTriples = function (prefixes) {
             var ret = this.SPARQLvalidation2(
-                function (rule, schema, label, prefixes, depth, counters, inOpt) {
-                    return rule.SPARQLvalidation(schema, label, prefixes, depth, counters, inOpt);
+                function (rule, schema, label, prefixes, depth, counters, contextCard) {
+                    return rule.SPARQLvalidation(schema, label, prefixes, depth, counters, contextCard);
                 }, prefixes,
                 RDF.SPARQLprefixes(prefixes) + "\
 SELECT ?s ?p ?o {\n\
   { ?s ?p ?o } MINUS\n\
   {\n","    {\n");
             ret += this.SPARQLvalidation2(
-                function (rule, schema, label, prefixes, depth, counters, inOpt) {
+                function (rule, schema, label, prefixes, depth, counters, contextCard) {
                     return rule.SPARQLremainingTriples(schema, label, "?"+label.lex, prefixes, depth, counters);
                 }, prefixes, "", "");
             ret += "\n\
@@ -3930,7 +3949,7 @@ SELECT ?s ?p ?o {\n\
                 throw new RDF.UnknownRule(start);
 
             this.seen[start] = label;
-            return this.ruleMap[start].SPARQLvalidation(this, label, prefixes, depth, counters, false)
+            return this.ruleMap[start].SPARQLvalidation(this, label, prefixes, depth, counters, {min:1, max:1})
         };
         this.SPARQLdataDump3 = function (start, label, prefixes, depth, counters) {
             if (this.seen[start])
@@ -3939,7 +3958,7 @@ SELECT ?s ?p ?o {\n\
                 throw new RDF.UnknownRule(start);
 
             this.seen[start] = label;
-            return this.ruleMap[start].SPARQLdataDump(this, label, prefixes, depth, counters, false)
+            return this.ruleMap[start].SPARQLdataDump(this, label, prefixes, depth, counters, {min:1, max:1})
         };
         this.SPARQLremainingTriples3 = function (label, as, prefixes, depth, counters) {
             var start = label.toString();
@@ -3954,7 +3973,7 @@ SELECT ?s ?p ?o {\n\
         this.SPARQLdataDump = function (prefixes) {
             var variables = [];
             var ret = this.SPARQLvalidation2(
-                function (rule, schema, label, prefixes, depth, counters, inOpt) {
+                function (rule, schema, label, prefixes, depth, counters, contextCard) {
                     return rule.SPARQLdataDump(schema, {lex:'start'}, // <-- dirty hack to emulate RDF term
                                                prefixes, depth, variables);
                 }, prefixes, '');

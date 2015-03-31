@@ -65,7 +65,7 @@ sparqlBase      = SPARQL_BASE _ i:IRIREF { iriResolver.setBase(i.lex); }
 start           = 'start' _ '=' _ startRule
 startRule       = l:label _ { curSchema.startRule = l; }
                 / t:typeSpec _ m:CodeMap {
-    var r = Object.keys(m).length ? new RDF.UnaryRule(t, false, m, RDF.Position2(line(), column())) : t;
+    var r = Object.keys(m).length ? new RDF.UnaryRule(t, {min:1, max:1}, m, RDF.Position2(line(), column())) : t;
     var b = RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column(), offset(), 1));
     r.setLabel(b);
     curSchema.add(b, r);
@@ -74,7 +74,7 @@ startRule       = l:label _ { curSchema.startRule = l; }
 }
 
 shape           = v:_VIRTUAL? l:label _ t:typeSpec _ m:CodeMap {
-    var r = Object.keys(m).length ? new RDF.UnaryRule(t, false, m, RDF.Position2(line(), column())) : t;
+    var r = Object.keys(m).length ? new RDF.UnaryRule(t, {min:1, max:1}, m, RDF.Position2(line(), column())) : t;
     r.setLabel(l);
     curSchema.add(l, r);
     if (v)
@@ -113,13 +113,13 @@ typeSpec        = includes:include* '{' _ exp:OrExpression? _ '}' {
 }
 include = '&' _ l:label _  { return new RDF.IncludeRule(l, RDF.Position2(line(), column())); }
 
-OrExpression    = exp:AndExpression _ more:disjoint* {
+OrExpression    = exp:AndExpression _ more:disjoint* _ '|'? {
     if (!more.length) return exp;
     more.unshift(exp)
     return new RDF.OrRule(more, RDF.Position2(line(), column()));
 }
 disjoint = '|' _ exp:AndExpression _ { return exp; }
-AndExpression   = exp:UnaryExpression _ more:conjoint* {
+AndExpression   = exp:UnaryExpression _ more:conjoint* _ ','? {
     if (!more.length) return exp;
     more.unshift(exp)
     return new RDF.AndRule(more, RDF.Position2(line(), column()));
@@ -139,11 +139,11 @@ UnaryExpression = i:_id? a:arc {
         r = {min: 1, max: 1};
     if (curSubject.length > 0)
         curSubject.pop();
-    if (r.min === 1 && !Object.keys(c).length) {
+    if (r.min === 1 && r.max === 1 && !Object.keys(c).length) {
         if (i) exp.setRuleID(i); // in case it has an ID but no triples.
         return exp;
     }
-    return new RDF.UnaryRule(exp, r.min !== 1 /* !!! extend to handle n-ary cardinality */, c, RDF.Position2(line(), column()));
+    return new RDF.UnaryRule(exp, {min:r.min, max:r.max} /* !!! extend to handle n-ary cardinality */, c, RDF.Position2(line(), column()));
 }
 _id = '$' _ i:iri _ { curSubject.push(i); return i; }
 
