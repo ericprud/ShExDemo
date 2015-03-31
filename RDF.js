@@ -2660,18 +2660,22 @@ RDF = {
             var _OrRule = this;
             return validatorStuff.async ? Promise.all(promises).then(checkResult) : checkResult();
             function checkResult () {
-                if (allErrors || (contextCard.max !== undefined && passCount > contextCard.max))
+                if (allErrors) {
                     ret.status = RDF.DISPOSITION.FAIL;
-                else if (passCount)
+                    ret.error_orNone(failures, _OrRule);
+                } else if (contextCard.max !== undefined && passCount > contextCard.max) {
+                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.error_orMulti(failures, _OrRule);
+                } else if (passCount)
                     ret.status = RDF.DISPOSITION.PASS;
                 else if (zeroCount)
                     ret.status = RDF.DISPOSITION.ZERO;
                 else if (noneCount)
                     ret.status = RDF.DISPOSITION.NONE;
-                else
+                else { // @@ how do we get here?
                     ret.status = RDF.DISPOSITION.FAIL;
-                if (ret.status === RDF.DISPOSITION.FAIL)
-                    ret.error_or(failures, _OrRule);
+                    ret.error_orNone(failures, _OrRule);
+                }
                 return ret;
             }
         };
@@ -4423,8 +4427,8 @@ SELECT ?s ?p ?o {\n\
         this.error_belowMin = function (min, rule) {
             this.errors.push(new RuleFailMin(min, rule));
         },
-        RuleFailOr = function (failures, rule) {
-            this._ = 'RuleFailOr'; this.failures = failures; this.status = RDF.DISPOSITION.FAIL; this.rule = rule;
+        RuleFailOrNone = function (failures, rule) {
+            this._ = 'RuleFailOrNone'; this.failures = failures; this.status = RDF.DISPOSITION.FAIL; this.rule = rule;
             this.toString = function (depth) {
                 return pad(depth) + "no matches of " + this.rule.toString()
                     + "[[" + this.failures.map(function (f) {
@@ -4438,8 +4442,26 @@ SELECT ?s ?p ?o {\n\
                     }).join("\n|  ") + "]]";
             }
         },
-        this.error_or = function (failures, rule) {
-            this.errors.push(new RuleFailOr(failures, rule));
+        this.error_orNone = function (failures, rule) {
+            this.errors.push(new RuleFailOrNone(failures, rule));
+        },
+        RuleFailOrMulti = function (failures, rule) {
+            this._ = 'RuleFailOrMulti'; this.failures = failures; this.status = RDF.DISPOSITION.FAIL; this.rule = rule;
+            this.toString = function (depth) {
+                return pad(depth) + "matched more than one of " + this.rule.toString()
+                    + "[[" + this.failures.map(function (f) {
+                        return pad(depth+1) + f.toString(depth+1);
+                    }).join("\n|  ") + "]]";
+            };
+            this.toHTML = function (depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames) {
+                return pad(depth) + renderFailure(this.rule, undefined, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames, "matched more than one of ", "")
+                    + "[[" + this.failures.map(function (f) {
+                        return pad(depth+1) + f.toHTML(depth+1, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
+                    }).join("\n|  ") + "]]";
+            }
+        },
+        this.error_orMulti = function (failures, rule) {
+            this.errors.push(new RuleFailOrMulti(failures, rule));
         },
 
         RuleFailMixedOpt = function (passes, empties, rule) {
