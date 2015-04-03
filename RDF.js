@@ -2213,7 +2213,7 @@ RDF = {
         };
         this.toHaskell = function (depth) {
             var lead = pad(depth, '    ');
-            return lead + "(Arcrule " + this.min + " " + this.max +" " +
+            return lead + "(ArcRule " + this.min + " " + this.max +" " +
 //                this.nameClass.toHaskell(depth+1) +" " +
                 this.valueClass.toHaskell(depth+1) +
                 codesToHaskell(this.codes, depth+1) + ")\n";
