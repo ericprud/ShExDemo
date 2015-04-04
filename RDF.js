@@ -2351,7 +2351,7 @@ RDF = {
             // @@@ hilight include this.rule.colorize(charmap, idMap, termStringToIds, idPrefix);
         };
         this.validate = function (schema, point, contextCard, db, validatorStuff) {
-            return schema.validatePoint(point, this.include, db, validatorStuff, {min:1, max:1});
+            return schema.validatePoint(point, this.include, db, validatorStuff, false);
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
             return schema.ruleMap[this.include].SPARQLvalidation(schema, label, prefixes, depth, counters, {min:1, max:1});
@@ -3681,7 +3681,7 @@ RDF = {
             var asStr = as.toString();
             if (!(asStr in this.ruleMap))
                 throw "rule " + asStr + " not found in schema";
-            var key = point.toString() + ' @' + asStr; //  + "," + subShapes
+            var key = point.toString() + ' @' + asStr + "," + subShapes;
             var resOrPromise = validatorStuff.termResults.get(key);
             if (resOrPromise === undefined) {
                 var tmp = new RDF.ValRes(); // temporary empty solution
@@ -4544,7 +4544,7 @@ SELECT ?s ?p ?o {\n\
                 var _TermResults = this;
                 Object.keys(this.stacks).forEach(function (k) {
                     _TermResults.stacks[k].forEach(function (frame) {
-                        var key = frame.node.toString()+" @"+frame.shape.toString();
+                        var key = frame.node.toString()+" @"+frame.shape.toString()+",true"; // ,true == validatePoint() cache with subshapes enabled
                         ret.push({node:frame.node,
                                   shape:frame.shape,
                                   res:_TermResults.cache[key].passed(),
