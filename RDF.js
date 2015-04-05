@@ -1849,8 +1849,13 @@ RDF = {
                             for (var iFails1 = 0; iFails1 < fails.length; ++iFails1)
                                 ret.add(fails[iFails1].r);
                         } else {
-                            for (var iPasses = 0; iPasses < passes.length; ++iPasses)
-                                ret.add(passes[iPasses].r);
+                            passes.forEach(function (pass) {
+                                if (_AtomicRule.max === undefined || _AtomicRule.max > 1)
+                                    pass.r.matches.forEach(function (m) {
+                                        m.group = passes;
+                                    });
+                                ret.add(pass.r);
+                            });
                             for (var iFails2 = 0; iFails2 < fails.length; ++iFails2)
                                 if (!_AtomicRule.additive)
                                     ret.missed(fails[iFails2].r);
@@ -2271,8 +2276,16 @@ RDF = {
                         ret.status = RDF.DISPOSITION.PASS;
                     else
                         ret.status = RDF.DISPOSITION.FAIL;
-                } else if (v.status != RDF.DISPOSITION.FAIL)
+                } else if (v.status != RDF.DISPOSITION.FAIL) {
+                    if (_UnaryRule.opt.max === undefined || _UnaryRule.opt.max > 1) {
+                        var passes = [];
+                        v.matches.forEach(function (r) {
+                            if (r.triple) // RuleMatchEmpty
+                                passes.push({t:r.triple, r: v});
+                        });
+                    }
                     ret.status = schema.dispatch(0, 'post', _UnaryRule.codes, v, v.matches);
+                }
                 return ret;
             }
         };
@@ -2351,7 +2364,7 @@ RDF = {
             // @@@ hilight include this.rule.colorize(charmap, idMap, termStringToIds, idPrefix);
         };
         this.validate = function (schema, point, contextCard, db, validatorStuff) {
-            return schema.validatePoint(point, this.include, db, validatorStuff, {min:1, max:1});
+            return schema.validatePoint(point, this.include, db, validatorStuff, false);
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
             return schema.ruleMap[this.include].SPARQLvalidation(schema, label, prefixes, depth, counters, {min:1, max:1});
@@ -2781,6 +2794,62 @@ RDF = {
             begin: function (code, valRes, context) { return this._callback(code, valRes, context); },
             post: function (code, valRes, context) { return this._callback(code, valRes, context); }
         }
+    },
+
+    // parser handler.
+    psHandler: function () {
+        return {
+            when: 1,
+            text: null,
+            begin: function (code, valRes, context) {
+                var _seen = [];
+                var _this = {};
+
+                var _callback = function (code, valRes, context) {
+                    if (code) {
+                        var list = [];
+                        var codeStr = (context.constructor === Array ?
+                                       code.replace(/\$([0-9]+)/g, '(_list[$1-1])') :
+                                       code.replace(/\$([0-9]+)/g, '(_.r.matches.$)')).
+                            replace(/\$\$/g, '_r.$');
+                        if ('group' in valRes) {
+                            if (_seen.indexOf(valRes.group) !== -1)
+                                return RDF.DISPOSITION.PASS;
+                            _seen.push(valRes.group);
+                            // var c2 = {};
+                            // for (k in context)
+                            //     c2[k] = context[k];
+                            // context = c2;
+                            list = valRes.group.map(function (elt) {
+                                return elt.t.o;
+                            });
+                        } else if ('r' in valRes) {
+                            list = valRes.r.matches.map(function (m) {
+                                return m.$;
+                            });
+                        }
+                        var evl = "function action(_, _r, _list) {" + codeStr + "}";
+                        console.log(evl);
+                        eval(evl);
+                        ret = action.call(_this, context, valRes, list, { message: function (msg) { RDF.message(msg); } });
+                        var status = RDF.DISPOSITION.PASS;
+                        if (ret === false)
+                        { status = RDF.DISPOSITION.FAIL; valRes.error_badEval(code); }
+                        return status;
+                    } else {
+                        valRes.$ = context.o;
+                    }
+                }
+
+                this.exit = _callback;
+                this.visit = _callback;
+                this.end = function (code, valRes, context) {
+                    this.text = _this.S.toString();
+                }
+                context.register(["visit", "exit"]);
+                return _callback(code, valRes, context);
+            }
+        };
     },
 
     // Example XML generator.
@@ -3681,7 +3750,7 @@ RDF = {
             var asStr = as.toString();
             if (!(asStr in this.ruleMap))
                 throw "rule " + asStr + " not found in schema";
-            var key = point.toString() + ' @' + asStr; //  + "," + subShapes
+            var key = point.toString() + ' @' + asStr + "," + subShapes;
             var resOrPromise = validatorStuff.termResults.get(key);
             if (resOrPromise === undefined) {
                 var tmp = new RDF.ValRes(); // temporary empty solution
@@ -3724,6 +3793,22 @@ RDF = {
             return validatorStuff.async ? resOrPromise.then(function (res) { return Promise.resolve(res); }) : resOrPromise;
         };
 
+        this.makeBeginContext = function (iriResolver, callbacksAlwaysInvoked) {
+            return {
+                iriResolver: iriResolver,
+                register: function (handlerName, events) {
+                    if (!Array.isArray(events))
+                        events = [events];
+                    for (var i = 0; i < events.length; ++i) {
+                        var event = events[i];
+                        if (!(event in callbacksAlwaysInvoked))
+                            callbacksAlwaysInvoked[event] = [];
+                        callbacksAlwaysInvoked[event].push(handlerName);
+                    }
+                }
+            };
+        };
+
         this.closeShapes = function (point, as, db, validatorStuff, subShapes) {
             var _Schema = this;
             var resOrPromise = this.validatePoint(point, as, db, validatorStuff, subShapes);
@@ -3735,7 +3820,8 @@ RDF = {
                 post(resOrPromise);
             function post (ret) {
                 if (ret.status == RDF.DISPOSITION.PASS) {
-                    _Schema.dispatch(1, 'begin', _Schema.init, null, {iriResolver: validatorStuff.iriResolver});
+                    _Schema.dispatch(1, 'begin', _Schema.init, {},
+                                     _Schema.makeBeginContext(validatorStuff.iriResolver, _Schema.alwaysInvoke));
                     var what = ret.postInvoke(_Schema, validatorStuff);
                     _Schema.dispatch(1, 'end', _Schema.init, null, ret);
                     var seen = ret.triples();
@@ -3755,20 +3841,8 @@ RDF = {
 
         // usual interface for validating a pointed graph
         this.validate = function (point, as, db, validatorStuff, subShapes) {
-            var callbacksAlwaysInvoked = this.alwaysInvoke;
-            this.dispatch(0, 'begin', this.init, null, {
-                iriResolver: validatorStuff.iriResolver,
-                register: function (handlerName, events) {
-                    if (!Array.isArray(events))
-                        events = [events];
-                    for (var i = 0; i < events.length; ++i) {
-                        var event = events[i];
-                        if (!(event in callbacksAlwaysInvoked))
-                            callbacksAlwaysInvoked[event] = [];
-                        callbacksAlwaysInvoked[event].push(handlerName);
-                    }
-                }
-            });
+            this.dispatch(0, 'begin', this.init, null,
+                          this.makeBeginContext(validatorStuff.iriResolver, this.alwaysInvoke));
             var schema = this;
             var resOrPromise = this.closeShapes(point, as, db, validatorStuff, subShapes);
             function post (ret) {
@@ -4186,9 +4260,9 @@ SELECT ?s ?p ?o {\n\
                 return renderRule(this.rule, this.triple, depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
             };
             this.postInvoke = function (schema, validatorStuff) {
-                schema.dispatch(1, 'link', this.rule.codes, null, this.triple);
-                schema.dispatch(1, 'visit', this.rule.codes, this.rule, this.triple);
-                schema.dispatch(1, 'post', this.rule.codes, this.rule, this.triple);
+                schema.dispatch(1, 'link', this.rule.codes, this, this.triple);
+                schema.dispatch(1, 'visit', this.rule.codes, this, this.triple);
+                schema.dispatch(1, 'post', this.rule.codes, this, this.triple);
                 return [this.triple];
             }
             this.triples = function () {
@@ -4206,11 +4280,13 @@ SELECT ?s ?p ?o {\n\
                     + "\n" + this.r.toHTML(depth+1, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
             };
             this.postInvoke = function (schema, validatorStuff) {
-                schema.dispatch(1, 'link', this.rule.codes, null, this.triple);
-                schema.dispatch(1, 'enter', this.rule.codes, this.rule, this.triple);
+                schema.dispatch(1, 'link', this.rule.codes, this, this.triple);
+                schema.dispatch(1, 'enter', this.rule.codes, this, this.triple);
                 var ret = this.r.postInvoke(schema, validatorStuff);
-                schema.dispatch(1, 'exit', this.rule.codes, this.rule, this);
-                schema.dispatch(1, 'post', this.rule.codes, this.rule, this.triple);
+                schema.dispatch(1, 'exit', this.rule.codes, this, this);
+                if (this.r.matches.length && this.r.matches[0].$ !== undefined) // @@@ move to psHandler
+                    this.$ = this.r.matches[0].$;
+                schema.dispatch(1, 'post', this.rule.codes, this, this.triple);
                 ret.unshift(this.triple);
                 return ret;
             }
@@ -4244,9 +4320,10 @@ SELECT ?s ?p ?o {\n\
                 return this.r.toHTML(depth, solnIDPrefix, schemaIdMap, dataIdMap, solutions, classNames);
             };
             this.postInvoke = function (schema, validatorStuff) {
-                schema.dispatch(1, 'enter', this.rule.codes, this.rule, {o:this.point});
+                schema.dispatch(1, 'enter', this.rule.codes, this, {o:this.point});
                 var ret = this.r.postInvoke(schema, validatorStuff);
-                schema.dispatch(1, 'exit', this.rule.codes, this.rule, null);
+                schema.dispatch(1, 'exit', this.rule.codes, this,
+                                this.r.matches.filter(function (m) { return m._ !== "RuleMatchEmpty"; })); // was this.r.matches
                 return ret;
             }
             this.triples = function () {
@@ -4544,7 +4621,7 @@ SELECT ?s ?p ?o {\n\
                 var _TermResults = this;
                 Object.keys(this.stacks).forEach(function (k) {
                     _TermResults.stacks[k].forEach(function (frame) {
-                        var key = frame.node.toString()+" @"+frame.shape.toString();
+                        var key = frame.node.toString()+" @"+frame.shape.toString()+",true"; // ,true == validatePoint() cache with subshapes enabled
                         ret.push({node:frame.node,
                                   shape:frame.shape,
                                   res:_TermResults.cache[key].passed(),

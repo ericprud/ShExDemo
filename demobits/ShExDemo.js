@@ -1039,8 +1039,10 @@ ShExDemo = function() {
                 GenR: RDF.GenRHandler({})
             };
             iface.validator.alwaysInvoke = {};
-            if (!$("#opt-disable-js").is(":checked"))
+            if (!$("#opt-disable-js").is(":checked")) {
                 iface.validator.handlers['js'] = RDF.jsHandler();
+                iface.validator.handlers['ps'] = RDF.psHandler();
+            }
             if (iface.validator.disableJavascript)
                 iface.message("javascript disabled");
 
@@ -1766,6 +1768,8 @@ ShExDemo = function() {
                         generatorInterface('GenJ', 'application/json');
                         generatorInterface('GenN', 'text/plain');
                         generatorInterface('GenR', 'text/plain');
+                        if (!$("#opt-disable-js").is(":checked"))
+                            generatorInterface('ps',   'text/plain');
                     }
 
 };
