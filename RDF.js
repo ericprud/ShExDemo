@@ -2262,7 +2262,7 @@ RDF = {
                 schema.dispatch(0, 'exit', _UnaryRule.codes, this, null);
                 var ret = new RDF.ValRes();
                 ret.status = v.status;
-                ret.matchedGroup(_UnaryRule, {o:point}, v);
+                ret.matchedGroup(_UnaryRule, point, v);
                 if (v.status == RDF.DISPOSITION.FAIL || v.status == RDF.DISPOSITION.ZERO)
                     ; // v.status = RDF.DISPOSITION.FAIL; -- avoid dispatch below
                 else if (v.status == RDF.DISPOSITION.NONE) {
