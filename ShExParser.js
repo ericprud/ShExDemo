@@ -321,7 +321,9 @@ ShExParser = (function() {
         peg$c124 = "\\",
         peg$c125 = { type: "literal", value: "\\", description: "\"\\\\\"" },
         peg$c126 = function(label, code) {
-            return new RDF.Code(label[0]+label[1].join(''), code.join(''), RDF.Position5(text(), line(), column(), offset(), 1+label.length+1+code.length+4));
+	    label = label ? label[0]+label[1].join('') : "";
+	    code = code.join('');
+            return new RDF.Code(label, code, RDF.Position5(text(), line(), column(), offset(), 1+label.length+1+code.length+2));
         },
         peg$c127 = /^[Vv]/,
         peg$c128 = { type: "class", value: "[Vv]", description: "[Vv]" },
