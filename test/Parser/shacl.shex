@@ -1,6 +1,8 @@
 PREFIX sh: <http://www.w3.org/ns/shacl/core#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
  %ps{ this.S = new RDF.Schema(); %}
+
 start=sh:ShapeShape
 sh:ShapeShape {
   a (sh:Shape)?,
@@ -22,19 +24,22 @@ sh:PropertyShape {
    | sh:valueType IRI      %ps{ $$ = new RDF.ValueType(_.o); %}
    | sh:nodeType IRI       %ps{ $$ = new RDF.ValueType(_.o); %}
   ),
-  sh:minCount xsd:integer? %ps{ $$ = _.o; %},
-  sh:maxCount xsd:integer? %ps{ $$ = _.o; %}
+  sh:minCount xsd:integer?,
+  sh:maxCount xsd:integer?
 } %ps{
   $$ = 
     new RDF.AtomicRule(false, false, false, $1, $2, parseInt($3.lex), $4 ? parseInt($4.lex) : undefined, {});
  %}
 
 sh:InversePropertyShape {
-  sh:predicate IRI      %ps{ _.$ = new RDF.NameTerm(@1) %},
-  (  sh:allowedValue .+
-   | sh:valueShape IRI
-   | sh:nodeType IRI
+  sh:predicate IRI         %ps{ $$ = new RDF.NameTerm(_.o) %},
+  (  sh:allowedValue .+    %ps{ $$ = new RDF.ValueSet(_list); %}
+   | sh:valueShape IRI     %ps{ $$ = new RDF.ValueReference(_.o); %}
+   | sh:nodeType IRI       %ps{ $$ = new RDF.ValueType(_.o); %}
   ),
   sh:minCount xsd:integer?,
   sh:maxCount xsd:integer?
-} %ps{ _.$ = new RDF.AtomicRule(false, true, false, @1, @2, @3, @4); %}PREFIX sh: <http://www.w3.org/ns/shacl/core#>
+} %ps{
+  $$ =
+    new RDF.AtomicRule(false, true, false, $1, $2, parseInt($3.lex), $4 ? parseInt($4.lex) : undefined);
+%}
