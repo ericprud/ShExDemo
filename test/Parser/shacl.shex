@@ -18,6 +18,7 @@ sh:ShapeShape {
 }
 
 sh:PropertyShape {
+  a (sh:PropertyShape)?,
   sh:predicate IRI         %ps{ $$ = new RDF.NameTerm(_.o); %},
   (  sh:allowedValue .+    %ps{ $$ = new RDF.ValueSet(_list); %}
    | sh:valueShape IRI     %ps{ $$ = new RDF.ValueReference(_.o); %}
@@ -32,6 +33,7 @@ sh:PropertyShape {
  %}
 
 sh:InversePropertyShape {
+  a (sh:InversePropertyShape)?,
   sh:predicate IRI         %ps{ $$ = new RDF.NameTerm(_.o) %},
   (  sh:allowedValue .+    %ps{ $$ = new RDF.ValueSet(_list); %}
    | sh:valueShape IRI     %ps{ $$ = new RDF.ValueReference(_.o); %}
