@@ -1178,7 +1178,7 @@ ShExDemo = function() {
                         }
                     });
                 });
-            return [resOrPromises, modelIntersection];
+            return [resOrPromises, modelIntersection || []];
         },
 
 
