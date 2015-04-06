@@ -2836,13 +2836,17 @@ RDF = {
                         if (ret === false)
                         { status = RDF.DISPOSITION.FAIL; valRes.error_badEval(code); }
                         return status;
+		    } else if ('r' in valRes && valRes.r.matches.length > 0) {
+			// default action for RuleMatchTree -- take $1
+                        valRes.$ = valRes.r.matches[0].$;
                     } else {
+			// default action for RuleMatch -- take _.o
                         valRes.$ = context.o;
                     }
                 }
 
-                this.exit = _callback;
                 this.visit = _callback;
+                this.exit = _callback;
                 this.end = function (code, valRes, context) {
                     this.text = _this.S.toString();
                 }
@@ -4284,8 +4288,6 @@ SELECT ?s ?p ?o {\n\
                 schema.dispatch(1, 'enter', this.rule.codes, this, this.triple);
                 var ret = this.r.postInvoke(schema, validatorStuff);
                 schema.dispatch(1, 'exit', this.rule.codes, this, this);
-                if (this.r.matches.length && this.r.matches[0].$ !== undefined) // @@@ move to psHandler
-                    this.$ = this.r.matches[0].$;
                 schema.dispatch(1, 'post', this.rule.codes, this, this.triple);
                 ret.unshift(this.triple);
                 return ret;
