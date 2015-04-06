@@ -2848,7 +2848,7 @@ RDF = {
                 this.visit = _callback;
                 this.exit = _callback;
                 this.end = function (code, valRes, context) {
-                    this.text = _this.S.toString();
+                    this.text = _this.S.toString(true);
                 }
                 context.register(["visit", "exit"]);
                 return _callback(code, valRes, context);
@@ -3677,20 +3677,20 @@ RDF = {
                 return disjoints[0];
             return new RDF.OrRule(disjoints, RDF.Position2(this.ruleMap[key].line, this.ruleMap[key].column));
         };
-        this.serializeRule = function (label) {
+        this.serializeRule = function (label, orig) {
             var ret = '';
             var rule = this.ruleMap[label];
             if (rule._ == 'UnaryRule') {
-                ret += label + ' {\n' + rule.rule.toString() + '\n}';
+                ret += label + ' {\n' + rule.rule.toString(orig) + '\n}';
                 Object.keys(rule.codes).map(function (k) { ret += ' %' + k + '{' + rule.codes[k] + '%}'; })
                 ret += "\n\n";
             } else if (rule._ == 'IncludeRule') {
                 ret += ": ";
-                rule.parents.forEach(function (p) { ret += p.toString(); });
-                ret += label + ' {\n' + rule.rule.toString() + '\n}';
+                rule.parents.forEach(function (p) { ret += p.toString(orig); });
+                ret += label + ' {\n' + rule.rule.toString(orig) + '\n}';
                 ret += "\n\n";
             } else {
-                ret += label + ' {\n' + rule.toString() + '\n}\n\n';
+                ret += label + ' {\n' + rule.toString(orig) + '\n}\n\n';
             }
             return ret;
         };
@@ -3703,7 +3703,7 @@ RDF = {
             if (this.startRule)
                 ret += "start = " + this.startRule.toString(orig) + "\n\n";
             for (var label in this.ruleMap)
-                ret += this.serializeRule(label);
+                ret += this.serializeRule(label, orig);
             return ret;
         };
         this.add = function (label, rule) {
