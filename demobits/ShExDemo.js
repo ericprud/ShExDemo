@@ -910,6 +910,7 @@ ShExDemo = function() {
                                                function(text, iriResolver) {
                                                    return ShExParser.parse(text, {iriResolver: iriResolver});
                                                });
+                iface.schema.obj.integrityCheck();
                 iface.validator = iface.schema.obj; // intuitive alias
                 enableValidatorLink();
                 if (iface.graph)

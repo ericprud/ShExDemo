@@ -2836,11 +2836,11 @@ RDF = {
                         if (ret === false)
                         { status = RDF.DISPOSITION.FAIL; valRes.error_badEval(code); }
                         return status;
-		    } else if ('r' in valRes && valRes.r.matches.length > 0) {
-			// default action for RuleMatchTree -- take $1
+                    } else if ('r' in valRes && valRes.r.matches.length > 0) {
+                        // default action for RuleMatchTree -- take $1
                         valRes.$ = valRes.r.matches[0].$;
                     } else {
-			// default action for RuleMatch -- take _.o
+                        // default action for RuleMatch -- take _.o
                         valRes.$ = context.o;
                     }
                 }
@@ -3639,6 +3639,77 @@ RDF = {
         this.isVirtualShape = {};
         this.init = {};
         this.comments = [];
+
+        /* integrityCheck - Test for both user error (undefined references) and
+         * algorithm error (labels out of synch with label-to-rule map).
+         */
+        this.integrityCheck = function (ob, checked, errors) {
+            errors = errors || [];
+            checked = checked || []; // Top level creates cache.
+            function checkByLabel (targetLabel) {
+                var asStr = targetLabel.toString();
+                if (!(asStr in _Schema.ruleMap))
+                    errors.push("found no definition for " + asStr);
+                else
+                    if (checked.indexOf(asStr) === -1) {
+                        checked.push(asStr);
+                        _Schema.integrityCheck(_Schema.ruleMap[asStr], checked, errors);
+                    }
+            }
+            var _Schema = this;
+            if (ob) {
+                switch (ob._) {
+                case 'AtomicRule':
+                case 'ConcomitantRule':
+                    if (ob.valueClass._ === 'ValueReference')
+                        checkByLabel(ob.valueClass.label);
+                    break;
+                case 'UnaryRule':
+                    if (ob.rule === undefined)
+                        errors.push("broken UnaryRule with undefined child rule");
+                    else
+                        _Schema.integrityCheck(ob.rule, checked, errors);
+                    break;
+                case 'IncludeRule':
+                    if (ob.include === undefined)
+                        errors.push("broken IncludeRule with undefined inclusion");
+                    else
+                        checkByLabel(ob.include);
+                    break;
+                case 'EmptyRule':
+                    break;
+                case 'AndRule':
+                    ob.conjoints.forEach(function (conj) {
+                        _Schema.integrityCheck(conj, checked, errors);
+                    });
+                    break;
+                case 'OrRule':
+                    ob.disjoints.forEach(function (disj) {
+                        _Schema.integrityCheck(disj, checked, errors);
+                    });
+                    break;
+                }
+            } else {
+                var labelStrings = _Schema.ruleLabels.map(function (l) { return l.toString(); });
+                var missingLabels = Object.keys(_Schema.ruleMap).filter(function (k) {
+                    return labelStrings.indexOf(k) < 0;
+                });
+                if (missingLabels.length)
+                    errors.push("broken internal state: missing labels for " + missingLabels.join(", "));
+
+                var missingMap = _Schema.ruleLabels.filter(function (k) {
+                    return !(k.toString() in _Schema.ruleMap);
+                });
+                if (missingMap.length)
+                    errors.push("broken internal state: missing keys for " + missingMap.join(", "));
+
+                _Schema.ruleLabels.forEach(function (l) {
+                    checkByLabel(l);
+                });
+                if (errors.length)
+                    throw errors.join("\n");
+            }
+        }
 
         this.hasDerivedShape = function (parent, child) {
             if (!(parent.toString() in this.derivedShapes))
