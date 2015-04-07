@@ -1,0 +1,27 @@
+#BASE <http://base.example/#>
+PREFIX ex: <http://ex.example/#>
+PREFIX foaf: <http://xmlns.com/foaf/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+                                         %GenJ{ @id %}
+
+start = <IssueShape>
+
+<IssueShape> {
+    ex:state (ex:unassigned ex:assigned) %GenJ{ state %},
+    ex:reportedBy @<User>                %GenJ{ rprtBy @id %},
+    ex:reportedOn xsd:dateTime           %GenJ{ rprtOn %},
+    (ex:reproducedBy @<User>             %GenJ{ rpdcBy @id %},
+     ex:reproducedOn xsd:dateTime        %GenJ{ rpdcOn %}
+    )?,
+    ex:related @<IssueShape>*
+}
+<User> {
+    (foaf:name xsd:string                %GenJ{ name %}
+     | foaf:givenName xsd:string+        %GenJ{ fname %},
+       foaf:familyName xsd:string        %GenJ{ lname %}
+    ),
+    foaf:mbox IRI                        %GenJ{ email %},
+    foaf:phone IRI?                      %GenJ{ tel %}
+}

@@ -1,0 +1,35 @@
+{
+  "@context":{
+    "ns0":"http://ex.example/#",
+    "state":"ns0:state",
+    "rprtBy":"ns0:reportedBy",
+    "ns1":"http://xmlns.com/foaf/",
+    "fname":"ns1:givenName",
+    "lname":"ns1:familyName",
+    "email":"ns1:mbox",
+    "ns2":"http://www.w3.org/2001/XMLSchema#",
+    "rprtOn":{"@id":"ns0:reportedOn",
+              "@type":"ns2:dateTime"},
+    "rpdcBy":"ns0:reproducedBy",
+    "tel":"ns1:phone",
+    "rpdcOn":{"@id":"ns0:reproducedOn",
+              "@type":"ns2:dateTime"}
+  },
+  "@id":"Issue1",
+  "state":"http://ex.example/#unassigned",
+  "rprtBy":{
+    "@id":"User2",
+    "fname":"Bob",
+    "lname":"Smith",
+    "email":"mail:bob@example.org"
+  },
+  "rprtOn":"2013-01-23T10:18:00",
+  "rpdcBy":{
+    "@id":"Thompson.J",
+    "fname":"Joseph",
+    "lname":"Thompson",
+    "email":"mail:joe@example.org",
+    "tel":"tel:+456"
+  },
+  "rpdcOn":"2013-01-23T11:00:00"
+}

@@ -1,0 +1,36 @@
+#BASE <http://base.example/#>
+PREFIX ex: <http://ex.example/#>
+PREFIX foaf: <http://xmlns.com/foaf/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+# directives:
+#   =<function>?
+#   $<namespace>
+#   !debugger
+                                %GenX{ issue $http://ex.example/xml %}
+
+start = <IssueShape>
+
+<IssueShape> {
+    ex:state (ex:unassigned ex:assigned) %GenX{ @state =substr(19) %},
+    ex:reportedBy @<Person>              %GenX{ reported = %},
+    ex:reportedOn xsd:dateTime           %GenX{ [-1]@date %},
+    (ex:reproducedBy @<EmployeeShape>    ,
+     ex:reproducedOn xsd:dateTime        %GenX{ @date %}
+    )?                                   %GenX{ reproduced = %},
+    ex:related @<IssueShape>*
+}                                        %GenX{ @id %}
+VIRTUAL <Person> {
+    (foaf:name xsd:string                %GenX{ full-name %}
+     | foaf:givenName xsd:string+        %GenX{ given-name %},
+       foaf:familyName xsd:string        %GenX{ family-name %}
+    ),
+    foaf:mbox IRI               %GenX{ email-addr %}
+}
+<UserShape> & <Person> {
+}
+<EmployeeShape> {
+    & <Person>,
+    foaf:phone IRI+             %GenX{ tel-number %}
+}

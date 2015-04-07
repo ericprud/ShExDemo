@@ -1,0 +1,72 @@
+#BASE <http://base.example/#>
+PREFIX ex: <http://ex.example/#>
+PREFIX foaf: <http://xmlns.com/foaf/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+      %js{
+           action.arguments[1].message("in init");
+           doc = document.implementation.createDocument
+                   ("http://ex.example/xml", "Issue", undefined);
+           issue = doc.childNodes[0];
+      %}
+
+start = <IssueShape>
+
+<IssueShape> {
+    ex:state (ex:unassigned ex:assigned)
+      %js{ issue.setAttribute("id", _.s.lex);
+           issue.setAttribute("state", _.o.lex.substr(19));
+           person = user = doc.createElement("Reported");
+      %},
+    ex:reportedBy @<Person>
+      %js{ issue.appendChild(user); %},
+    ex:reportedOn xsd:dateTime
+      %js{ user.setAttribute("reportedOn", _.o.lex);
+           person = reproducer = doc.createElement("Reproduced");
+      %},
+    (ex:reproducedBy @<EmployeeShape>
+      %js{ issue.appendChild(person);
+      %},
+     ex:reproducedOn xsd:dateTime
+      %js{ reproducer.setAttribute("reportedOn", _.o.lex);
+      %})?,
+    ex:related @<IssueShape>*
+} %js{ 
+//$("#validation-messages").append($('<div><a href="'
+window.open(''
++ "data:application/xml;charset=utf-8;base64,"
++ Base64.encode((new XMLSerializer()).serializeToString(doc))
+//+'">Issue as XML</a></div>')
+,"toy"
+);
+ %}
+VIRTUAL <Person> {
+    (foaf:name xsd:string
+     | foaf:givenName xsd:string+
+      %js{ gn = doc.createElement("GivenName");
+           gn.appendChild(doc.createTextNode(_.o.lex));
+           person.appendChild(gn);
+      %},
+       foaf:familyName xsd:string
+      %js{ fn = doc.createElement("FamilyName");
+           fn.appendChild(doc.createTextNode(_.o.lex));
+           person.appendChild(fn);
+      %}
+    ),
+    foaf:mbox IRI
+      %js{ fn = doc.createElement("Email-address");
+           fn.appendChild(doc.createTextNode(_.o.lex));
+           person.appendChild(fn);
+      %}
+}
+<UserShape> & <Person> {
+}
+<EmployeeShape> {
+    & <Person>,
+    foaf:phone IRI+
+      %js{ fn = doc.createElement("Telephone-Number");
+           fn.appendChild(doc.createTextNode(_.o.lex));
+           person.appendChild(fn);
+      %}
+}
