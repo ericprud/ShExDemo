@@ -24,7 +24,11 @@ sh:PropertyShape {
    | sh:valueShape IRI     %ps{ $$ = new RDF.ValueReference(_.o); %}
    | sh:valueType IRI      %ps{ $$ = new RDF.ValueType(_.o); %}
    | sh:nodeType IRI       %ps{ $$ = new RDF.ValueType(_.o); %}
-  ),
+  )
+  %ps{
+    var disjuncts = _.map(function (r) { return r.$; });
+    $$ = new RDF.OrRule(disjuncts);
+  %},
   sh:minCount xsd:integer?,
   sh:maxCount xsd:integer?
 } %ps{
