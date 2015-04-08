@@ -176,3 +176,5 @@ h2 { margin: 0; border: none; }
   z-index:50;
   padding: 25px 25px
 
+
+.resultsDiv { border-left: solid 1em #ddf; margin-bottom: 2ex; } /* !! never got this working */
