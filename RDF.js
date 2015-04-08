@@ -3994,7 +3994,7 @@ RDF = {
                     f = context.register;
                     context.register = function (events) {
                         f(handlerName, events);
-                    };                        
+                    };
                 }
 
                 // invoke
