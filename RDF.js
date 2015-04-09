@@ -3841,13 +3841,6 @@ RDF = {
 
                 // Make sure we used all of the closedSubGraph.
                 if (validatorStuff.closedShapes) {
-                    if (validatorStuff.async)
-                        resOrPromise = resOrPromise.then(checkRemaining).catch(function (e) {
-                            debugger;
-                            return Promise.reject(e);
-                        });
-                    else
-                        checkRemaining(resOrPromise);
                     function checkRemaining (res) {
                         if (res.passed()) {
                             var remaining = closedSubGraph.filter(function (t) {
@@ -3862,6 +3855,13 @@ RDF = {
                         }
                         return res;
                     }
+                    if (validatorStuff.async)
+                        resOrPromise = resOrPromise.then(checkRemaining).catch(function (e) {
+                            debugger;
+                            return Promise.reject(e);
+                        });
+                    else
+                        checkRemaining(resOrPromise);
                 }
                 validatorStuff.termResults.finalize(key, resOrPromise);
             }
