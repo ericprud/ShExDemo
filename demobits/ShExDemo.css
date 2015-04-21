@@ -139,19 +139,22 @@ h2 { margin: 0; border: none; }
 .hasToolTip {outline:none; }
 .hasToolTip strong999 {line-height:3ex;}
 .hasToolTip:hover {text-decoration:none;}
-.hasToolTip .toolTip {
+.toolTipDiv, .hasToolTip .toolTip {
     z-index:10; display:none; padding:1.4em 2.0ex;
-    margin-top:2em; margin-left:-10em;
     width: 25em; line-height:2ex;
 }
-.hasToolTip .wide {
-    width: 80%;
+.hasToolTip .toolTip {
+    margin-top:2em; margin-left:-10em;
 }
-.hasToolTip:hover .toolTip {
+.hasToolTip .toolTip .pushLeft {
+    width: 80%;
+    margin-top:2em; margin-left:-100em;
+}
+.toolTipDiv, .hasToolTip:hover .toolTip {
     display:inline; position:absolute; color:#111;
     border:thin solid #DCA; background:#fffAF0;}
 /*CSS3 extras*/
-.hasToolTip .toolTip {
+.toolTipDiv, .hasToolTip .toolTip {
     border-radius:1em;
     box-shadow: .5em .5em .8em #CCC;
 }
@@ -174,7 +177,7 @@ h2 { margin: 0; border: none; }
   margin-left: 15px;
   position:absolute;
   z-index:50;
-  padding: 25px 25px
-
+  padding: 25px 25px;
+}
 
 .resultsDiv { border-left: solid 1em #ddf; margin-bottom: 2ex; } /* !! never got this working */

@@ -44,6 +44,13 @@
     <div id="pcontent"></div>
 </div>
 
+<div class="toolTipDiv">
+<!--
+This is appended with the cloned contents of .hasTooltip .toolTip in order to:
+  1 keep toolTip content near where it's needed,
+  2 still allow the tooltip to cross nesting divs.
+ --></div>
+
     <div id="examples">
 
 	    <div class="header">Examples</div>
@@ -243,7 +250,7 @@
                         <input type="checkbox" id="opt-closed-shapes" disabled="disabled"/>
                         <label for="opt-closed-shapes">
                           <span class="hasToolTip">Closed shapes
-                          <span class="toolTip">
+                          <span class="toolTip pushLeft">
                             The schema must mention all shapes in any visited node in the instance data.
                           </span>
                           </span>
@@ -555,6 +562,18 @@
                 } catch (e) { // Sigh, exceptions ajax callbacks never get here.
                     $("#apology").text("Error running javascript libraries: " + e);
                 }
+                var toolTipDiv = $(".toolTipDiv").hide();
+                $(".hasToolTip").mouseenter(function () {
+                    var toolTip = $(this).find(".toolTip");
+                    var o = toolTip.offset();
+                    toolTipDiv.append(toolTip.contents().clone()).
+                        css({left:o.left,top:o.top}).
+                        width(toolTip.width()).
+                        height(toolTip.height()).
+                        show();
+                }).mouseleave(function () {
+                    toolTipDiv.empty().hide();
+                });
             });
         </script>
 <!-- 
