@@ -1375,7 +1375,7 @@ ShExDemo = function() {
                 } else {
                     var i = document.getElementById("curSolution").value;
                     var slns = solutionsToRuleAndTriple[solnSetIDPrefix];
-                    if (++i < slns.length)
+                    if (slns && ++i < slns.length)
                         hilight(solnSetIDPrefix, [i], slns[i].rule === undefined ? [] : [slns[i].rule], slns[i].triple === undefined ? [] : [slns[i].triple]);
                 }
             }
