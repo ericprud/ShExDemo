@@ -1166,6 +1166,9 @@ RDF = {
         this.toString = function (orig) {
             return this.term.toString(orig);
         };
+        this.assignId = function (charmap, idPrefix) {
+            this.term.assignId(charmap, idPrefix);
+        }
         this.match = function (t2) {
             return t2.toString() == this.term.toString();
         };
@@ -1197,6 +1200,7 @@ RDF = {
             ret += this.exclusions.map(function (ex) { return ' - ' + ex.toString(orig); }).join('');
             return ret;
         };
+        this.assignId = function (charmap, idPrefix) {  }
         this.match = function (t2) {
             for (var i = 0; i < this.exclusions.length; ++i)
                 if (this.exclusions[i].lex === t2.lex)
@@ -1226,6 +1230,12 @@ RDF = {
         this.toString = function (orig) {
             return this.term.toString(orig) + '~' + this.exclusions.map(function (ex) { return ' - ' + ex.toString(orig); }).join('');
         };
+        this.assignId = function (charmap, idPrefix) {
+            this.term.assignId(charmap, idPrefix);
+            this.exclusions.forEach(function (e, o) {
+                e.term.assignId(charmap, idPrefix+"_"+o);
+            });
+        }
         this.match = function (t2) {
             var ts = this.term.lex;
             if (ts != t2.lex.substr(0, ts.length))
@@ -1344,6 +1354,10 @@ RDF = {
             else
                 return '@' + l;
         },
+        this.assignId = function (charmap, idPrefix) { // @@ could add " id='"+id+"'"
+            charmap.insertBefore(this.label._pos.offset-1, "<span class='shapeName'>", 0);
+            charmap.insertAfter(this.label._pos.offset+this._pos.width, "</span>", 0);
+        }
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             var ret = new RDF.ValRes();
             schema.dispatch(0, 'enter', rule.codes, rule, t);
@@ -1459,6 +1473,9 @@ RDF = {
         this.toString = function (orig, schema) {
             return this.term.toString(orig);
         },
+        this.assignId = function (charmap, idMap, termStringToIds, idPrefix) {
+            this.term.assignId(charmap, idPrefix);
+        }
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             var ret = new RDF.ValRes();
             if (point._ == this.term._ && point.lex == this.term.lex) {
@@ -1510,6 +1527,9 @@ RDF = {
         this.toString = function (orig, schema) {
             return this.type.toString(orig);
         },
+        this.assignId = function (charmap, idPrefix) {
+            this.type.assignId(charmap, idPrefix);
+        }
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             function passIf (b) {
                 if (b) { ret.status = RDF.DISPOSITION.PASS; ret.matched(rule, t); }
@@ -1573,6 +1593,11 @@ RDF = {
         this.toString = function (orig, schema) {
             return '(' + this.values.map(function (v) { return v.toString(orig); }).join(' ') + ')';
         },
+        this.assignId = function (charmap, idPrefix) {
+            this.values.forEach(function (v, o) {
+                v.term.assignId(charmap, idPrefix+"_"+o);
+            });
+        }
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             var _ValueSet = this;
             var ret = null;
@@ -1641,6 +1666,11 @@ RDF = {
             x.unshift('.');
             return x.join(' ');
         },
+        this.assignId = function (charmap, idPrefix) {
+            this.exclusions.forEach(function (e, o) {
+                e.term.assignId(charmap, idPrefix+"_"+o);
+            });
+        }
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             for (var i = 0; i < this.exclusions.length; ++i) {
                 if (this.exclusions[i].matches(point)) {
@@ -1689,6 +1719,12 @@ RDF = {
         this.toString = function (orig, schema) {
             return this.term.toString(orig) + '~' + this.exclusions.map(function (ex) { return ' - ' + ex.toString(orig); }).join('');
         },
+        this.assignId = function (charmap, idPrefix) {
+            this.term.assignId(charmap, idPrefix);
+            this.exclusions.forEach(function (e, o) {
+                e.term.assignId(charmap, idPrefix+"_"+o);
+            });
+        }
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             for (var i = 0; i < this.exclusions.length; ++i) {
                 if (this.exclusions[i].toString() === point.toString()) {
@@ -1772,10 +1808,14 @@ RDF = {
         this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
             var ruleId = idPrefix + idMap.add(this.toKey());
             this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
+            charmap.insertBefore(this.label._pos.offset, "<span class='shapeName'>", 0);
+            charmap.insertAfter(this.label._pos.offset+this.label._pos.width, "</span>", 0);
             if (this.valueClass._ == 'ValueReference') { // not very OO
                 this.valueClass.label.assignId(charmap, ruleId+"_ref");
                 termStringToIds.add(this.valueClass.label.toString(true), this.valueClass.label.id);
             }
+            this.nameClass.assignId(charmap, idPrefix+"_predicate");
+            this.valueClass.assignId(charmap, idPrefix+"_value");
             charmap.insertBefore(this._pos.offset, "<span id='"+ruleId+"' class='rule'>", 0);
             charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
             var AtomicRule = this;
@@ -2388,6 +2428,10 @@ RDF = {
             return '& ' + this.include.toString(orig);
         };
         this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
+            charmap.insertBefore(this.include._pos.offset-1, "<span class='keyword'>", 0);
+            charmap.insertAfter(this.include._pos.offset, "</span>", 0);
+            charmap.insertBefore(this.include._pos.offset, "<span class='shapeName'>", 0);
+            charmap.insertAfter(this.include._pos.offset+this.include._pos.width, "</span>", 0);
             // @@@ hilight include this.rule.colorize(charmap, idMap, termStringToIds, idPrefix);
         };
         this.validate = function (schema, point, contextCard, db, validatorStuff) {
@@ -2634,6 +2678,7 @@ RDF = {
                 lead + ")\n";
         };
         this.prepend = function (elts) {
+            debugger;
             this.conjoints = elts.concat(this.conjoints);
         };
     },
@@ -3851,7 +3896,10 @@ RDF = {
             });
             for (var i = 0; i < this.ruleLabels.length; ++i) {
                 var label = this.ruleLabels[i];
-                this.ruleMap[label.toString()].colorize(charmap, idMap, termStringToIds, idPrefix);
+                var rule = this.ruleMap[label.toString()];
+                rule.colorize(charmap, idMap, termStringToIds, idPrefix);
+                charmap.insertBefore(rule._pos.offset, "<span class='shape'>", 0);
+                charmap.insertAfter(rule._pos.offset+rule._pos.width, "</span>", 0);
                 // colorizing assigns ids; add to term map after colorizing
                 termStringToIds.add(label.toString(true), label.id);
             }

@@ -166,7 +166,7 @@ PrefixedName999 = ln:PNAME_LN {
     return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(ln.prefix) + ln.lex), RDF.Position5(text(), line(), column(), offset(), ln.width));
 }
     / p:PNAME_NS {
-    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1));
+    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p.text)), p._pos);
 }
 PrefixedName = ln:ERR_PNAME_LN {
     // @@ test for valid PNAME_LN
@@ -174,7 +174,7 @@ PrefixedName = ln:ERR_PNAME_LN {
 }
     / p:ERR_PNAME_NS {
     // @@ test for valid PNAME_NS
-    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1));
+    return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p.text)), p._pos);
 }
 BlankNode = BLANK_NODE_LABEL / ANON
 
@@ -196,8 +196,8 @@ PNAME_NS = pre:PN_PREFIX? ':' { return {text:pre ? pre : '', _pos: RDF.Position5
 PNAME_LN         = pre:PNAME_NS l:PN_LOCAL {
     return {width: pre.text.length+1+l.length, prefix:pre.text, lex:l};
 }
-BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL2* {
-    return RDF.BNode(bnodeScope.uniqueLabel(first+rest.join('')), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
+BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL2 {
+    return RDF.BNode(bnodeScope.uniqueLabel(first+rest), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
 }
 BLANK_NODE_LABEL2 = l:'.' r:BLANK_NODE_LABEL2 { return l+r; }
           / l:PN_CHARS r:BLANK_NODE_LABEL2? { return r ? l+r : l; }
@@ -285,9 +285,9 @@ PN_LOCAL_ESC = '\\' r:[_~.!$&'()*+,;=/?#@%-] { return r; } //'// for syntax high
 
 
 // ERR_*: non-validating PN parser -- @@ needs runtime switch
-ERR_PNAME_NS = pre:ERR_PN_PREFIX? ':' { return pre ? pre : '' } // pre+'|' : '|';
+ERR_PNAME_NS = pre:ERR_PN_PREFIX? ':' { return {text:pre ? pre : '', _pos: RDF.Position5(text(), line(), column(), offset(), text().length+1)}; } // pre+'|' : '|';
 ERR_PNAME_LN         = pre:ERR_PNAME_NS l:ERR_PN_LOCAL {
-    return {width: pre.length+1+l.length, prefix:pre, lex:l};
+    return {width: pre.text.length+1+l.length, prefix:pre.text, lex:l};
 }
 ERR_PN_CHARS_BASE = [A-Z] / [a-z]
  / [\u0080-\uFFFD] // anything

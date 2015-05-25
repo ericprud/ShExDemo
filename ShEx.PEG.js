@@ -92,14 +92,15 @@ typeSpec        = includes:include* '{' _ exp:OrExpression? _ '}' {
             });
             if (exp._ == 'AndRule') {
                 exp.prepend(includes);
+                exp._pos = RDF.Position5(text(), line(), column(), offset(), text().length);
                 return exp;
             } else {
                 includes.push(exp);
-                return new RDF.AndRule(includes, RDF.Position2(line(), column()));
+                return new RDF.AndRule(includes, RDF.Position5(text(), line(), column(), offset(), text().length));
             }
         } else { // includes, !exp
             // could set exp to new RDF.EmptyRule(line(), column()) above but end up with pointless disjoint.
-            var ret = new RDF.AndRule(includes, RDF.Position2(line(), column()));
+            var ret = new RDF.AndRule(includes, RDF.Position5(text(), line(), column(), offset(), text().length));
             includes.forEach(function (p) {
                 curSchema.hasDerivedShape(p.include, ret); // API reflects that we only care about parent->child map.
             });
@@ -107,24 +108,32 @@ typeSpec        = includes:include* '{' _ exp:OrExpression? _ '}' {
         }
     } else {
         if (exp) { // !includes, exp
+            exp._pos = RDF.Position5(text(), line(), column(), offset(), text().length);
             return exp;
         } else { // !includes, !exp
-            return new RDF.EmptyRule(RDF.Position2(line(), column()));
+            return new RDF.EmptyRule(RDF.Position5(text(), line(), column(), offset(), text().length));
         }
     }
 }
-include = '&' _ l:label _  { return new RDF.IncludeRule(l, RDF.Position2(line(), column())); }
+include = '&' _ l:label _  {
+    var t = text();
+    var width = l._pos.offset-offset()+l._pos.width;
+    var chop = t.length - width;
+    if (chop)
+        t = t.slice(0, -chop);
+    return new RDF.IncludeRule(l, RDF.Position5(t, line(), column(), offset(), width));
+}
 
 OrExpression    = exp:AndExpression _ more:disjoint* _ '|'? {
     if (!more.length) return exp;
     more.unshift(exp)
-    return new RDF.OrRule(more, RDF.Position2(line(), column()));
+    return new RDF.OrRule(more, RDF.Position5(text(), line(), column(), offset(), text().length)); // no whitespace or punctuation on either side
 }
 disjoint = '|' _ exp:AndExpression _ { return exp; }
 AndExpression   = exp:UnaryExpression _ more:conjoint* _ ','? {
     if (!more.length) return exp;
     more.unshift(exp)
-    return new RDF.AndRule(more, RDF.Position2(line(), column()));
+    return new RDF.AndRule(more, RDF.Position5(text(), line(), column(), offset(), text().length)); // no whitespace or punctuation on either side
 }
 conjoint = ',' _ exp:UnaryExpression _ { return exp; }
 UnaryExpression = i:_id? a:arc {
@@ -145,7 +154,7 @@ UnaryExpression = i:_id? a:arc {
         if (i) exp.setRuleID(i); // in case it has an ID but no triples.
         return exp;
     }
-    return new RDF.UnaryRule(exp, {min:r.min, max:r.max} /* !!! extend to handle n-ary cardinality */, c, RDF.Position2(line(), column()));
+    return new RDF.UnaryRule(exp, {min:r.min, max:r.max} /* !!! extend to handle n-ary cardinality */, c, RDF.Position5(text(), line(), column(), offset(), text().length));
 }
 _id = '$' _ i:iri _ { curSubject.push(i); return i; }
 
@@ -176,10 +185,12 @@ arc             = CONCOMITANT _ '@' _ l:label _ r:repeatCount? _ p:properties? _
 }
 
 nameClass       = _nmIriStem
-                / i: RDF_TYPE { return new RDF.NameTerm(i, RDF.Position2(line(), column())); }
-                / '.' _ excl:exclusions { return new RDF.NameWild(excl.list, RDF.Position2(line(), column())); }
+                / i: RDF_TYPE { return new RDF.NameTerm(i, RDF.Position5(text(), line(), column(), offset(), text().length)); }
+                / '.' _ excl:exclusions { return new RDF.NameWild(excl.list, RDF.Position5(text(), line(), column(), offset(), text().length)); }
 _nmIriStem = i:iri patFlag:( _ TILDE _ exclusions)? {
-    return patFlag ? new RDF.NamePattern(i, patFlag[3] ? patFlag[3].list : [], RDF.Position2(line(), column())) : new RDF.NameTerm(i, RDF.Position2(line(), column()));
+    return patFlag ?
+        new RDF.NamePattern(i, patFlag[3] ? patFlag[3].list : [], RDF.Position5(text(), line(), column(), offset(), text().length)) :
+        new RDF.NameTerm(i, RDF.Position5(text(), line(), column(), offset(), text().length));
 }
 
 valueClass      = '@' _ l:label { return new RDF.ValueReference(l, RDF.Position5(text(), line(), column(), offset(), l._pos.offset-offset()+l._pos.width)); }
@@ -245,11 +256,11 @@ _members = o:object _           {
     if (curListHead.peek() == null)
         curListHead.replace(cur);
     else {
-	db.nextInsertAt = db.triples.length-1;
+        db.nextInsertAt = db.triples.length-1;
         db.add(curListTail.peek(), // last tail
                RDF.IRI(RDF_NS+'rest', RDF.Position5(text(), line(), column(), offset(), 1)),
                cur);
-	db.nextInsertAt = null;
+        db.nextInsertAt = null;
     }
     var next = RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), o._pos.column-2, o._pos.offset-2, 1));
     curListTail.replace(cur);
