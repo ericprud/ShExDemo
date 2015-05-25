@@ -1,9 +1,9 @@
 {
     function createStack () {
-	var ret = [];
-	ret.peek = function () { return this.slice(-1)[0]};
-	ret.replace = function (elt) { this[this.length-1] = elt; };
-	return ret;
+        var ret = [];
+        ret.peek = function () { return this.slice(-1)[0]};
+        ret.replace = function (elt) { this[this.length-1] = elt; };
+        return ret;
     }
     var curSubject   = createStack();
     var curPredicate = createStack();
@@ -13,13 +13,13 @@
     var db = RDF.Dataset();
     db.nextInsertAt = null;
     db.add = function (s, p, o) {
-	var t = RDF.Triple(s, p, o);
-    	if (this.nextInsertAt == null)
-    	    this.push(t);
-    	else {
-    	    this.insertAt(this.nextInsertAt, t);
-    	    this.nextInsertAt = null;
-    	}
+        var t = RDF.Triple(s, p, o);
+        if (this.nextInsertAt == null)
+            this.push(t);
+        else {
+            this.insertAt(this.nextInsertAt, t);
+            this.nextInsertAt = null;
+        }
     }
     var RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
     var XSD_NS = 'http://www.w3.org/2001/XMLSchema#'
@@ -30,9 +30,9 @@
     };
 
     function _literalHere (value, type) {
-	var dt = RDF.IRI(XSD_NS+type, RDF.Position5(text(), line(), column(), offset(), value.length));
-	var pos = RDF.Position5(text(), line(), column(), offset(), value.length);
-	return RDF.RDFLiteral(value, undefined, dt, pos);
+        var dt = RDF.IRI(XSD_NS+type, RDF.Position5(text(), line(), column(), offset(), value.length));
+        var pos = RDF.Position5(text(), line(), column(), offset(), value.length);
+        return RDF.RDFLiteral(value, undefined, dt, pos);
     }
 
     var curSchema = new RDF.Schema();
@@ -40,14 +40,14 @@
 }
 ShExDoc         = _ directive* _ssc_statement? {
     if (curSubject.length > 0 ||
-	curPredicate.length > 0) {
-	return {_: "Bad end state:",
-		s:curSubject, 
-		p:curPredicate, 
-		t:db.triples.map(
-		    function (t) { return t.toString(); }
-		).join('\n')
-	       };
+        curPredicate.length > 0) {
+        return {_: "Bad end state:",
+                s:curSubject,
+                p:curPredicate,
+                t:db.triples.map(
+                    function (t) { return t.toString(); }
+                ).join('\n')
+               };
     }
     // t:db.triples.map( function (t) { console.log(t.toString()); } )
     return curSchema;
@@ -59,22 +59,24 @@ _ssc            = shape
                 / m:CodeMap { curSchema.init = m; }
 statement       = directive / start / shape
 directive       = sparqlPrefix _ / sparqlBase _
-sparqlPrefix    = SPARQL_PREFIX _ pre:PNAME_NS _ i:IRIREF { iriResolver.setPrefix(pre, i.lex); }
+sparqlPrefix    = keyword:SPARQL_PREFIX _ pre:PNAME_NS _ i:IRIREF { iriResolver.setPrefix(pre.text, i.lex); curSchema.prefixDecl(keyword, pre, i); }
 sparqlBase      = SPARQL_BASE _ i:IRIREF { iriResolver.setBase(i.lex); }
 
-start           = 'start' _ '=' _ startRule
-startRule       = l:label _ { curSchema.startRule = l; }
+start           = s:START _ '=' _ r:startRule { curSchema.startDecl(s, r); }
+START           = 'start' { return {_: "Keyword", text: text(), _pos: RDF.Position5(text(), line(), column(), offset(), text().length)}; }
+startRule       = l:label _ { curSchema.startRule = l; return l; }
                 / t:typeSpec _ m:CodeMap {
-    var r = Object.keys(m).length ? new RDF.UnaryRule(t, {min:1, max:1}, m, RDF.Position2(line(), column())) : t;
+    var r = Object.keys(m).length ? new RDF.UnaryRule(t, {min:1, max:1}, m, RDF.Position5(text(), line(), column(), offset(), text().length)) : t;
     var b = RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column(), offset(), 1));
     r.setLabel(b);
     curSchema.add(b, r);
     curSchema.startRule = b;
-    return new RDF.ValueReference(b, RDF.Position2(line(), column()));
+    return null;
+    // return new RDF.ValueReference(b, RDF.Position5(text(), line(), column(), offset(), text().length));
 }
 
 shape           = v:_VIRTUAL? l:label _ t:typeSpec _ m:CodeMap {
-    var r = Object.keys(m).length ? new RDF.UnaryRule(t, {min:1, max:1}, m, RDF.Position2(line(), column())) : t;
+    var r = Object.keys(m).length ? new RDF.UnaryRule(t, {min:1, max:1}, m, RDF.Position5(text(), line(), column(), offset(), text().length)) : t;
     r.setLabel(l);
     curSchema.add(l, r);
     if (v)
@@ -320,7 +322,7 @@ iri = IRIREF / PrefixedName
 PrefixedName = ln:PNAME_LN {
     return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(ln.prefix) + ln.lex), RDF.Position5(text(), line(), column(), offset(), ln.width));
 }
-    / p:PNAME_NS { return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p)), RDF.Position5(text(), line(), column(), offset(), p.length+1)); }
+    / p:PNAME_NS { return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(p.text)), p._pos); }
 BlankNode = BLANK_NODE_LABEL / ANON
 
 // Terminals:
@@ -346,15 +348,15 @@ _IRIREF_BEGIN = '<' { return offset(); }
 _IRIREF_END = '>' { return offset(); }
 
 CONCOMITANT = [Cc][Oo][Nn][Cc][Oo][Mm][Ii][Tt][Aa][Nn][Tt]
-SPARQL_PREFIX = [Pp][Rr][Ee][Ff][Ii][Xx]
+SPARQL_PREFIX = [Pp][Rr][Ee][Ff][Ii][Xx] { return {_: "Keyword", text: text(), _pos: RDF.Position5(text(), line(), column(), offset(), text().length)}; }
 SPARQL_BASE = [Bb][Aa][Ss][Ee]
-PNAME_NS = pre:PN_PREFIX? ':' { return pre ? pre : '' } // pre+'|' : '|';
-PNAME_LN = pre:PNAME_NS l:PN_LOCAL { 
-    return {width: pre.length+1+l.length, prefix:pre, lex:l};
+PNAME_NS = pre:PN_PREFIX? ':' { return {text:pre ? pre : '', _pos: RDF.Position5(text(), line(), column(), offset(), text().length+1)}; } // pre+'|' : '|';
+PNAME_LN = pre:PNAME_NS l:PN_LOCAL {
+    return {width: pre.text.length+1+l.length, prefix:pre.text, lex:l};
 }
 
-BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL2* {
-    return RDF.BNode(bnodeScope.uniqueLabel(first+rest.join('')), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
+BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL2 {
+    return RDF.BNode(bnodeScope.uniqueLabel(first+rest), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
 }
 BLANK_NODE_LABEL2 = l:'.' r:BLANK_NODE_LABEL2 { return l+r; }
           / l:PN_CHARS r:BLANK_NODE_LABEL2? { return r ? l+r : l; }

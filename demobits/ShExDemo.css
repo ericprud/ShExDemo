@@ -119,11 +119,21 @@ h2 { margin: 0; border: none; }
 .textButton { background-color: #ddd; border: 1px solid #000; }
 .preload { float:left; border:3px solid #efe; margin-left: 1em;}
 .preload-desc { float:left; border:3px solid #fff; text-align: right;}
+.keyword { color: #a020f0; }
+.prefix { color: #228b22; }
+.localName { color: #008b8b; }
+.shapeName { color: #a0522d; }
+.shape {  }
 .IRI { color: #00f; }
 .bnode { color: #a3a; }
+#schema .shapeName > .IRI { color: #a0522d; }   /* .shapeName trumps .IRI */
+#schema .shapeName > .bnode { color: #a0522d; } /* .shapeName trumps .bnode */
 .literal { color: #722; }
 .langtag { color: #770; }
-.rule { color: #119; }
+/*
+.rule:nth-child(even) { border-left: thin solid #119; border-right: thin solid #119; }
+.shape { border-left: thick solid #191; border-right: thick solid #191; }
+*/
 .code { color: #7bb; }
 .comment { color: #911; }
 .error { color: #d00; }

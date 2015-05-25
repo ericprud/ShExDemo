@@ -79,9 +79,9 @@ turtleDoc = _ statement* _ {
 
 statement       = directive _ / triples _ '.' _
 directive       = prefix / base / sparqlPrefix / sparqlBase
-prefix          = PREFIX _ pre:PNAME_NS _ i:IRIREF _ '.' { iriResolver.setPrefix(pre, i.lex); }
+prefix          = keyword:PREFIX _ pre:PNAME_NS _ i:IRIREF _ '.' { iriResolver.setPrefix(pre.text, i.lex); db.prefixDecl(keyword, pre, i); }
 base            = BASE _ i:IRIREF _ '.' { iriResolver.setBase(i.lex); }
-sparqlPrefix    = SPARQL_PREFIX _ pre:PNAME_NS _ i:IRIREF { iriResolver.setPrefix(pre, i.lex); }
+sparqlPrefix    = keyword:SPARQL_PREFIX _ pre:PNAME_NS _ i:IRIREF { iriResolver.setPrefix(pre.text, i.lex); db.prefixDecl(keyword, pre, i); }
 sparqlBase      = SPARQL_BASE _ i:IRIREF { iriResolver.setBase(i.lex); }
 
 triples         = _ subject predicateObjectList { curSubject.pop(); }
@@ -188,13 +188,13 @@ IRIREF = b:_IRIREF_BEGIN s:([^\u0000-\u0020<>\"{}|^`\\] / UCHAR)* e:_IRIREF_END 
 _IRIREF_BEGIN = '<' { return offset(); }
 _IRIREF_END = '>' { return offset(); }
 
-PREFIX = '@prefix'
+PREFIX = '@prefix' { return {_: "Keyword", text: text(), _pos: RDF.Position5(text(), line(), column(), offset(), text().length)}; }
 BASE = '@base'
-SPARQL_PREFIX = [Pp][Rr][Ee][Ff][Ii][Xx]
+SPARQL_PREFIX = [Pp][Rr][Ee][Ff][Ii][Xx] { return {_: "Keyword", text: text(), _pos: RDF.Position5(text(), line(), column(), offset(), text().length)}; }
 SPARQL_BASE = [Bb][Aa][Ss][Ee]
-PNAME_NS = pre:PN_PREFIX? ':' { return pre ? pre : '' } // pre+'|' : '|';
+PNAME_NS = pre:PN_PREFIX? ':' { return {text:pre ? pre : '', _pos: RDF.Position5(text(), line(), column(), offset(), text().length+1)}; } // pre+'|' : '|';
 PNAME_LN         = pre:PNAME_NS l:PN_LOCAL {
-    return {width: pre.length+1+l.length, prefix:pre, lex:l};
+    return {width: pre.text.length+1+l.length, prefix:pre.text, lex:l};
 }
 BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL2* {
     return RDF.BNode(bnodeScope.uniqueLabel(first+rest.join('')), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));

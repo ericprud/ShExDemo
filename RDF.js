@@ -567,6 +567,7 @@ RDF = {
                 {str:"<Bob> <foaf:name>  'Bob'"},
                 {str:"<Bob> <foaf:name>  'Rob'"}]
              */
+            prefixDecls: [],
             triples: [],
             comments: [],
             /* SPO is an index of the form:
@@ -768,9 +769,20 @@ RDF = {
                 } else
                     return this.triples.map(function (t) { return t.toString(); }).join("\n");
             },
+            prefixDecl: function (keyword, prefix, iri) {
+                this.prefixDecls.push({keyword:keyword, prefix:prefix, iri:iri});
+            },
             colorize: function (charmap, idPrefix) {
                 var idMap = IntStringMap();
                 var termStringToIds = StringIdMap();
+                this.prefixDecls.forEach(function (d) {
+                    charmap.insertBefore(d.keyword._pos.offset, "<span class='keyword'>", 0);
+                    charmap.insertAfter(d.keyword._pos.offset+d.keyword._pos.width, "</span>", 0);
+                    charmap.insertBefore(d.prefix._pos.offset, "<span class='prefix'>", 0);
+                    charmap.insertAfter(d.prefix._pos.offset+d.prefix._pos.width, "</span>", 0);
+                    charmap.insertBefore(d.iri._pos.offset, "<span class='IRI'>", 0);
+                    charmap.insertAfter(d.iri._pos.offset+d.iri._pos.width, "</span>", 0);
+                });
                 if (this.triples === null)
                     for (si in this.SPO)
                         for (pi in this.SPO[si])
@@ -3648,6 +3660,8 @@ RDF = {
         this._ = 'Schema'; this._pos = _pos;
         this.ruleMap = {};
         this.ruleLabels = [];
+        this.prefixDecls = [];
+        this._startDecl = undefined;
         this.startRule = undefined;
         this.eventHandlers = {};
         this.derivedShapes = {}; // Map parent name to array of 1st generation childrens' rules.
@@ -3783,15 +3797,21 @@ RDF = {
         this.toString = function (orig) {
             var ret = '';
 
-            var Schema = this;
+            var _Schema = this;
             if (this.init)
-                Object.keys(this.init).map(function (k) { ret += Schema.init[k] + "\n"; })
+                Object.keys(this.init).map(function (k) { ret += _Schema.init[k] + "\n"; })
             if (this.startRule)
                 ret += "start = " + this.startRule.toString(orig) + "\n\n";
             for (var label in this.ruleMap)
                 ret += this.serializeRule(label, orig);
             return ret;
         };
+        this.prefixDecl = function (keyword, prefix, iri) {
+            this.prefixDecls.push({keyword:keyword, prefix:prefix, iri:iri});
+        }
+        this.startDecl = function (start, label) {
+            this._startDecl = {start:start, label:label};
+        }
         this.add = function (label, rule) {
             var key = label.toString();
             if (this.ruleMap[key])
@@ -3807,9 +3827,25 @@ RDF = {
             var termStringToIds = StringIdMap();
             var ruleId = "init";
             //this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
-            var AtomicRule = this;
+            var _Schema = this;
+            this.prefixDecls.forEach(function (d) {
+                charmap.insertBefore(d.keyword._pos.offset, "<span class='keyword'>", 0);
+                charmap.insertAfter(d.keyword._pos.offset+d.keyword._pos.width, "</span>", 0);
+                charmap.insertBefore(d.prefix._pos.offset, "<span class='prefix'>", 0);
+                charmap.insertAfter(d.prefix._pos.offset+d.prefix._pos.width, "</span>", 0);
+                charmap.insertBefore(d.iri._pos.offset, "<span class='IRI'>", 0);
+                charmap.insertAfter(d.iri._pos.offset+d.iri._pos.width, "</span>", 0);
+            });
+            if (this._startDecl) {
+                charmap.insertBefore(this._startDecl.start._pos.offset, "<span class='keyword'>", 0);
+                charmap.insertAfter(this._startDecl.start._pos.offset+this._startDecl.start._pos.width, "</span>", 0);
+                if (this._startDecl.label) {
+                    charmap.insertBefore(this._startDecl.label._pos.offset, "<span class='shapeName'>", 0);
+                    charmap.insertAfter(this._startDecl.label._pos.offset+this._startDecl.label._pos.width, "</span>", 0);
+                }
+            }
             Object.keys(this.init).map(function (k) {
-                var code = AtomicRule.init[k];
+                var code = _Schema.init[k];
                 charmap.insertBefore(code._pos.offset, "<span id='"+ruleId+"_"+k+"' class='code'>", 0);
                 charmap.insertAfter(code._pos.offset+code._pos.width, "</span>", 0);
             });
