@@ -385,9 +385,24 @@ RDF = {
             },
             assignId: function (charmap, idP) {
                 if (this.id === undefined) {
-                    this.id = idP;
-                    charmap.insertBefore(this._pos.offset, "<span id='"+idP+"' class='IRI'>", 0);
-                    charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
+                    var idStr = "";
+                    if (idP) {
+                        this.id = idP;
+                        idStr = " id='"+idP+"'";
+                    }
+                    if (this._pos._orig[0] === "<") {
+                        charmap.insertBefore(this._pos.offset, "<span"+idStr+" class='IRI'>", 0);
+                        charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
+                    } else if (this._pos._orig === "a") {
+                        charmap.insertBefore(this._pos.offset, "<span"+idStr+" class='keyword'>", 0);
+                        charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
+                    } else {
+                        var c = this._pos._orig.indexOf(':')+1;
+                        charmap.insertBefore(this._pos.offset, "<span"+idStr+" class='prefix'>", 0);
+                        charmap.insertAfter(this._pos.offset+c, "</span>", 0);
+                        charmap.insertBefore(this._pos.offset+c, "<span class='localName'>", 0);
+                        charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
+                    }
                 }
                 return this.id;
             }
