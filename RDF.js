@@ -1345,8 +1345,8 @@ RDF = {
     },
 
     // @<foo>
-    ValueReference: function (label, _pos) {
-        this._ = 'ValueReference'; this.label = label; this._pos = _pos;
+    ValueReference: function (label, keyword, _pos) {
+        this._ = 'ValueReference'; this.label = label; this.keyword = keyword; this._pos = _pos; // total rule boundaries
         this.toString = function (orig, schema) {
             var l = this.label.toString(orig);
             if (schema && this.label._ === 'BNode' && l in schema.ruleMap)
@@ -1355,7 +1355,9 @@ RDF = {
                 return '@' + l;
         },
         this.assignId = function (charmap, idPrefix) { // @@ could add " id='"+id+"'"
-            charmap.insertBefore(this.label._pos.offset-1, "<span class='shapeName'>", 0);
+            charmap.insertBefore(this.keyword._pos.offset, "<span class='keyword'>", 0);
+            charmap.insertAfter(this.keyword._pos.offset+this._pos.width, "</span>", 0);
+            charmap.insertBefore(this.label._pos.offset, "<span class='shapeName'>", 0);
             charmap.insertAfter(this.label._pos.offset+this._pos.width, "</span>", 0);
         }
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
@@ -2417,8 +2419,8 @@ RDF = {
         };
     },
 
-    IncludeRule: function (include, _pos) {
-        this._ = 'IncludeRule'; this.include = include; this._pos = _pos;
+    IncludeRule: function (include, keyword, _pos) {
+        this._ = 'IncludeRule'; this.include = include; this.keyword = keyword; this._pos = _pos;
         this.ruleID = undefined;
         this.setRuleID = function (ruleID) { this.ruleID = ruleID; };
         this.label = undefined;
@@ -2428,8 +2430,8 @@ RDF = {
             return '& ' + this.include.toString(orig);
         };
         this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
-            charmap.insertBefore(this.include._pos.offset-1, "<span class='keyword'>", 0);
-            charmap.insertAfter(this.include._pos.offset, "</span>", 0);
+            charmap.insertBefore(this.keyword._pos.offset, "<span class='keyword'>", 0);
+            charmap.insertAfter(this.keyword._pos.offset+this.keyword._pos.width, "</span>", 0);
             charmap.insertBefore(this.include._pos.offset, "<span class='shapeName'>", 0);
             charmap.insertAfter(this.include._pos.offset+this.include._pos.width, "</span>", 0);
             // @@@ hilight include this.rule.colorize(charmap, idMap, termStringToIds, idPrefix);

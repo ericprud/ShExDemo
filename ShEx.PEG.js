@@ -115,14 +115,11 @@ typeSpec        = includes:include* '{' _ exp:OrExpression? _ '}' {
         }
     }
 }
-include = '&' _ l:label _  {
-    var t = text();
-    var width = l._pos.offset-offset()+l._pos.width;
-    var chop = t.length - width;
-    if (chop)
-        t = t.slice(0, -chop);
-    return new RDF.IncludeRule(l, RDF.Position5(t, line(), column(), offset(), width));
+include = keyword:AMPERSAND _ l:label _  {
+    return new RDF.IncludeRule(l, keyword,
+                               RDF.Position5(text(), line(), column(), offset(), text().length));
 }
+AMPERSAND = '&'  { return {_: "Keyword", text: text(), _pos: RDF.Position5(text(), line(), column(), offset(), text().length)}; }
 
 OrExpression    = exp:AndExpression _ more:disjoint* _ '|'? {
     if (!more.length) return exp;
@@ -160,8 +157,8 @@ _id = '$' _ i:iri _ { curSubject.push(i); return i; }
 
 label           = iri / BlankNode
 
-arc             = CONCOMITANT _ '@' _ l:label _ r:repeatCount? _ p:properties? _ c:CodeMap {
-    var v = new RDF.ValueReference(l, RDF.Position5(text(), line(), column(), offset(), l._pos.offset-offset()+l._pos.width));
+arc             = CONCOMITANT _ keyword:ATSIGN _ l:label _ r:repeatCount? _ p:properties? _ c:CodeMap {
+    var v = new RDF.ValueReference(l, keyword, RDF.Position5(text(), line(), column(), offset(), text().length));
     var width = v._pos.offset-offset()+v._pos.width;
     if (r)
         width = r.ends-offset();
@@ -193,17 +190,22 @@ _nmIriStem = i:iri patFlag:( _ TILDE _ exclusions)? {
         new RDF.NameTerm(i, RDF.Position5(text(), line(), column(), offset(), text().length));
 }
 
-valueClass      = '@' _ l:label { return new RDF.ValueReference(l, RDF.Position5(text(), line(), column(), offset(), l._pos.offset-offset()+l._pos.width)); }
+valueClass      = keyword:ATSIGN _ l:label {
+    return new RDF.ValueReference(l, keyword,
+                                  RDF.Position5(text(), line(), column(), offset(), text().length));
+}
                 / r:typeSpec {
     var b = RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column(), offset(), 1));
     r.setLabel(b);
     curSchema.add(b, r);
-    return new RDF.ValueReference(b, RDF.Position5(text(), line(), column(), offset(), 1)); // Only hilight open brace.
+    return new RDF.ValueReference(b, keyword,
+                                  RDF.Position5(text(), line(), column(), offset(), text().length));
 }
                 / t:nodeType { return new RDF.ValueType(t, RDF.Position5(text(), line(), column(), offset(), t._pos.width)); }
                 / n:iri { return new RDF.ValueType(n, RDF.Position5(text(), line(), column(), offset(), n._pos.width)); }
                 / s:valueSet { return new RDF.ValueSet(s.list, RDF.Position5(text(), line(), column(), offset(), s.ends-offset())); }
                 / '.' _ excl:exclusions { return new RDF.ValueWild(excl.list, RDF.Position5(text(), line(), column(), offset(), excl.ends-offset())); }
+ATSIGN          = '@' { return {_: "Keyword", text: text(), _pos: RDF.Position5(text(), line(), column(), offset(), text().length)}; }
 nodeType        = IRI / LITERAL / BNODE / NONLITERAL
 defahlt         = '=' o:(_iri_OR_literal) { return o; }
 _iri_OR_literal = iri
