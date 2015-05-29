@@ -219,7 +219,15 @@ This is appended with the cloned contents of .hasTooltip .toolTip in order to:
                             </select>
                             as <label id="start-rule" for="opt-pre-typed">schema start rule</label>
                             <br/>
-                            <input type="radio" name="mode" id="opt-find-type" value="find-type"/> <label for="opt-pre-typed">
+                            <input type="radio" name="mode" id="opt-instance-linkage" value="instance-linkage"/> <label for="opt-instance-linkage">
+                            <span class="hasToolTip">Use shape assertions in data
+                              <span class="toolTip">
+                                <strong>instance-linkages</strong> enforces <code>sh:nodeShape</code> assertions in the data to be validated.
+                              </span>
+                            </span>
+                          </label>
+                          <br/>
+                            <input type="radio" name="mode" id="opt-find-type" value="find-type"/> <label for="opt-find-type">
                             <span class="hasToolTip">Find node types
                               <span class="toolTip">
                                 <strong>Find-types</strong> enumerates for each data nodes all of the rules which it matches.<br/>

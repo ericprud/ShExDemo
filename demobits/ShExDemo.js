@@ -11,6 +11,10 @@ ShExDemo = function() {
     var DATA    = 2;
     var VALPARM = 3;
 
+    var mode_preTyped = { mode: "preTyped" };
+    var mode_instLink = { mode: "instLink" };
+    var mode_findType = { mode: "findType" };
+
     var last    = {}; // Save input values to avoid needless re-execution.
 
     function setHandler(elts, handler) {
@@ -622,7 +626,7 @@ ShExDemo = function() {
         allDataIsLoaded: function() {
             setHandler($("#schema .textInput"), iface.queueSchemaUpdate);
             setHandler($("#data .textInput"), iface.queueDataUpdate);
-            setHandler($("#ctl-colorize, #starting-node, #opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes"),
+            setHandler($("#ctl-colorize, #starting-node, #opt-pre-typed, #opt-instance-linkage, #opt-find-type, #opt-disable-js, #opt-closed-shapes"),
                        iface.handleParameterUpdate);
             setHandler($("#opt-async"), function () {
                 if ("clearCache" in iface.graph)
@@ -636,13 +640,19 @@ ShExDemo = function() {
             $("#apology").hide();
             $("#main").show();
             $("#schema .textInput, #data .textInput, #starting-node,"
-              +"#opt-pre-typed, #opt-find-type, #opt-disable-js, #opt-closed-shapes, #opt-async").removeAttr("disabled");
+              +"#opt-pre-typed, #opt-instance-linkage, #opt-find-type, #opt-disable-js, #opt-closed-shapes, #opt-async").removeAttr("disabled");
             $("#schema .textInput").focus(); // set focus after removeAttr("disabled").
             if (iface.queryParms['find-types']) { // switch to pre after unhiding.
                 $("#opt-pre-typed").prop( "checked", false );
+                $("#opt-instance-linkage").prop( "checked", false );
                 $("#opt-find-type").prop( "checked", true );
+            } else if (iface.queryParms['instance-linkages']) { // switch to pre after unhiding.
+                $("#opt-pre-typed").prop( "checked", false );
+                $("#opt-instance-linkage").prop( "checked", true );
+                $("#opt-find-type").prop( "checked", false );
             } else {
                 $("#opt-pre-typed").prop( "checked", true );
+                $("#opt-instance-linkage").prop( "checked", false );
                 $("#opt-find-type").prop( "checked", false );
             }
 
@@ -762,8 +772,17 @@ ShExDemo = function() {
         },
 
         updateURLParameters: function() {
-            if ($("#opt-find-type").is(":checked")) { // vs. opt-pre-typed
+            if ($("#opt-find-type").is(":checked")) {
                 iface.queryParms['find-types'] = ["true"];
+                delete iface.queryParms['instance-linkages'];
+                var startingNodes = $("#starting-nodes").val();
+                if (startingNodes)
+                    iface.queryParms['starting-nodes'] = startingNodes;
+                else
+                    delete iface.queryParms['starting-nodes'];
+            } else if ($("#opt-instance-linkage").is(":checked")) {
+                delete iface.queryParms['find-types'];
+                iface.queryParms['instance-linkages'] = ["true"];
                 var startingNodes = $("#starting-nodes").val();
                 if (startingNodes)
                     iface.queryParms['starting-nodes'] = startingNodes;
@@ -771,6 +790,7 @@ ShExDemo = function() {
                     delete iface.queryParms['starting-nodes'];
             } else {
                 delete iface.queryParms['find-types'];
+                delete iface.queryParms['instance-linkages'];
                 iface.queryParms['starting-nodes'] = [($("#starting-nodes").val() || []).join(' ')];
             }
             if ($("#ctl-colorize").is(":checked")) {
@@ -809,6 +829,8 @@ ShExDemo = function() {
         handleParameterUpdate: function() {
             if($("#starting-nodes").val() === last["#starting-nodes"]
                && $("#opt-pre-typed").is(":checked") === last["#opt-pre-typed"]
+               && $("#opt-instance-linkage").is(":checked") === last["#opt-instance-linkage"]
+               && $("#opt-find-type").is(":checked") === last["#opt-find-type"]
                && $("#opt-disable-js").is(":checked") === last["#opt-disable-js"]
                && $("#opt-closed-shapes").is(":checked") === last["#opt-closed-shapes"]
                && $("#opt-async").is(":checked") === last["#opt-async"]
@@ -826,6 +848,7 @@ ShExDemo = function() {
 
         enableValidatorInput: function() {
             $("#opt-pre-typed").removeAttr("disabled");
+            $("#opt-instance-linkage").removeAttr("disabled");
             $("#opt-find-type").removeAttr("disabled");
             $("#opt-disable-js").removeAttr("disabled");
             $("#opt-closed-shapes").removeAttr("disabled");
@@ -842,6 +865,7 @@ ShExDemo = function() {
             $("#validation .now").attr("class", "now message disabled").text("Validator not available.");
             try{$("#starting-nodes").multiselect("disable");} catch (e) {} // may not yet be initialized
             $("#opt-pre-typed").attr("disabled", "disabled");
+            $("#opt-instance-linkage").attr("disabled", "disabled");
             $("#opt-find-type").attr("disabled", "disabled");
             $("#opt-disable-js").attr("disabled", "disabled");
             $("#opt-closed-shapes").attr("disabled", "disabled");
@@ -939,7 +963,8 @@ ShExDemo = function() {
                     }
                 } else {
                     $("#opt-pre-typed").attr("disabled", "disabled");
-                    $("#opt-find-type").click();
+                    if ($("#opt-pre-typed").is(":checked"))
+                        $("#opt-find-type").click(); // pick another validation option.
                     $("#start-rule").empty()
                         .append('<a href="#" class="hasToolTip">schema start rule'
                                 +'<span class="toolTip">'
@@ -1020,6 +1045,8 @@ ShExDemo = function() {
 
             last["#starting-nodes"]  = $("#starting-nodes").val();
             last["#opt-pre-typed"]  = $("#opt-pre-typed").is(":checked");
+            last["#opt-instance-linkage"]  = $("#opt-instance-linkage").is(":checked");
+            last["#opt-find-type"]  = $("#opt-find-type").is(":checked");
             last["#opt-disable-js"] = $("#opt-disable-js").is(":checked");
             last["#opt-closed-shapes"] = $("#opt-closed-shapes").is(":checked");
             last["#opt-async"] = $("#opt-async").is(":checked");
@@ -1047,18 +1074,23 @@ ShExDemo = function() {
             if (iface.validator.disableJavascript)
                 iface.message("javascript disabled");
 
-            var preTyped = $("#opt-pre-typed").is(":checked");
-            if (preTyped && !iface.validator.startRule) {
+            var execMode = // execution mode: preTyped, instLink or findType
+                $("#opt-pre-typed").is(":checked") ?
+                mode_preTyped :
+                $("#opt-instance-linkage").is(":checked") ?
+                mode_instLink :
+                mode_findType ;
+            if (execMode == mode_preTyped && !iface.validator.startRule) {
                 $("#validation .now").removeClass("progress").empty().append($('<div/>').html() + "<span class='error'>No schema start rule against which to validate.</span>" + "<br/>");
             } else {
                 var schema = iface.validator; // shortcut.
-                if (!preTyped)
+                if (execMode == mode_findType)
                     for (var handler in schema.handlers)
                         if ('beginFindTypes' in schema.handlers[handler])
                             schema.handlers[handler]['beginFindTypes']();
                 var startingNodes = $("#starting-nodes").val() || [];
                 var testAgainst =
-                    preTyped ?
+                    execMode == mode_preTyped ?
                     [iface.validator.startRule] :
                     schema.ruleLabels.map(function (ruleLabel) {
                         return schema.isVirtualShape[ruleLabel.toString()] ?
@@ -1066,12 +1098,12 @@ ShExDemo = function() {
                             ruleLabel;
                     }).filter(function (ruleLabel) { return !!ruleLabel; });
                 try {
-                    var pair = iface.iterateNodesAndLabels(startingNodes, testAgainst, schema, preTyped, timeBefore);
+                    var pair = iface.iterateNodesAndLabels(startingNodes, testAgainst, schema, execMode, timeBefore);
                     var resOrPromises = pair[0], modelIntersection = pair[1];
                     if ($("#opt-async").is(":checked"))
                         Promise.all(resOrPromises).
                         then(function (results) {
-                            renderAllResults(results, preTyped, modelIntersection, timeBefore);
+                            renderAllResults(results, execMode, modelIntersection, timeBefore);
                         }).catch(function (e) {
                             iface.renderError(e, "#validation .now");
                         }).catch(function (e) {
@@ -1079,7 +1111,7 @@ ShExDemo = function() {
                             return e;
                         });
                     else
-                        renderAllResults(resOrPromises, preTyped, modelIntersection, timeBefore);
+                        renderAllResults(resOrPromises, execMode, modelIntersection, timeBefore);
                 } catch (e) {
                     try {
                         iface.renderError(e, "#validation .now");
@@ -1092,7 +1124,7 @@ ShExDemo = function() {
             iface.updateURL();
         },
 
-        iterateNodesAndLabels: function (startingNodes, testAgainst, schema, preTyped, timeBefore) {
+        iterateNodesAndLabels: function (startingNodes, testAgainst, schema, execMode, timeBefore) {
             var resOrPromises = [];
             var termResults = RDF.TermResults();
             var modelIntersection = null;
@@ -1115,14 +1147,23 @@ ShExDemo = function() {
                                     (startingNode.substr(1,startingNode.length-2))
                                     , RDF.Position0());
                     }
-                    testAgainst.forEach(function (ruleLabel) {
-                        var pos0 = RDF.Position0();
+                    var pos0 = RDF.Position0();
+                    var nodeSh = RDF.IRI("http://www.w3.org/ns/shacl#nodeShape", pos0);
+                    var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", pos0);
+                    var filteredTestAgainst =
+                        execMode == mode_instLink ?
+                            testAgainst.filter(function (ruleLabel) {
+                                // Look for { startingNode sh:nodeShape ruleLabel. }
+                                // Can supplement with { startingNode a X. X sh:classShape ruleLabel. }
+                                return iface.graph.triplesMatching(startingNode, nodeSh, ruleLabel).length !== 0
+                            }) :
+                            testAgainst;
+                    filteredTestAgainst.forEach(function (ruleLabel) {
                         var niceRuleLabel = ruleLabel._ == "BNode" && ruleLabel == iface.validator.startRule ?
                             "schema start rule" :
                             ruleLabel.toString();
                         var elt =
                             iface.message("Validating " + startingNode + " as " + niceRuleLabel + ".");
-                        var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", pos0);
                         var vs = RDF.ValidatorStuff(iface.schema.iriResolver,
                                                     $("#opt-closed-shapes").is(":checked"),
                                                     $("#opt-async").is(":checked"),
@@ -1137,14 +1178,7 @@ ShExDemo = function() {
                             resOrPromises.push(post(resOrPromise, startingNode, ruleLabel));
                         function post (r) {
                             r.elt = elt; // write it into the r for later manipulation
-                            if (preTyped) {
-                                if (r.passed())
-                                    elt.addClass("success").empty().
-                                    append(HEsc(startingNode + " matches " + niceRuleLabel));
-                                else
-                                    elt.addClass("error").empty().
-                                    append(HEsc(startingNode + " fails " + niceRuleLabel));
-                            } else {
+                            if (execMode == mode_findType) {
                                 if (r.passed()) {
                                     // add a fake rule with a value reference for oslc:instanceShape
                                     elt.empty().
@@ -1155,6 +1189,13 @@ ShExDemo = function() {
                                     elt.remove();
                                     br.remove();
                                 }
+                            } else {
+                                if (r.passed())
+                                    elt.addClass("success").empty().
+                                    append(HEsc(startingNode + " matches " + niceRuleLabel));
+                                else
+                                    elt.addClass("error").empty().
+                                    append(HEsc(startingNode + " fails " + niceRuleLabel));
                             }
 
                             r.model = vs.termResults.getModel().filter(function (tr) {
@@ -1650,8 +1691,8 @@ ShExDemo = function() {
         return remainingTripleIDs;
     }
 
-                function renderAllResults (results, preTyped, modelIntersection, timeBefore) {
-                        if (!preTyped)
+                function renderAllResults (results, execMode, modelIntersection, timeBefore) {
+                        if (execMode == mode_findType)
                             for (var handler in schema.handlers)
                                 if ('endFindTypes' in schema.handlers[handler])
                                     schema.handlers[handler]['endFindTypes']();
