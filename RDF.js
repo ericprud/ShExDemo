@@ -391,18 +391,20 @@ RDF = {
                         idStr = " id='"+idP+"'";
                     }
                     if (this._pos._orig[0] === "<") {
-                        charmap.insertBefore(this._pos.offset, "<span"+idStr+" class='IRI'>", 0);
+                        charmap.insertBefore(this._pos.offset, "<span class='IRI'>", 0);
                         charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
                     } else if (this._pos._orig === "a") {
-                        charmap.insertBefore(this._pos.offset, "<span"+idStr+" class='keyword'>", 0);
+                        charmap.insertBefore(this._pos.offset, "<span class='keyword'>", 0);
                         charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
                     } else {
                         var c = this._pos._orig.indexOf(':')+1;
-                        charmap.insertBefore(this._pos.offset, "<span"+idStr+" class='prefix'>", 0);
+                        charmap.insertBefore(this._pos.offset, "<span class='prefix'>", 0);
                         charmap.insertAfter(this._pos.offset+c, "</span>", 0);
                         charmap.insertBefore(this._pos.offset+c, "<span class='localName'>", 0);
                         charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
                     }
+                    charmap.insertBefore(this._pos.offset, "<span"+idStr+">", 0);
+                    charmap.insertAfter(this._pos.offset+this._pos.width, "</span>", 0);
                 }
                 return this.id;
             }
