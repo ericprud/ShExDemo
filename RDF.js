@@ -2594,7 +2594,7 @@ RDF = {
                 if (contextCard.min === 0) {
                     subs.push(sub);
                     if (firstNonZero === undefined && sub.min !== 0)
-                        firstNonZero = i;
+                        firstNonZero = subs.length-1;
                 }
             }
             if (contextCard.min === 0) {
