@@ -1355,8 +1355,10 @@ RDF = {
                 return '@' + l;
         },
         this.assignId = function (charmap, idPrefix) { // @@ could add " id='"+id+"'"
-            charmap.insertBefore(this.keyword._pos.offset, "<span class='keyword'>", 0);
-            charmap.insertAfter(this.keyword._pos.offset+this._pos.width, "</span>", 0);
+            if (this.keyword) {
+                charmap.insertBefore(this.keyword._pos.offset, "<span class='keyword'>", 0);
+                charmap.insertAfter(this.keyword._pos.offset+this._pos.width, "</span>", 0);
+            }
             charmap.insertBefore(this.label._pos.offset, "<span class='shapeName'>", 0);
             charmap.insertAfter(this.label._pos.offset+this._pos.width, "</span>", 0);
         }
