@@ -181,10 +181,15 @@ ShExParser = (function() {
             if (d)
                 throw peg$buildException('default (='+d.toString()+') not currently supported', null, peg$reportedPos);
             var width = v._pos.offset-offset()+v._pos.width;
-            if (r)
+            if (r) {
                 width = r.ends-offset();
-            else
+                if (r.ends == 0) { // form of negation
+                    r = {min: 1, max: 1};
+                    bang = true;
+                }
+            } else {
                 r = {min: 1, max: 1};
+            }
             var ret = new RDF.AtomicRule(bang?true:false, inverse?true:false, addative?true:false, n, v, r.min, r.max, c, RDF.Position5(text(), line(), column(), offset(), width));
             if (p) ret.setRuleID(p);
             return ret;
@@ -206,7 +211,7 @@ ShExParser = (function() {
             var b = RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column(), offset(), 1));
             r.setLabel(b);
             curSchema.add(b, r);
-            return new RDF.ValueReference(b, keyword,
+            return new RDF.ValueReference(b, null,
                                           RDF.Position5(text(), line(), column(), offset(), text().length));
         },
         peg$c57 = function(t) { return new RDF.ValueType(t, RDF.Position5(text(), line(), column(), offset(), t._pos.width)); },
