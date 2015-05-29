@@ -137,6 +137,7 @@ h2 { margin: 0; border: none; }
 .code { color: #7bb; }
 .comment { color: #911; }
 .error { color: #d00; }
+.error .prefix, .error .localName, .error .IRI, .error .bnode, .error .literal, .error .langtag { color: #d00; }
 .small { font-size: 60%; }
 .success { color: #0d0; }
 .success a.success, .success a:visited { color: #0d0; }
