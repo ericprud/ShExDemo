@@ -594,9 +594,7 @@ ShExDemo = function() {
             var triples = iface.graph.slice();
             var seen = {};
             var matched = 0;
-            $("#starting-nodes option").remove();
-            for (var i = 0; i < triples.length; ++i) {
-                var s = triples[i].s;
+            function maybeAddNode (s) {
                 var str = s.toString();
                 if (!(str in seen)) {
                     var text = s._ == 'BNode'
@@ -615,6 +613,12 @@ ShExDemo = function() {
                           +(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"))
                           +"</option>"));
                 }
+            }
+            $("#starting-nodes option").remove();
+            for (var i = 0; i < triples.length; ++i) {
+                maybeAddNode(triples[i].s);
+                if (triples[i].o._ != 'RDFLiteral')
+                    maybeAddNode(triples[i].o);
             }
 
             if (matched == 0 && triples.length != 0) // fall back to the first node in the DB.
