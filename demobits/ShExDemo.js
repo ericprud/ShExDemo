@@ -1065,15 +1065,15 @@ ShExDemo = function() {
             iface.validator.termResults = {}; // clear out yester-cache
 
             iface.validator.handlers = {
-                GenX: RDF.GenXHandler(document.implementation, new XMLSerializer()),
-                GenJ: RDF.GenJHandler({}),
-                GenN: RDF.GenNHandler({}),
-                GenR: RDF.GenRHandler({})
+                '<http://shexspec.github.io/extensions/GenX/>': RDF.GenXHandler(document.implementation, new XMLSerializer()),
+                '<http://shexspec.github.io/extensions/GenJ/>': RDF.GenJHandler({}),
+                '<http://shexspec.github.io/extensions/GenN/>': RDF.GenNHandler({}),
+                '<http://shexspec.github.io/extensions/GenR/>': RDF.GenRHandler({})
             };
             iface.validator.alwaysInvoke = {};
             if (!$("#opt-disable-js").is(":checked")) {
-                iface.validator.handlers['js'] = RDF.jsHandler();
-                iface.validator.handlers['ps'] = RDF.psHandler();
+                iface.validator.handlers['<http://shexspec.github.io/extensions/js/>'] = RDF.jsHandler();
+                iface.validator.handlers['<http://shexspec.github.io/extensions/ps/>'] = RDF.psHandler();
             }
             if (iface.validator.disableJavascript)
                 iface.message("javascript disabled");
@@ -1769,15 +1769,15 @@ ShExDemo = function() {
                             }).join("\n<hr>\n"));
                         }
 
-                        function generatorInterface (gen, mediaType) {
-                            if (iface.validator.handlers[gen].text) {
+                        function generatorInterface (url, gen, mediaType) {
+                            if (iface.validator.handlers[url].text) {
                                 var win = gen+'window';
                                 var divId = gen+'Div';
                                 var useId = 'Use'+gen+'Button';
                                 var stopId = 'Stop'+gen+'Button';
 
                                 var link = "data:"+mediaType+";charset=utf-8;base64,"
-                                    + Base64.encode(iface.validator.handlers[gen].text);
+                                    + Base64.encode(iface.validator.handlers[url].text);
                                 //$("#validation .log").append($('<div><a href="' + link +'">'+gen+' output</a></div>')
                                 var options = 'width='+(window.innerWidth/3)
                                     +' , height='+(window.innerHeight/3);
@@ -1807,15 +1807,15 @@ ShExDemo = function() {
                                 } else {
                                     delStopButton(addUseButton, delStopButton);
                                 }
-                                iface.validator.handlers[gen].text = null;
+                                iface.validator.handlers[url].text = null;
                             }
                         };
-                        generatorInterface('GenX', 'application/xml');
-                        generatorInterface('GenJ', 'application/json');
-                        generatorInterface('GenN', 'text/plain');
-                        generatorInterface('GenR', 'text/plain');
+                        generatorInterface('<http://shexspec.github.io/extensions/GenX/>', 'GenX', 'application/xml');
+                        generatorInterface('<http://shexspec.github.io/extensions/GenJ/>', 'GenJ', 'application/json');
+                        generatorInterface('<http://shexspec.github.io/extensions/GenN/>', 'GenN', 'text/plain');
+                        generatorInterface('<http://shexspec.github.io/extensions/GenR/>', 'GenR', 'text/plain');
                         if (!$("#opt-disable-js").is(":checked"))
-                            generatorInterface('ps',   'text/plain');
+                            generatorInterface('<http://shexspec.github.io/extensions/ps/>',   'text/plain');
                     }
 
 };

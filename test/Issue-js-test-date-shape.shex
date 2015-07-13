@@ -3,6 +3,7 @@ PREFIX ex: <http://ex.example/#>
 PREFIX foaf: <http://xmlns.com/foaf/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX js: <http://shexspec.github.io/extensions/js/>
 
 start = <IssueShape>
 
@@ -10,13 +11,13 @@ start = <IssueShape>
     ex:state (ex:unassigned ex:assigned),
     ex:reportedBy @<UserShape>,
     ex:reportedOn xsd:dateTime
-        %js{ report = _.o; return true; %},
+        %js:{ report = _.o; return true; %},
     (ex:reproducedBy @<EmployeeShape>,
      ex:reproducedOn xsd:dateTime
     ),
     ex:related @<IssueShape>*
 }
-  %js{ return _[4].triple.o.lex > _[2].triple.o.lex; %}
+  %js:{ return _[4].triple.o.lex > _[2].triple.o.lex; %}
 
 <UserShape> {
     (foaf:name xsd:string

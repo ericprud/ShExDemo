@@ -344,7 +344,11 @@ PrefixedName = ln:PNAME_LN {
 BlankNode = BLANK_NODE_LABEL / ANON
 
 // Terminals:
-CODE = '%' label:([a-zA-Z+#_][a-zA-Z0-9+#_]*)? '{' code:([^%\\] / '\\' '%')* '%' '}' {
+CODE = '%' label:iri '{' code:([^%\\] / '\\' '%')* '%' '}' {
+    code = code.join('');
+    return new RDF.Code(label, code, RDF.Position5(text(), line(), column(), offset(), 1+label.length+1+code.length+2));
+}
+     / '%' label:([a-zA-Z+#_][a-zA-Z0-9+#_]*)? '{' code:([^%\\] / '\\' '%')* '%' '}' {
     label = label ? label[0]+label[1].join('') : "";
     code = code.join('');
     return new RDF.Code(label, code, RDF.Position5(text(), line(), column(), offset(), 1+label.length+1+code.length+2));
