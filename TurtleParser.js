@@ -189,7 +189,7 @@ TurtleParser = (function() {
         peg$c90 = /^[0-9]/,
         peg$c91 = { type: "class", value: "[0-9]", description: "[0-9]" },
         peg$c92 = function(first, rest) {
-            return RDF.BNode(bnodeScope.uniqueLabel(first+rest), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
+            return RDF.BNode(bnodeScope.uniqueLabel(first+(rest ? rest : '')), RDF.Position5(text(), line(), column(), offset(), 2+first.length+(rest ? rest.length : 0)));
         },
         peg$c93 = function(l, r) { return l+r; },
         peg$c94 = function(l, r) { return r ? l+r : l; },
@@ -1981,7 +1981,10 @@ TurtleParser = (function() {
           }
         }
         if (s2 !== peg$FAILED) {
-          s3 = peg$parseBLANK_NODE_LABEL2();
+          s3 = peg$parseBLANK_NODE_LABEL();
+          if (s3 === peg$FAILED) {
+            s3 = peg$c8;
+          }
           if (s3 !== peg$FAILED) {
             peg$reportedPos = s0;
             s1 = peg$c92(s2, s3);

@@ -196,8 +196,8 @@ PNAME_NS = pre:PN_PREFIX? ':' { return {text:pre ? pre : '', _pos: RDF.Position5
 PNAME_LN         = pre:PNAME_NS l:PN_LOCAL {
     return {width: pre.text.length+1+l.length, prefix:pre.text, lex:l};
 }
-BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL2 {
-    return RDF.BNode(bnodeScope.uniqueLabel(first+rest), RDF.Position5(text(), line(), column(), offset(), 2+first.length+rest.length));
+BLANK_NODE_LABEL = '_:' first:(PN_CHARS_U / [0-9]) rest:BLANK_NODE_LABEL? {
+    return RDF.BNode(bnodeScope.uniqueLabel(first+(rest ? rest : '')), RDF.Position5(text(), line(), column(), offset(), 2+first.length+(rest ? rest.length : 0)));
 }
 BLANK_NODE_LABEL2 = l:'.' r:BLANK_NODE_LABEL2 { return l+r; }
           / l:PN_CHARS r:BLANK_NODE_LABEL2? { return r ? l+r : l; }
