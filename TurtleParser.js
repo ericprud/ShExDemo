@@ -1981,7 +1981,7 @@ TurtleParser = (function() {
           }
         }
         if (s2 !== peg$FAILED) {
-          s3 = peg$parseBLANK_NODE_LABEL();
+          s3 = peg$parseBLANK_NODE_LABEL2();
           if (s3 === peg$FAILED) {
             s3 = peg$c8;
           }

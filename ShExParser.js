@@ -4658,6 +4658,9 @@ ShExParser = (function() {
         }
         if (s2 !== peg$FAILED) {
           s3 = peg$parseBLANK_NODE_LABEL2();
+          if (s3 === peg$FAILED) {
+            s3 = peg$c2;
+          }
           if (s3 !== peg$FAILED) {
             peg$reportedPos = s0;
             s1 = peg$c189(s2, s3);
