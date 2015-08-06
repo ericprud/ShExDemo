@@ -185,7 +185,7 @@ function ResourceShapeCardinality (min, max, sePrefix, rsPrefix, seFix, rsFix) {
             return this.toString();
     }
 
-RDF = {
+var _RDF = {
     message: function (str) {
         console.error(str);
     },
@@ -221,8 +221,8 @@ RDF = {
                 return nest(this.data);
             }
         };
-        Object.keys(RDF.StructuredError_proto).map(function (k) {
-            ret[k] = RDF.StructuredError_proto[k];
+        Object.keys(_RDF.StructuredError_proto).map(function (k) {
+            ret[k] = _RDF.StructuredError_proto[k];
         });
         return ret;
     },
@@ -278,7 +278,7 @@ RDF = {
                 if (nspace === undefined) {
                     this.errorHandler("unknown namespace prefix: " + pre);
                     // throw("unknown namespace prefix: " + pre);
-                    RDF.message("unknown namespace prefix: " + pre);
+                    _RDF.message("unknown namespace prefix: " + pre);
                     nspace = '<!' + pre + '!>';
                 }
                 return nspace;
@@ -346,7 +346,7 @@ RDF = {
             code = parseInt(el.slice(1,9).join(''), 16);
         if (el.length==5)
             code = parseInt(el.slice(1,5).join(''), 16);
-        if (code<0x10000) { // RDFa.1.2.0.js:2712
+        if (code<0x10000) { // _RDFa.1.2.0.js:2712
             return String.fromCharCode(code);
         } else {
             // Evil: generate surrogate pairs
@@ -360,7 +360,7 @@ RDF = {
     // Three kinds of position. Not needed in the long run, but useful for recording what's expected.
     Position5: function (_orig, line, column, offset, width) {
         // if (Math.abs(_orig.length - width) > 1)
-        //     RDF.message(new Error("'"+_orig+"'.length = "+_orig.length+" != "+width));
+        //     _RDF.message(new Error("'"+_orig+"'.length = "+_orig.length+" != "+width));
         return { _orig:_orig, line:line, column:column, offset:offset, width:width,
                  origText: function () { return this._orig; }
                };
@@ -532,19 +532,19 @@ RDF = {
 
     Dataset: function () {
         return {
-            // test with RDF.Dataset().test()
+            // test with _RDF.Dataset().test()
             test: function (info, warning, error) {
                 info = info || function (s) { console.log("info: "+s); }
                 warning = warning || function (s) { console.log("warning: "+s); }
                 error = error || function (s) { console.log("error: "+s); }
                 var errors = 0;
-                var t0 = RDF.Triple(RDF.IRI  ("Bob"), RDF.IRI("http://...foaf/knows"),  RDF.IRI       ("Joe"));
-                var t1 = RDF.Triple(RDF.IRI  ("Bob"), RDF.IRI("http://...foaf/knows"),  RDF.BNode     ("sue"));
-                var t2 = RDF.Triple(RDF.BNode("Sue"), RDF.IRI("http://...foaf/knows"),  RDF.IRI       ("Bob"));
-                var t3 = RDF.Triple(RDF.IRI  ("Bob"), RDF.IRI("http://...foaf/name" ),  RDF.RDFLiteral("Bob"));
-                var t4 = RDF.Triple(RDF.IRI  ("Bob"), RDF.IRI("http://...foaf/name" ),  RDF.RDFLiteral("Rob"));
+                var t0 = _RDF.Triple(_RDF.IRI  ("Bob"), _RDF.IRI("http://...foaf/knows"),  _RDF.IRI       ("Joe"));
+                var t1 = _RDF.Triple(_RDF.IRI  ("Bob"), _RDF.IRI("http://...foaf/knows"),  _RDF.BNode     ("sue"));
+                var t2 = _RDF.Triple(_RDF.BNode("Sue"), _RDF.IRI("http://...foaf/knows"),  _RDF.IRI       ("Bob"));
+                var t3 = _RDF.Triple(_RDF.IRI  ("Bob"), _RDF.IRI("http://...foaf/name" ),  _RDF.RDFLiteral("Bob"));
+                var t4 = _RDF.Triple(_RDF.IRI  ("Bob"), _RDF.IRI("http://...foaf/name" ),  _RDF.RDFLiteral("Rob"));
 
-                var ds = RDF.Dataset();
+                var ds = _RDF.Dataset();
                 ds.unordered();
                 ds.push(t0);ds.push(t1);ds.push(t2);ds.push(t3);ds.push(t4); info(ds.toString());
                 info("- " + t1.toString()); ds.retract(t1); info(ds.toString());
@@ -658,7 +658,7 @@ RDF = {
                 return this.triples.slice(from, length);
             },
             clone: function () {
-                var ret = RDF.Dataset();
+                var ret = _RDF.Dataset();
                 for (si in this.SPO) {
                     ret.SPO[si] = {};
                     for (pi in this.SPO[si]) {
@@ -801,7 +801,99 @@ RDF = {
                     charmap.insertAfter(comment._pos.offset+comment._pos.width, "</span>", 0);
                 }
                 return {idMap:idMap, termStringToIds:termStringToIds};
+            },
+          equals: function (right) {
+            if (this.triples.length !== right.triples.length)
+              return false;
+
+	    var m = {};
+	    var toMatch = this.triples.slice();
+	    function match (g) {
+              function val (term) {
+                if (term._ === 'BNode')
+		  return (term in m) ? m[term] : null
+		else
+		  return term;
+              }
+
+	      if (g.length == 0)
+		return true;
+	      var t = g.pop(), s = val(t.s), o = val(t.o);
+	      var tm = right.triplesMatching(s, t.p, o);
+	      return tm.reduce(function (ret, triple) {
+		var adds = [];
+		function add (term) {
+		  if (val(term) === null) {
+		    adds.push(term.lex);
+		    m[term.lex] = triple.s;
+		  }
+		}
+		add(t.s);
+		add(t.o);
+		ret = match(g);
+		if (!ret)
+		  adds.forEach(function (added) {
+		    delete m[term.lex];
+		  });
+		return ret;
+	      }, false);
+	    }
+	    return match(this.triples.slice());
+	  },
+
+	  // old, slow (but interesting) permutations schema
+          __oldEquals_dont_use: function (right) {
+            if (this.triples.length !== right.triples.length)
+              return false;
+
+            var _Dataset = this;
+            function scan (ds) {
+              return ds.triples.reduce(function (ret, triple) {
+                function add (term) {
+                  if (term._ === 'BNode')
+                    if (!(term.lex in ret))
+                      ret[term.lex] = {term: term, triples: [triple]};
+                  else
+                    ret[term.lex].triples.push(triple);
+                }
+                add(triple.s);
+                add(triple.o);
+                return ret;
+              }, {});
             }
+            var lBNodeDetails = scan(this ), lBNodes = Object.keys(lBNodeDetails);
+            var rBNodeDetails = scan(right), rBNodes = Object.keys(rBNodeDetails);
+
+
+            if (lBNodes.length !== rBNodes.length)
+              return false;
+
+            var l2r = rBNodes.reduce(
+              function permute (res, item, key, arr) {
+                return res.concat(arr.length > 1 && arr.slice(0, key).
+                                  concat(arr.slice(key + 1)).reduce(permute, []).map(
+                                    function (perm) {
+                                      return [item].concat(perm);
+                                    }) || item);
+              }, []);
+
+            for (var l2r_i = 0; l2r_i < l2r.length; ++l2r_i) {
+              var m = l2r[l2r_i];
+              console.log(m);
+              var matchesSoFar = true;
+              for (var l = 0; l < _Dataset.triples.length && matchesSoFar; ++l) {
+                var t = _Dataset.triples[l];
+                var s = t.s._ === 'BNode' ? rBNodeDetails[m[lBNodes.indexOf(t.s.lex)]].term : t.s;
+                var o = t.o._ === 'BNode' ? rBNodeDetails[m[lBNodes.indexOf(t.o.lex)]].term : t.o;
+                if (right.triplesMatching(s, t.p, o).length === 0)
+                  matchesSoFar = false;
+              }
+              if (matchesSoFar)
+                return true;
+            };
+
+            return false;
+          }
         };
     },
 
@@ -838,7 +930,7 @@ RDF = {
                         var ray = jqXHR.getResponseHeader("content-type").split(/;/)
                             .map(function (s) { return s.replace(/ /g,''); });
                         try {
-                            var r = RDF.parseSPARQLResults(body, ray.shift(), ray);
+                            var r = _RDF.parseSPARQLResults(body, ray.shift(), ray);
                             if (parms.async)
                                 resolve(r);
                             else
@@ -902,17 +994,17 @@ RDF = {
                         var varName = binding.getAttribute("name");
                         var elt = binding.children[0];
                         var content = elt.textContent;
-                        var pos = RDF.Position2(solnNo, bindNo);
+                        var pos = _RDF.Position2(solnNo, bindNo);
                         if (elt.localName === "bnode") {
-                            ret[varName] = RDF.BNode(content, pos);
+                            ret[varName] = _RDF.BNode(content, pos);
                         } else if (elt.localName === "uri") {
-                            ret[varName] = RDF.IRI(content, pos);
+                            ret[varName] = _RDF.IRI(content, pos);
                         } else if (elt.localName === "literal") {
                             var langTag = elt.getAttribute("xml:lang");
                             var datatype = elt.getAttribute("datatype");
                             if (datatype !== null)
-                                datatype = RDF.IRI(datatype, pos);
-                            ret[varName] = RDF.RDFLiteral(content, langTag, datatype, pos);
+                                datatype = _RDF.IRI(datatype, pos);
+                            ret[varName] = _RDF.RDFLiteral(content, langTag, datatype, pos);
                         } else {
                             "unknown node type: \"" + elt.localName + "\"";
                         }
@@ -929,19 +1021,19 @@ RDF = {
                     var bindNo = 0;
                     for (var varName in result) {
                         var binding = result[varName];
-                        var pos = RDF.Position2(solnNo, bindNo++);
+                        var pos = _RDF.Position2(solnNo, bindNo++);
                         if (binding.type === "bnode") {
-                            ret[varName] = RDF.BNode(binding.value, pos);
+                            ret[varName] = _RDF.BNode(binding.value, pos);
                         } else if (binding.type === "uri") {
-                            ret[varName] = RDF.IRI(binding.value, pos);
+                            ret[varName] = _RDF.IRI(binding.value, pos);
                         } else if (binding.type === "literal") {
                             var langTag = null;
                             if ("xml:lang" in binding)
                                 langTag = binding["xml:lang"];
                             var datatype = null;
                             if ("datatype" in binding)
-                                datatype = RDF.IRI(binding.datatype, pos);
-                            ret[varName] = RDF.RDFLiteral(binding.value, langTag, datatype, pos);
+                                datatype = _RDF.IRI(binding.datatype, pos);
+                            ret[varName] = _RDF.RDFLiteral(binding.value, langTag, datatype, pos);
                         } else {
                             "unknown node type: \"" + binding.type + "\"";
                         }
@@ -950,7 +1042,7 @@ RDF = {
                 })
             };
         } else if (mediaType === "text/turtle") {
-            var queryIriResolver = RDF.createIRIResolver();
+            var queryIriResolver = _RDF.createIRIResolver();
             return {obj: TurtleParser.parse(body, {iriResolver: queryIriResolver}),
                     iriResolver: queryIriResolver};
         } else {
@@ -983,7 +1075,7 @@ RDF = {
                     var body = rejection[0], e = rejection[1], query = rejection[2];
                     debugger;
                     var message =
-                        [["actionCategory", RDF.actionCategory.DATA],
+                        [["actionCategory", _RDF.actionCategory.DATA],
                          ["text", "failed to "],
                          ['link', _queryDB.sparqlInterface.getLastURL(),
                           [["text", e.constructor.name === "SyntaxError" ? "parse" : "GET"]]],
@@ -992,7 +1084,7 @@ RDF = {
                         ];
                     if (e.constructor.name === "SyntaxError")
                         message.push(["SyntaxError", e, body]);
-                    throw RDF.StructuredError(message);
+                    throw _RDF.StructuredError(message);
                 }
                 if (cachedAt != -1) {
                     // We've already cached this subject in slaveDB. Push to top of LRU.
@@ -1315,7 +1407,7 @@ RDF = {
             codeStr + "\n" +
             lead + "} GROUP BY ?" + label.lex +
             cardStr + "}\n";
-        return new RDF.QueryClause(counter, str);
+        return new _RDF.QueryClause(counter, str);
     },
     arcTest: function (schema, label, prefixes, depth, counters, needCounter, predicate, predicateTest, object, objectTest, card, code) {
         // var needFilter = needCounter;
@@ -1332,7 +1424,7 @@ RDF = {
     },
     arcDump: function (schema, label, prefixes, depth, variables, predicate, predicateTest, object, objectTest, card, code) {
         var lead = pad(depth, '    ');
-        return new RDF.QueryClause(undefined, lead+"?"+label+" "+predicate+" "+object+" .\n");
+        return new _RDF.QueryClause(undefined, lead+"?"+label+" "+predicate+" "+object+" .\n");
     },
     arcSelect: function (schema, as, prefixes, depth, counters, predicate, predicateTest, object, objectTest) {
         var lead = pad(depth, '    ');
@@ -1343,7 +1435,7 @@ RDF = {
             predicate + " " + object +
             " . FILTER (" +
             predicateTest + " && " + objectTest + ") BIND (" + as + " AS ?s) BIND (" + predicate + " AS ?p) }";
-        return new RDF.QueryClause(counter, str);
+        return new _RDF.QueryClause(counter, str);
     },
 
     // @<foo>
@@ -1365,7 +1457,7 @@ RDF = {
             charmap.insertAfter(this.label._pos.offset+this._pos.width, "</span>", 0);
         }
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
-            var ret = new RDF.ValRes();
+            var ret = new _RDF.ValRes();
             schema.dispatch(0, 'enter', rule.codes, rule, t);
             var nestedValidatorStuff = validatorStuff.push(point, this.label, rule.nameClass.term); // !!!! s/rule.nameClass.term/t.p/
             var resOrPromise = schema.validatePoint(point, this.label, db, nestedValidatorStuff, true);
@@ -1376,7 +1468,7 @@ RDF = {
                 if (r.passed())
                 { ret.status = r.status; ret.matchedTree(rule, t, r); }
                 else
-                { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatchTree(rule, t, r); }
+                { ret.status = _RDF.DISPOSITION.FAIL; ret.error_noMatchTree(rule, t, r); }
                 return ret;
             }
         },
@@ -1388,7 +1480,7 @@ RDF = {
         },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
             contextCard.min = 0;
-            var ret = RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            var ret = _RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
             var lead1 = pad(depth, '    ');
             var lead2 = pad(depth+1, '    ');
         var countSelect = '';
@@ -1414,7 +1506,7 @@ RDF = {
                         " . FILTER (" + predicateTest + " && (isIRI(" + o + ") || isBlank(" + o + "))) }\n");
             } catch (e) {
                 if (typeof(e) === 'object' && e._ === 'ValidationRecursion')
-                    RDF.message("avoiding cyclic validation of " + e.label.toString());
+                    _RDF.message("avoiding cyclic validation of " + e.label.toString());
                 else
                     throw e;
             }
@@ -1425,20 +1517,20 @@ RDF = {
             var o = label.lex+"_"+predicate.lex;
             if (!(s in variables)) variables[s] = undefined;
             if (!(o in variables)) variables[o] = undefined;
-            var ret = RDF.arcDump(schema, s, prefixes, depth, variables, predicate, predicateTest, o, this.SPARQLobjectTest(prefixes), card, code);
+            var ret = _RDF.arcDump(schema, s, prefixes, depth, variables, predicate, predicateTest, o, this.SPARQLobjectTest(prefixes), card, code);
             try {
                 var lead1 = pad(depth, '    ');
                 ret.append(lead1 + schema.SPARQLdataDump3(this.label, o, prefixes, depth+1, variables).sparql);
             } catch (e) {
                 if (typeof(e) === 'object' && e._ === 'ValidationRecursion')
-                    RDF.message("avoiding cyclic validation of " + e.label.toString());
+                    _RDF.message("avoiding cyclic validation of " + e.label.toString());
                 else
                     throw e;
             }
             return ret;
         },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
-            var ret = RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
+            var ret = _RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
             var lead1 = pad(depth, '    ');
             var lead2 = pad(depth+1, '    ');
             try {
@@ -1453,7 +1545,7 @@ RDF = {
                         lead1 + "  }");
             } catch (e) {
                 if (typeof(e) === 'object' && e._ === 'ValidationRecursion')
-                    RDF.message("avoiding cyclic validation of " + e.label.toString());
+                    _RDF.message("avoiding cyclic validation of " + e.label.toString());
                 else
                     throw e;
             }
@@ -1483,12 +1575,12 @@ RDF = {
             this.term.assignId(charmap, idPrefix);
         }
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
-            var ret = new RDF.ValRes();
+            var ret = new _RDF.ValRes();
             if (point._ == this.term._ && point.lex == this.term.lex) {
-                ret.status = RDF.DISPOSITION.PASS;
+                ret.status = _RDF.DISPOSITION.PASS;
                 ret.matched(rule, t);
             } else {
-                ret.status = RDF.DISPOSITION.FAIL;
+                ret.status = _RDF.DISPOSITION.FAIL;
                 ret.error_noMatch(rule, t);
             }
             return validatorStuff.async ? Promise.resolve(ret) : ret;
@@ -1505,13 +1597,13 @@ RDF = {
             return "(isLiteral(?o) && dataterm(?o) = " + defix(this.term, prefixes) + ")";
         },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
-            return RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            return _RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
-            return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            return _RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
-            return RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
+            return _RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
         },
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             var lead = pad(depth, '    ');
@@ -1538,10 +1630,10 @@ RDF = {
         }
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             function passIf (b) {
-                if (b) { ret.status = RDF.DISPOSITION.PASS; ret.matched(rule, t); }
-                else { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatch(rule, t); }
+                if (b) { ret.status = _RDF.DISPOSITION.PASS; ret.matched(rule, t); }
+                else { ret.status = _RDF.DISPOSITION.FAIL; ret.error_noMatch(rule, t); }
             }
-            var ret = new RDF.ValRes();
+            var ret = new _RDF.ValRes();
             if      (this.type.toString() == "<http://www.w3.org/2013/ShEx/ns#Literal>")
                 passIf(point._ == "RDFLiteral");
             else if (this.type.toString() == "<http://www.w3.org/2013/ShEx/ns#IRI>")
@@ -1556,7 +1648,7 @@ RDF = {
                 } else {
                     passIf(point.datatype.toString() == this.type.toString());
                 }
-            } else { ret.status = RDF.DISPOSITION.FAIL; ret.error_noMatch(rule, t); }
+            } else { ret.status = _RDF.DISPOSITION.FAIL; ret.error_noMatch(rule, t); }
             return validatorStuff.async ? Promise.resolve(ret) : ret;
         },
         this.SPARQLobject = function (prefixes) {
@@ -1571,13 +1663,13 @@ RDF = {
             return "(isLiteral(?o) && datatype(?o) = " + defix(this.type, prefixes) + ")";
         },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
-            return RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            return _RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
-            return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            return _RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
-            return RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
+            return _RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
         },
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             var lead = pad(depth, '    ');
@@ -1608,15 +1700,15 @@ RDF = {
             var _ValueSet = this;
             var ret = null;
             function match (ret1) {
-                if (ret1.status == RDF.DISPOSITION.PASS)
+                if (ret1.status == _RDF.DISPOSITION.PASS)
                     ret = ret1;
             }
             function done () {
                 if (ret)
                     return ret;
                 else {
-                    var ret2 = new RDF.ValRes();
-                    { ret2.status = RDF.DISPOSITION.FAIL; ret2.error_noMatch(rule, t); }
+                    var ret2 = new _RDF.ValRes();
+                    { ret2.status = _RDF.DISPOSITION.FAIL; ret2.error_noMatch(rule, t); }
                     return validatorStuff.async ? Promise.resolve(ret2) : ret2;
                 }
             }
@@ -1640,13 +1732,13 @@ RDF = {
             }).join(" || ") + ")";
         },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
-            return RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            return _RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
-            return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            return _RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
-            return RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
+            return _RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
         },
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             var lead = pad(depth, '    ');
@@ -1680,13 +1772,13 @@ RDF = {
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             for (var i = 0; i < this.exclusions.length; ++i) {
                 if (this.exclusions[i].matches(point)) {
-                    var ret1 = new RDF.ValRes();
-                    { ret1.status = RDF.DISPOSITION.FAIL; ret1.error_noMatch(rule, t); }
+                    var ret1 = new _RDF.ValRes();
+                    { ret1.status = _RDF.DISPOSITION.FAIL; ret1.error_noMatch(rule, t); }
                     return validatorStuff.async ? Promise.resolve(ret1) : ret1;
                 }
             }
-            var ret2 = new RDF.ValRes();
-            { ret2.status = RDF.DISPOSITION.PASS; ret2.matched(rule, t); }
+            var ret2 = new _RDF.ValRes();
+            { ret2.status = _RDF.DISPOSITION.PASS; ret2.matched(rule, t); }
             return validatorStuff.async ? Promise.resolve(ret2) : ret2;
         },
         this.SPARQLobject = function (prefixes) {
@@ -1700,13 +1792,13 @@ RDF = {
             }).join(" && ") + ")";
         },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
-            return RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            return _RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
-            return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            return _RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
-            return RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
+            return _RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
         },
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             return "# haven't made up some schema for ValueWild yet.\n";
@@ -1734,18 +1826,18 @@ RDF = {
         this.validate = function (schema, rule, t, point, db, validatorStuff) {
             for (var i = 0; i < this.exclusions.length; ++i) {
                 if (this.exclusions[i].toString() === point.toString()) {
-                    var ret1 = new RDF.ValRes();
-                    { ret1.status = RDF.DISPOSITION.FAIL; ret1.error_noMatch(rule, t); }
+                    var ret1 = new _RDF.ValRes();
+                    { ret1.status = _RDF.DISPOSITION.FAIL; ret1.error_noMatch(rule, t); }
                     return validatorStuff.async ? Promise.resolve(ret1) : ret1;
                 }
             }
             if (point.lex.substr(0,this.term.lex.length) !== this.term.lex) {
-                var ret2 = new RDF.ValRes();
-                { ret2.status = RDF.DISPOSITION.FAIL; ret2.error_noMatch(rule, t); }
+                var ret2 = new _RDF.ValRes();
+                { ret2.status = _RDF.DISPOSITION.FAIL; ret2.error_noMatch(rule, t); }
                 return validatorStuff.async ? Promise.resolve(ret2) : ret2;
             }
-            var ret3 = new RDF.ValRes();
-            { ret3.status = RDF.DISPOSITION.PASS; ret3.matched(rule, t); }
+            var ret3 = new _RDF.ValRes();
+            { ret3.status = _RDF.DISPOSITION.PASS; ret3.matched(rule, t); }
             return validatorStuff.async ? Promise.resolve(ret3) : ret3;
         },
         this.SPARQLobject = function (prefixes) {
@@ -1762,15 +1854,15 @@ RDF = {
         },
         this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
             // throw "SPARQLobjectJoin of ValuePattern " + this.toString() + " needs attention.";
-            return RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+            return _RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
         },
         this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
             // throw "SPARQLobjectJoin of ValuePattern " + this.toString() + " needs attention.";
-            return RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), code);
+            return _RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), code);
         },
         this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
             // throw "SPARQLobjectSelect of ValuePattern " + this.toString() + " needs attention.";
-            return RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
+            return _RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
         },
         this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
             return "# haven't made up some schema for ValuePattern yet (POWDER?).\n";
@@ -1837,8 +1929,8 @@ RDF = {
         // vs=matchName.map(valueClass(v,_,g,{min:1, max:1})); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
         this.validate = function (schema, point, contextCard, db, validatorStuff) {
             var matched = 0;
-            var ret = new RDF.ValRes();
-            ret.status = RDF.DISPOSITION.PASS;
+            var ret = new _RDF.ValRes();
+            ret.status = _RDF.DISPOSITION.PASS;
             var _AtomicRule = this;
             function handleError (e) {
                 var message =
@@ -1848,7 +1940,7 @@ RDF = {
                          ["NestedError", e],
                      ["text", "]]"]
                     ];
-                throw RDF.StructuredError(message);
+                throw _RDF.StructuredError(message);
             }
 
             var rOrP = db.triplesMatching(this.reversed ? null : point,
@@ -1865,15 +1957,15 @@ RDF = {
                 });
                 var pet = null;
                 if (contextCard.min === 0 && matchName.length === 0)
-                { ret.status = this.min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE; ret.matchedEmpty(_AtomicRule);
+                { ret.status = this.min === 0 ? _RDF.DISPOSITION.ZERO : _RDF.DISPOSITION.NONE; ret.matchedEmpty(_AtomicRule);
                   if (validatorStuff.async) pet = Promise.resolve(ret);
                 }
                 else if (matchName.length < _AtomicRule.min)
-                { ret.status = RDF.DISPOSITION.FAIL; ret.error_belowMin(_AtomicRule.min, _AtomicRule);
+                { ret.status = _RDF.DISPOSITION.FAIL; ret.error_belowMin(_AtomicRule.min, _AtomicRule);
                   if (validatorStuff.async) pet = Promise.resolve(ret);
                 }
                 //             else if (matchName.length > _AtomicRule.max)
-                //                 { ret.status = RDF.DISPOSITION.FAIL; ret.error_aboveMax(_AtomicRule.max, _AtomicRule, matchName[_AtomicRule.max]); }
+                //                 { ret.status = _RDF.DISPOSITION.FAIL; ret.error_aboveMax(_AtomicRule.max, _AtomicRule, matchName[_AtomicRule.max]); }
                 else {
                     var passes = [];
                     var fails = [];
@@ -1892,7 +1984,7 @@ RDF = {
                             if (_AtomicRule.valueClass._ != 'ValueReference')
                                 schema.dispatch(0, 'visit', _AtomicRule.codes, r, t);
                             if (!r.passed() ||
-                                schema.dispatch(0, 'post', _AtomicRule.codes, r, t) == RDF.DISPOSITION.FAIL)
+                                schema.dispatch(0, 'post', _AtomicRule.codes, r, t) == _RDF.DISPOSITION.FAIL)
                                 fails.push({t:t, r:r});
                             else
                                 passes.push({t:t, r:r});
@@ -1903,22 +1995,22 @@ RDF = {
                     });
                     function postTest () {
                         if (contextCard.min === 0 && passes.length === 0) {
-                            ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
+                            ret.status = min === 0 ? _RDF.DISPOSITION.ZERO : _RDF.DISPOSITION.NONE;
                             ret.matchedEmpty(_AtomicRule);
                         } else if (passes.length < _AtomicRule.min) {
-                            ret.status = RDF.DISPOSITION.FAIL;
+                            ret.status = _RDF.DISPOSITION.FAIL;
                             ret.error_belowMin(_AtomicRule.min, _AtomicRule);
                         } else if (contextCard.max === undefined || contextCard.max >= passes.length) {
-                            ret.status = RDF.DISPOSITION.PASS;
+                            ret.status = _RDF.DISPOSITION.PASS;
                         } else if (_AtomicRule.max !== null && passes.length > _AtomicRule.max) {
-                            ret.status = RDF.DISPOSITION.FAIL;
+                            ret.status = _RDF.DISPOSITION.FAIL;
                             ret.error_aboveMax(_AtomicRule.max, _AtomicRule, passes[_AtomicRule.max].r);
                             var t;
                             while (t = passes.shift()) { // @@hack: move passes to fails so they get added below.
                                 fails.push(t);
                             }
                         }
-                        if (ret.status == RDF.DISPOSITION.FAIL) {
+                        if (ret.status == _RDF.DISPOSITION.FAIL) {
                             for (var iFails1 = 0; iFails1 < fails.length; ++iFails1)
                                 ret.add(fails[iFails1].r);
                         } else {
@@ -1944,11 +2036,11 @@ RDF = {
                 }
                 function handleNegation (ret) {
                     if (_AtomicRule.negated) {
-                        if (ret.status == RDF.DISPOSITION.FAIL) {
-                            ret.status = RDF.DISPOSITION.PASS;
+                        if (ret.status == _RDF.DISPOSITION.FAIL) {
+                            ret.status = _RDF.DISPOSITION.PASS;
                             ret.errors = [];
-                        } else if (ret.status == RDF.DISPOSITION.PASS) {
-                            ret.status = RDF.DISPOSITION.FAIL;
+                        } else if (ret.status == _RDF.DISPOSITION.PASS) {
+                            ret.status = _RDF.DISPOSITION.FAIL;
                             ret.error_aboveMax(0, _AtomicRule, matchName[0]); // !! take a triple from passes
                         }
                     }
@@ -2067,7 +2159,7 @@ RDF = {
 
     ConcomitantRule: function (valueClass, min, max, codes, _pos) {
         this._ = 'ConcomitantRule'; this.valueClass = valueClass; this.min = min; this.max = max; this.codes = codes; this._pos = _pos;
-        this.nameClass = {term: RDF.IRI("http://www.w3.org/2013/ShEx/Definition#concomitantRelation") };
+        this.nameClass = {term: _RDF.IRI("http://www.w3.org/2013/ShEx/Definition#concomitantRelation") };
         this.ruleID = undefined;
         this.setRuleID = function (ruleID) { this.ruleID = ruleID; };
         this.label = undefined;
@@ -2117,8 +2209,8 @@ RDF = {
         // vs=matchName.map(valueClass(v,_,g,{min:1, max:1})); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
         this.validate = function (schema, point, contextCard, db, validatorStuff) {
             var matched = 0;
-            var ret = new RDF.ValRes();
-            ret.status = RDF.DISPOSITION.PASS;
+            var ret = new _RDF.ValRes();
+            ret.status = _RDF.DISPOSITION.PASS;
             var _ConcomitantRule = this;
             var seen = {};
             var matchName = db.uniqueSubjects();
@@ -2130,23 +2222,23 @@ RDF = {
                          ["NestedError", e],
                      ["text", "]]"]
                     ];
-                throw RDF.StructuredError(message);
+                throw _RDF.StructuredError(message);
             }
             if (contextCard.min === 0 && matchName.length === 0)
-                { ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE; ret.matchedEmpty(_ConcomitantRule);
+                { ret.status = min === 0 ? _RDF.DISPOSITION.ZERO : _RDF.DISPOSITION.NONE; ret.matchedEmpty(_ConcomitantRule);
                   return validatorStuff.async ? Promise.resolve(ret) : ret;
                 }
             else if (matchName.length < _ConcomitantRule.min)
-                { ret.status = RDF.DISPOSITION.FAIL; ret.error_belowMin(_ConcomitantRule.min, _ConcomitantRule);
+                { ret.status = _RDF.DISPOSITION.FAIL; ret.error_belowMin(_ConcomitantRule.min, _ConcomitantRule);
                   return validatorStuff.async ? Promise.resolve(ret) : ret;
                 }
 //             else if (matchName.length > _ConcomitantRule.max)
-//                 { ret.status = RDF.DISPOSITION.FAIL; ret.error_aboveMax(_ConcomitantRule.max, _ConcomitantRule, matchName[_ConcomitantRule.max]); }
+//                 { ret.status = _RDF.DISPOSITION.FAIL; ret.error_aboveMax(_ConcomitantRule.max, _ConcomitantRule, matchName[_ConcomitantRule.max]); }
             else {
                 var passes = [];
                 var promises = [];
                 matchName.forEach(function (s) {
-                    var t = RDF.Triple(point, _ConcomitantRule.nameClass.term, s); // make up connecting triple for reporting
+                    var t = _RDF.Triple(point, _ConcomitantRule.nameClass.term, s); // make up connecting triple for reporting
                     if (_ConcomitantRule.valueClass._ == 'ValueReference')
                         schema.dispatch(0, 'link', _ConcomitantRule.codes, null, t);
                     var resOrPromise = _ConcomitantRule.valueClass.validate(schema, _ConcomitantRule, t,
@@ -2160,7 +2252,7 @@ RDF = {
                         if (_ConcomitantRule.valueClass._ != 'ValueReference')
                             schema.dispatch(0, 'visit', _ConcomitantRule.codes, r, t);
                         if (r.passed() &&
-                            schema.dispatch(0, 'post', _ConcomitantRule.codes, r, t) != RDF.DISPOSITION.FAIL)
+                            schema.dispatch(0, 'post', _ConcomitantRule.codes, r, t) != _RDF.DISPOSITION.FAIL)
                             passes.push({t:t, r:r});
                     }
                     if (validatorStuff.async)
@@ -2168,16 +2260,16 @@ RDF = {
                 });
                 function postTest () {
                     if (contextCard.min === 0 && passes.length === 0) {
-                        ret.status = min === 0 ? RDF.DISPOSITION.ZERO : RDF.DISPOSITION.NONE;
+                        ret.status = min === 0 ? _RDF.DISPOSITION.ZERO : _RDF.DISPOSITION.NONE;
                         ret.matchedEmpty(_ConcomitantRule);
                     } else if (passes.length < _ConcomitantRule.min) {
-                        ret.status = RDF.DISPOSITION.FAIL;
+                        ret.status = _RDF.DISPOSITION.FAIL;
                         ret.error_belowMin(_ConcomitantRule.min, _ConcomitantRule);
                     } else if (_ConcomitantRule.max !== null && passes.length > _ConcomitantRule.max) {
-                        ret.status = RDF.DISPOSITION.FAIL;
+                        ret.status = _RDF.DISPOSITION.FAIL;
                         ret.error_aboveMax(_ConcomitantRule.max, _ConcomitantRule, passes[_ConcomitantRule.max].r);
                     }
-                    if (ret.status != RDF.DISPOSITION.FAIL)
+                    if (ret.status != _RDF.DISPOSITION.FAIL)
                         for (var iPasses = 0; iPasses < passes.length; ++iPasses)
                             ret.add(passes[iPasses].r);
                     return ret;
@@ -2338,18 +2430,18 @@ RDF = {
             return validatorStuff.async ? resOrPromise.then(post) : post(resOrPromise);
             function post (v) {
                 schema.dispatch(0, 'exit', _UnaryRule.codes, this, null);
-                var ret = new RDF.ValRes();
+                var ret = new _RDF.ValRes();
                 ret.status = v.status;
                 ret.matchedGroup(_UnaryRule, point, v);
-                if (v.status == RDF.DISPOSITION.FAIL || v.status == RDF.DISPOSITION.ZERO)
-                    ; // v.status = RDF.DISPOSITION.FAIL; -- avoid dispatch below
-                else if (v.status == RDF.DISPOSITION.NONE) {
-                    // if (contextCard.min === 0) v.status = RDF.DISPOSITION.NONE; else
+                if (v.status == _RDF.DISPOSITION.FAIL || v.status == _RDF.DISPOSITION.ZERO)
+                    ; // v.status = _RDF.DISPOSITION.FAIL; -- avoid dispatch below
+                else if (v.status == _RDF.DISPOSITION.NONE) {
+                    // if (contextCard.min === 0) v.status = _RDF.DISPOSITION.NONE; else
                     if (_UnaryRule.opt.min === 0)
-                        ret.status = RDF.DISPOSITION.PASS;
+                        ret.status = _RDF.DISPOSITION.PASS;
                     else
-                        ret.status = RDF.DISPOSITION.FAIL;
-                } else if (v.status != RDF.DISPOSITION.FAIL) {
+                        ret.status = _RDF.DISPOSITION.FAIL;
+                } else if (v.status != _RDF.DISPOSITION.FAIL) {
                     if (_UnaryRule.opt.max === undefined || _UnaryRule.opt.max > 1) {
                         var passes = [];
                         v.matches.forEach(function (r) {
@@ -2489,18 +2581,18 @@ RDF = {
         this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
         };
         this.validate = function (schema, point, contextCard, db, validatorStuff) {
-            var ret = new RDF.ValRes();
-            ret.status = contextCard.min === 0 ? RDF.DISPOSITION.NONE : RDF.DISPOSITION.PASS; // nod agreeably
+            var ret = new _RDF.ValRes();
+            ret.status = contextCard.min === 0 ? _RDF.DISPOSITION.NONE : _RDF.DISPOSITION.PASS; // nod agreeably
             return validatorStuff.async ? Promise.resolve(ret) : ret;
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
-            return new RDF.QueryClause(undefined, "");
+            return new _RDF.QueryClause(undefined, "");
         },
         this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
-            return new RDF.QueryClause(undefined, "");
+            return new _RDF.QueryClause(undefined, "");
         },
         this.SPARQLremainingTriples = function (schema, label, as, prefixes, depth, counters) {
-            return new RDF.QueryClause(undefined, "");
+            return new _RDF.QueryClause(undefined, "");
         },
         this.toResourceShapes_inline = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
             return "";
@@ -2543,9 +2635,9 @@ RDF = {
         // if(∃𝕡∧∃∅) return 𝕗; if(∄𝕡∧∄∅) return 𝜃 else if(∃𝕡) return 𝕡 else return ∅
         // Note, this FAILs an empty disjunction.
         this.validate = function (schema, point, contextCard, db, validatorStuff) {
-            var ret = new RDF.ValRes();
+            var ret = new _RDF.ValRes();
             var seenFail = false;
-            var allPass = RDF.DISPOSITION.PASS;
+            var allPass = _RDF.DISPOSITION.PASS;
             var passes = [];
             var empties = [];
             var resOrPromises = []; // list of results or promises of results.
@@ -2556,14 +2648,14 @@ RDF = {
                 else
                     resOrPromises.push(testConjunct(resOrPromise));
                 function testConjunct (r) {
-                    if (r.status == RDF.DISPOSITION.FAIL)
+                    if (r.status == _RDF.DISPOSITION.FAIL)
                         seenFail = true;
-                    if (r.status == RDF.DISPOSITION.PASS)
+                    if (r.status == _RDF.DISPOSITION.PASS)
                         // seenPass = true;
                         passes.push(r);
                     else
-                        allPass = RDF.DISPOSITION.NONE;
-                    if (r.status == RDF.DISPOSITION.NONE)
+                        allPass = _RDF.DISPOSITION.NONE;
+                    if (r.status == _RDF.DISPOSITION.NONE)
                         // seenEmpty = true;
                         empties.push(r);
                     return r;
@@ -2578,11 +2670,11 @@ RDF = {
                     ret.add(r);
                 });
                 if (passes.length && empties.length)
-                { ret.status = RDF.DISPOSITION.FAIL; ret.error_mixedOpt(passes, empties, _AndRule); }
+                { ret.status = _RDF.DISPOSITION.FAIL; ret.error_mixedOpt(passes, empties, _AndRule); }
                 else if (seenFail)
-                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.status = _RDF.DISPOSITION.FAIL;
                 else if (!passes.length && !empties.length)
-                    ret.status = RDF.DISPOSITION.ZERO;
+                    ret.status = _RDF.DISPOSITION.ZERO;
                 else
                     ret.status = allPass;
                 return ret;
@@ -2616,11 +2708,11 @@ RDF = {
 
             var qc;
             if (contextCard.min === 0) {
-                qc = new RDF.QueryClause(subs[firstNonZero].variable, ret);
+                qc = new _RDF.QueryClause(subs[firstNonZero].variable, ret);
                 qc.min = subs[firstNonZero].min;
                 qc.max = subs[firstNonZero].max;
             } else
-                qc = new RDF.QueryClause(undefined, ret);
+                qc = new _RDF.QueryClause(undefined, ret);
             return qc;
         },
         this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
@@ -2631,7 +2723,7 @@ RDF = {
                 var sub = this.conjoints[i].SPARQLdataDump(schema, label, prefixes, depth, variables);
                 ret += sub.sparql;
             }
-            return new RDF.QueryClause(undefined, ret);
+            return new _RDF.QueryClause(undefined, ret);
         },
         this.SPARQLremainingTriples = function (schema, label, as, prefixes, depth, counters) {
             var ret = '';
@@ -2641,7 +2733,7 @@ RDF = {
                 if (i !== this.conjoints.length - 1)
                     ret += " UNION\n";
             }
-            return new RDF.QueryClause(undefined, ret);
+            return new _RDF.QueryClause(undefined, ret);
         },
         this.toResourceShapes_inline = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
             if (this.ruleID)
@@ -2712,7 +2804,7 @@ RDF = {
         // OrRule: vs=disjoints.map(validity(_,p,g,o)); if(∄𝕡∧∄∅∧∄𝜃) return 𝕗;
         // if(∃!𝕡) return 𝕡; if(∃!𝜃) return 𝜃 else return 𝕗;
         this.validate = function (schema, point, contextCard, db, validatorStuff) {
-            var ret = new RDF.ValRes();
+            var ret = new _RDF.ValRes();
             var allErrors = true;
             var passCount = 0;
             var zeroCount = 0;
@@ -2726,7 +2818,7 @@ RDF = {
                 else
                     testExclusiveness(resOrPromise);
                 function testExclusiveness (r) {
-                    if (r.status == RDF.DISPOSITION.FAIL) {
+                    if (r.status == _RDF.DISPOSITION.FAIL) {
                         if (r.errors.length === 1 && r.errors[0]._ === "RuleFailMax")
                             passCount += 2;
                         else
@@ -2734,11 +2826,11 @@ RDF = {
                     } else {
                         allErrors = false;
                         ret.add(r);
-                        if (r.status == RDF.DISPOSITION.PASS)
+                        if (r.status == _RDF.DISPOSITION.PASS)
                             ++passCount;
-                        else if (r.status == RDF.DISPOSITION.ZERO)
+                        else if (r.status == _RDF.DISPOSITION.ZERO)
                             ++zeroCount;
-                        else if (r.status == RDF.DISPOSITION.NONE)
+                        else if (r.status == _RDF.DISPOSITION.NONE)
                             ++noneCount;
                     }
                 }
@@ -2747,19 +2839,19 @@ RDF = {
             return validatorStuff.async ? Promise.all(promises).then(checkResult) : checkResult();
             function checkResult () {
                 if (allErrors) {
-                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.status = _RDF.DISPOSITION.FAIL;
                     ret.error_orNone(failures, _OrRule);
                 } else if (contextCard.max !== undefined && passCount > contextCard.max) {
-                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.status = _RDF.DISPOSITION.FAIL;
                     ret.error_orMulti(failures, _OrRule);
                 } else if (passCount)
-                    ret.status = RDF.DISPOSITION.PASS;
+                    ret.status = _RDF.DISPOSITION.PASS;
                 else if (zeroCount)
-                    ret.status = RDF.DISPOSITION.ZERO;
+                    ret.status = _RDF.DISPOSITION.ZERO;
                 else if (noneCount)
-                    ret.status = RDF.DISPOSITION.NONE;
+                    ret.status = _RDF.DISPOSITION.NONE;
                 else { // @@ how do we get here?
-                    ret.status = RDF.DISPOSITION.FAIL;
+                    ret.status = _RDF.DISPOSITION.FAIL;
                     ret.error_orNone(failures, _OrRule);
                 }
                 return ret;
@@ -2782,7 +2874,7 @@ RDF = {
             }
             ret += lead2 + "}\n" +
                 lead1 + "} GROUP BY ?" + label.lex + " HAVING (COUNT(*) = 1)}\n"; // make sure we pass only one side of the union
-            return new RDF.QueryClause(counter, ret);
+            return new _RDF.QueryClause(counter, ret);
         };
         this.SPARQLdataDump = function (schema, label, prefixes, depth, variables) {
             var lead1 = pad(depth, '    ');
@@ -2793,7 +2885,7 @@ RDF = {
                 ret += this.disjoints[i].SPARQLdataDump(schema, label, prefixes, depth+1, variables).sparql;
             }
             ret += lead1 + "}\n";
-            return new RDF.QueryClause(undefined, ret);
+            return new _RDF.QueryClause(undefined, ret);
         };
         this.SPARQLremainingTriples = function (schema, label, as, prefixes, depth, counters) {
             var ret = '';
@@ -2803,7 +2895,7 @@ RDF = {
                 if (i !== this.disjoints.length - 1)
                     ret += " UNION\n";
             }
-            return new RDF.QueryClause(undefined, ret);
+            return new _RDF.QueryClause(undefined, ret);
         },
         this.toResourceShapes_inline = function (schema, db, prefixes, sePrefix, rsPrefix, depth) {
             if (this.ruleID)
@@ -2857,16 +2949,16 @@ RDF = {
     },
 
     // Example (unsafe) javascript semantic action handler.
-    // Can be used like: schema.eventHandlers = {js: RDF.jsHandler};
+    // Can be used like: schema.eventHandlers = {js: _RDF.jsHandler};
     jsHandler: function () {
         return {
             when: 0,
             _callback: function (code, valRes, context) {
                 eval("function action(_) {" + code + "}");
-                ret = action(context, { message: function (msg) { RDF.message(msg); } });
-                var status = RDF.DISPOSITION.PASS;
+                ret = action(context, { message: function (msg) { _RDF.message(msg); } });
+                var status = _RDF.DISPOSITION.PASS;
                 if (ret === false)
-                { status = RDF.DISPOSITION.FAIL; valRes.error_badEval(code); }
+                { status = _RDF.DISPOSITION.FAIL; valRes.error_badEval(code); }
                 return status;
             },
             begin: function (code, valRes, context) { return this._callback(code, valRes, context); },
@@ -2892,7 +2984,7 @@ RDF = {
                             replace(/\$\$/g, '_r.$');
                         if ('group' in valRes) {
                             if (_seen.indexOf(valRes.group) !== -1)
-                                return RDF.DISPOSITION.PASS;
+                                return _RDF.DISPOSITION.PASS;
                             _seen.push(valRes.group);
                             // var c2 = {};
                             // for (k in context)
@@ -2909,10 +3001,10 @@ RDF = {
                         var evl = "function action(_, _r, _list) {" + codeStr + "}";
                         console.log(evl);
                         eval(evl);
-                        ret = action.call(_this, context, valRes, list, { message: function (msg) { RDF.message(msg); } });
-                        var status = RDF.DISPOSITION.PASS;
+                        ret = action.call(_this, context, valRes, list, { message: function (msg) { _RDF.message(msg); } });
+                        var status = _RDF.DISPOSITION.PASS;
                         if (ret === false)
-                        { status = RDF.DISPOSITION.FAIL; valRes.error_badEval(code); }
+                        { status = _RDF.DISPOSITION.FAIL; valRes.error_badEval(code); }
                         return status;
                     } else if ('r' in valRes && valRes.r.matches.length > 0) {
                         // default action for RuleMatchTree -- take $1
@@ -2936,7 +3028,7 @@ RDF = {
 
     // Example XML generator.
     // Can be used like:
-    //   schema.eventHandlers = {GenX: RDF.GenXHandler(document.implementation, 
+    //   schema.eventHandlers = {GenX: _RDF.GenXHandler(document.implementation, 
     //                                                 new XMLSerializer())};
     GenXHandler: function (DOMImplementation, XMLSerializer) {
         return {
@@ -3065,7 +3157,7 @@ RDF = {
                 var now = this._stack.pop();
                 // console.dir(this._doc);
                 if (this._stack.length) { // in a findtypes container
-                    if (context.status == RDF.DISPOSITION.PASS)
+                    if (context.status == _RDF.DISPOSITION.PASS)
                         this._stack[this._stack.length-1].bottom.appendChild(now.top);
                 } else {
                     this.text = this._XMLSerializer.serializeToString(this._doc);
@@ -3109,7 +3201,7 @@ RDF = {
 
     // Example JSON generator.
     // Can be used like:
-    //   schema.eventHandlers = {GenJ: RDF.GenJHandler()};
+    //   schema.eventHandlers = {GenJ: _RDF.GenJHandler()};
     GenJHandler: function () {
         return {
             when: 1,
@@ -3211,12 +3303,12 @@ RDF = {
 
     // Simple normalizer.
     // Can be used like:
-    //   schema.eventHandlers = {GenN: RDF.GenNHandler()};
+    //   schema.eventHandlers = {GenN: _RDF.GenNHandler()};
     // invoke with
     //   %GenN{ %}
     GenNHandler: function () {
         function _add (code, valRes, context) {
-            this._doc.push(RDF.Triple(context.s, context.p, context.o));
+            this._doc.push(_RDF.Triple(context.s, context.p, context.o));
         }
         return {
             when: 1,
@@ -3236,9 +3328,9 @@ RDF = {
         };
     },
 
-    // RDF rewriter.
+    // _RDF rewriter.
     // Can be used like:
-    //   schema.eventHandlers = {GenR: RDF.GenRHandler()};
+    //   schema.eventHandlers = {GenR: _RDF.GenRHandler()};
     // invoke with
     //   %GenR{"always":true%}
     //  always: whether to default to outputing a triple if there's no code.
@@ -3271,7 +3363,7 @@ RDF = {
 
                 var _add = function (code, valRes, context) {
                         var i;
-                                var RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+                                var _RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
                                 var XSD_NS = 'http://www.w3.org/2001/XMLSchema#'
                         var skipSpace = function () {
                             var Space = /^[ \t\n\r\v]+/;
@@ -3293,63 +3385,63 @@ RDF = {
                                 end1 = code.indexIf(delim, end1+1);
                             if (end1 == -1)
                                 throw code.substr(i);
-                            var ret1 = RDF.RDFLiteral(code.substr(i+1, end1-i-1), undefined, undefined, RDF.Position0());
+                            var ret1 = _RDF.RDFLiteral(code.substr(i+1, end1-i-1), undefined, undefined, _RDF.Position0());
                             i = end1+1;
                             return ret1;
                         } else if (ch.match(Integer)) {
                             var val = code.substr(i).match(Integer);
                             val = val[0]; // guaranteed to match at least one char.
                             i += val.length;
-                            var ret2 = RDF.RDFLiteral(val, undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+                            var ret2 = _RDF.RDFLiteral(val, undefined, _RDF.IRI(XSD_NS+"integer", _RDF.Position0()), _RDF.Position0());
                             return ret2;
                         } else if (ch == '_' && code[i+1] == ':') {
                             var s1 = code.substr(i+2).match(Token)[0];
                             i += 2+s1.length;
-                            return RDF.BNode(s1, RDF.Position0());
+                            return _RDF.BNode(s1, _RDF.Position0());
                         } else if (ch == '<') {
                             var end2 = code.indexOf('>', i);
                             if (end2 == -1)
                                 throw code.substr(i);
                             var s2 = code.substr(i+1, end2-i-1);
                             i = end2+1;
-                            return RDF.IRI(iriResolver.getAbsoluteIRI(s2), RDF.Position0());
+                            return _RDF.IRI(iriResolver.getAbsoluteIRI(s2), _RDF.Position0());
                         } else if (ch == 'a' && !code[i+1].match(/[a-zA-Z_0-9]/)) {
                             ++i;
-                            return RDF.IRI(iriResolver.getAbsoluteIRI(RDF_NS+"type"), RDF.Position0());
+                            return _RDF.IRI(iriResolver.getAbsoluteIRI(_RDF_NS+"type"), _RDF.Position0());
                         } else if (ch == '||') { // maybe "a" || "b" is close to EBV("a") || EBV("b")
                             ++i;
                             return {_:'Op', f: function (l, r) {
-                                return RDF.RDFLiteral(l.lex || r.lex, undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()))
+                                return _RDF.RDFLiteral(l.lex || r.lex, undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()))
                             }};
                         } else if (ch == '&&') { // maybe "a" && "b" is close to EBV("a") && EBV("b")
                             ++i;
                             return {_:'Op', f: function (l, r) {
-                                return RDF.RDFLiteral(l.lex && r.lex, undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()))
+                                return _RDF.RDFLiteral(l.lex && r.lex, undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()))
                             }};
                         } else if (ch == '+') {
                             ++i;
                             return {_:'Op', f: function (l, r) {
-                                return RDF.RDFLiteral(l.lex + (+r.lex), undefined, l.datatype)
+                                return _RDF.RDFLiteral(l.lex + (+r.lex), undefined, l.datatype)
                             }};
                         } else if (ch == '-') {
                             ++i;
                             return {_:'Op', f: function (l, r) {
-                                return RDF.RDFLiteral(l.lex - (+r.lex), undefined, l.datatype)
+                                return _RDF.RDFLiteral(l.lex - (+r.lex), undefined, l.datatype)
                             }};
                         } else if (ch == '*') {
                             ++i;
                             return {_:'Op', f: function (l, r) {
-                                return RDF.RDFLiteral(l.lex * (+r.lex), undefined, l.datatype)
+                                return _RDF.RDFLiteral(l.lex * (+r.lex), undefined, l.datatype)
                             }};
                         } else if (ch == '/') {
                             ++i;
                             return {_:'Op', f: function (l, r) {
-                                return RDF.RDFLiteral(l.lex / (+r.lex), undefined, l.datatype)
+                                return _RDF.RDFLiteral(l.lex / (+r.lex), undefined, l.datatype)
                             }};
                         } else if (ch == ':') {
                             var lname = code.substr(++i).match(Token);
                             i += lname[0].length;
-                            return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix("")+lname[0]), RDF.Position0());
+                            return _RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix("")+lname[0]), _RDF.Position0());
                         } else if (ch.match(Token)) {
                             var first = code.substr(i).match(Token);
                             first = first[0]; // guaranteed to match at least one char.
@@ -3360,7 +3452,7 @@ RDF = {
                                 var lname = code.substr(++i).match(Token);
                                 lname = lname ? lname[0] : '';
                                 i += lname.length;
-                                return RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(first)+lname), RDF.Position0());
+                                return _RDF.IRI(iriResolver.getAbsoluteIRI(iriResolver.getPrefix(first)+lname), _RDF.Position0());
                             } else if (code[i] == '(') {
                                 // a function,
                                 first = first.toUpperCase();
@@ -3435,34 +3527,34 @@ RDF = {
                                     return new Date(utcDate);
                                 }
                                 if (false) {
-// Functions on RDF Terms 17.4.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-rdfTerms
+// Functions on _RDF Terms 17.4.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-rdfTerms
 //     isIRI 17.4.2.1 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-isIRI
                                 } else if (first == "ISIRI") {
-                                    return RDF.RDFLiteral(params[0]._ == 'IRI' ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0]._ == 'IRI' ? 'true' : 'false', undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()), _RDF.Position0());
 //     isBlank 17.4.2.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-isBlank
                                 } else if (first == "ISBLANK") {
-                                    return RDF.RDFLiteral(params[0]._ == 'BNode' ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0]._ == 'BNode' ? 'true' : 'false', undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()), _RDF.Position0());
 //     isLiteral 17.4.2.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-isLiteral
                                 } else if (first == "ISLITERAL") {
-                                    return RDF.RDFLiteral(params[0]._ == 'RDFLiteral' ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0]._ == 'RDFLiteral' ? 'true' : 'false', undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()), _RDF.Position0());
 //     isNumeric 17.4.2.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-isNumeric
                                 } else if (first == "ISNUMERIC") {
-                                    return RDF.RDFLiteral(numerics.indexOf(params[0].datatype.lex) == -1 ? 'false' : 'true', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(numerics.indexOf(params[0].datatype.lex) == -1 ? 'false' : 'true', undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()), _RDF.Position0());
 //     str 17.4.2.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-str
                                 } else if (first == "STR") {
-                                    return RDF.RDFLiteral(params[0].lex, undefined, undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex, undefined, undefined, _RDF.Position0());
 //     lang 17.4.2.6 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-lang
                                 } else if (first == "LANG") {
-                                    return RDF.RDFLiteral(params[0].langtag, undefined, undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].langtag, undefined, undefined, _RDF.Position0());
 //     datatype 17.4.2.7 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-datatype
                                 } else if (first == "DATATYPE") {
-                                    return RDF.IRI(params[0].datatype, RDF.Position0());
+                                    return _RDF.IRI(params[0].datatype, _RDF.Position0());
 //     IRI 17.4.2.8 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-iri
                                 } else if (first == "IRI") {
-                                    return RDF.IRI(iriResolver.getAbsoluteIRI(params[0].lex), RDF.Position0());
+                                    return _RDF.IRI(iriResolver.getAbsoluteIRI(params[0].lex), _RDF.Position0());
 //     BNODE 17.4.2.9 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-bnode
                                 } else if (first == "BNODE") {
-                                    return RDF.BNode(params[0].lex, RDF.Position0());
+                                    return _RDF.BNode(params[0].lex, _RDF.Position0());
 //     STRDT 17.4.2.10 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strdt
                                 } else if (first == "STRDT") {
                                     function pad (str, max) {
@@ -3481,54 +3573,54 @@ RDF = {
                                             lex = ""+m[1]+"-"+pad(m[2], 2)+"-"+pad(m[3], 2)+m[4];
                                     }
 
-                                    return RDF.RDFLiteral(lex, undefined, target, RDF.Position0());
+                                    return _RDF.RDFLiteral(lex, undefined, target, _RDF.Position0());
 //     STRLANG 17.4.2.11 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strlang
                                 } else if (first == "STRLANG") {
-                                    return RDF.RDFLiteral(params[0].lex, RDF.LangTag(params[1].lex, RDF.Position0()), undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex, _RDF.LangTag(params[1].lex, _RDF.Position0()), undefined, _RDF.Position0());
 //     UUID 17.4.2.12 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-uuid
                                 } else if (first == "STRLEN") {
-                                    return RDF.IRI("urn:uuid:"+guid(), RDF.Position0());
+                                    return _RDF.IRI("urn:uuid:"+guid(), _RDF.Position0());
 //     STRUUID 17.4.2.13 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-struuid
                                 } else if (first == "STRLEN") {
-                                    return RDF.RDFLiteral(guid(), undefined, undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(guid(), undefined, undefined, _RDF.Position0());
 // Functions on Strings 17.4.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strings
 //     STRLEN 17.4.3.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strlen
                                 } else if (first == "STRLEN") {
-                                    return RDF.RDFLiteral(params[0].lex.length, undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex.length, undefined, _RDF.IRI(XSD_NS+"integer", _RDF.Position0()), _RDF.Position0());
 //     SUBSTR 17.4.3.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-substr
                                 } else if (first == "SUBSTR") {
                                     var substring = params.length == 3 ?
                                         params[0].lex.substr(params[1].lex, params[2].lex) :
                                         params[0].lex.substr(params[1].lex);
-                                    return RDF.RDFLiteral(substring, undefined, undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(substring, undefined, undefined, _RDF.Position0());
 //     UCASE 17.4.3.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-ucase
                                 } else if (first == "UCASE") {
-                                    return RDF.RDFLiteral(params[0].lex.toUpperCase(), undefined, undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex.toUpperCase(), undefined, undefined, _RDF.Position0());
 //     LCASE 17.4.3.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-lcase
                                 } else if (first == "LCASE") {
-                                    return RDF.RDFLiteral(params[0].lex.toLowerCase(), undefined, undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex.toLowerCase(), undefined, undefined, _RDF.Position0());
 //     STRSTARTS 17.4.3.6 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strstarts
                                 } else if (first == "STRSTARTS") {
-                                    return RDF.RDFLiteral(params[0].lex.indexOf(params[1].lex) === 0 ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex.indexOf(params[1].lex) === 0 ? 'true' : 'false', undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()), _RDF.Position0());
 //     STRENDS 17.4.3.7 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strends
                                 } else if (first == "STRENDS") {
-                                    return RDF.RDFLiteral(params[0].lex.lastIndexOf(params[1].lex) == params[0].lex.length - params[1].lex.length ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex.lastIndexOf(params[1].lex) == params[0].lex.length - params[1].lex.length ? 'true' : 'false', undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()), _RDF.Position0());
 //     CONTAINS 17.4.3.8 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-contains
                                 } else if (first == "CONTAINS") {
-                                    return RDF.RDFLiteral(params[0].lex.indexOf(params[1].lex) != -1 ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex.indexOf(params[1].lex) != -1 ? 'true' : 'false', undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()), _RDF.Position0());
 //     STRBEFORE 17.4.3.9 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strbefore
                                 } else if (first == "STRBEFORE") {
-                                    return RDF.RDFLiteral(params[0].lex.substr(0, params[0].lex.indexOf(params[1].lex)), RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex.substr(0, params[0].lex.indexOf(params[1].lex)), _RDF.Position0());
 //     STRAFTER 17.4.3.10 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-strafter
                                 } else if (first == "STRAFTER") {
-                                    return RDF.RDFLiteral(params[0].lex.substr(params[0].lex.indexOf(params[1].lex) + params[1].lex.length), undefined, undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex.substr(params[0].lex.indexOf(params[1].lex) + params[1].lex.length), undefined, undefined, _RDF.Position0());
 //     ENCODE_FOR_URI 17.4.3.11 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-encode
                                 } else if (first == "ENCODE_FOR_URI") {
-                                    return RDF.RDFLiteral(encodeURIComponent(params[0].lex), undefined, undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(encodeURIComponent(params[0].lex), undefined, undefined, _RDF.Position0());
 //     CONCAT 17.4.3.12 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-concat
                                 } else if (first == "CONCAT") {
                                     var concat = params.map(function (p) { return p.lex; }).join('');
-                                    return RDF.RDFLiteral(concat, undefined, undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(concat, undefined, undefined, _RDF.Position0());
 //     langMatches 17.4.3.13 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-langMatches
                                 } else if (first == "LANGMATCHES") {
                                     var tag = params[0].lex.toUpperCase();
@@ -3540,40 +3632,40 @@ RDF = {
                                         val = tag === '' ? "false" : "true";
                                     else (tag.substr(0, pattern.length) == pattern && (tag.length == pattern.length || tag[pattern.length] == '-'))
                                         val == "true";
-                                    return RDF.RDFLiteral(val, undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(val, undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()), _RDF.Position0());
 //     REGEX 17.4.3.14 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-regex
                                 } else if (first == "REGEX") {
                                     var re = params.length == 3 ?
                                         new RegExp(params[1].lex, params[2].lex) :
                                         new RegExp(params[1].lex);
-                                    return RDF.RDFLiteral(params[0].lex.match(re) != -1 ? 'true' : 'false', undefined, RDF.IRI(XSD_NS+"boolean", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex.match(re) != -1 ? 'true' : 'false', undefined, _RDF.IRI(XSD_NS+"boolean", _RDF.Position0()), _RDF.Position0());
 //     REPLACE 17.4.3.15 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-replace
                                 } else if (first == "SUBSTR") {
                                     var re = params.length == 3 ?
                                         new RegExp(params[1].lex, params[2].lex) :
                                         new RegExp(params[1].lex);
-                                    return RDF.RDFLiteral(params[0].lex.replace(re), undefined, undefined, RDF.Position0());
+                                    return _RDF.RDFLiteral(params[0].lex.replace(re), undefined, undefined, _RDF.Position0());
 // Functions on Numerics 17.4.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-numerics
 //     abs 17.4.4.1 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-abs
                                 } else if (first == "ABS") {
                                     var v = Math.abs(params[0].lex);
-                                    return RDF.RDFLiteral(v, undefined, params[0].datatype, RDF.Position0());
+                                    return _RDF.RDFLiteral(v, undefined, params[0].datatype, _RDF.Position0());
 //     round 17.4.4.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-round
                                 } else if (first == "ROUND") {
                                     var v = Math.round(params[0].lex);
-                                    return RDF.RDFLiteral(v, undefined, params[0].datatype, RDF.Position0());
+                                    return _RDF.RDFLiteral(v, undefined, params[0].datatype, _RDF.Position0());
 //     ceil 17.4.4.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-ceil
                                 } else if (first == "CEIL") {
                                     var v = Math.ceil(params[0].lex);
-                                    return RDF.RDFLiteral(v, undefined, params[0].datatype, RDF.Position0());
+                                    return _RDF.RDFLiteral(v, undefined, params[0].datatype, _RDF.Position0());
 //     floor 17.4.4.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-floor
                                 } else if (first == "FLOOR") {
                                     var v = Math.floor(params[0].lex);
-                                    return RDF.RDFLiteral(v, undefined, params[0].datatype, RDF.Position0());
+                                    return _RDF.RDFLiteral(v, undefined, params[0].datatype, _RDF.Position0());
 //     RAND 17.4.4.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#idp2130040
                                 } else if (first == "RAND") {
                                     var v = Math.random();
-                                    return RDF.RDFLiteral(v, undefined, RDF.IRI(XSD_NS+"double", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(v, undefined, _RDF.IRI(XSD_NS+"double", _RDF.Position0()), _RDF.Position0());
 // Functions on Dates and Times 17.4.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-date-time
 //     now 17.4.5.1 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-now
                                 } else if (first == "NOW") {
@@ -3584,31 +3676,31 @@ RDF = {
                                     var strDateTime = [[now.getUTCFullYear(), AddZero(now.getUTCMonth() + 1), AddZero(now.getUTCDate())].join("-"),
                                                        [AddZero(now.getUTCHours()), AddZero(now.getUTCMinutes()), AddZero(now.getUTCSeconds())].join(":")]
                                         .join("T")+"+"+AddZero(Math.floor(now.getUTCTimezoneOffset()/60))+":"+AddZero(now.getUTCTimezoneOffset()%60);
-                                    return RDF.RDFLiteral(strDateTime, undefined, RDF.IRI(XSD_NS+"dateTime"), RDF.Position0());
+                                    return _RDF.RDFLiteral(strDateTime, undefined, _RDF.IRI(XSD_NS+"dateTime"), _RDF.Position0());
 //     year 17.4.5.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-year
                                 } else if (first == "YEAR") {
                                     var d = xmlDateToJavascriptDate(params[0].lex);
-                                    return RDF.RDFLiteral(d.getUTCFullYear(), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(d.getUTCFullYear(), undefined, _RDF.IRI(XSD_NS+"integer", _RDF.Position0()), _RDF.Position0());
 //     month 17.4.5.3 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-month
                                 } else if (first == "MONTH") {
                                     var d = xmlDateToJavascriptDate(params[0].lex);
-                                    return RDF.RDFLiteral(d.getUTCMonth()+1, undefined, RDF.IRI(XSD_NS+"integer"), RDF.Position0());
+                                    return _RDF.RDFLiteral(d.getUTCMonth()+1, undefined, _RDF.IRI(XSD_NS+"integer"), _RDF.Position0());
 //     day 17.4.5.4 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-day
                                 } else if (first == "DAY") {
                                     var d = xmlDateToJavascriptDate(params[0].lex);
-                                    return RDF.RDFLiteral(d.getUTCDate(), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(d.getUTCDate(), undefined, _RDF.IRI(XSD_NS+"integer", _RDF.Position0()), _RDF.Position0());
 //     hours 17.4.5.5 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-hours
                                 } else if (first == "HOURS") {
                                     var d = xmlDateToJavascriptDate(params[0].lex);
-                                    return RDF.RDFLiteral(d.getUTCHours(), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(d.getUTCHours(), undefined, _RDF.IRI(XSD_NS+"integer", _RDF.Position0()), _RDF.Position0());
 //     minutes 17.4.5.6 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-minutes
                                 } else if (first == "MINUTES") {
                                     var d = xmlDateToJavascriptDate(params[0].lex);
-                                    return RDF.RDFLiteral(d.getUTCMinutes(), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(d.getUTCMinutes(), undefined, _RDF.IRI(XSD_NS+"integer", _RDF.Position0()), _RDF.Position0());
 //     seconds 17.4.5.7 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-seconds
                                 } else if (first == "SECONDS") {
                                     var d = xmlDateToJavascriptDate(params[0].lex);
-                                    return RDF.RDFLiteral(d.getUTCSeconds(), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(d.getUTCSeconds(), undefined, _RDF.IRI(XSD_NS+"integer", _RDF.Position0()), _RDF.Position0());
 //     timezone 17.4.5.8 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-timezone
                                 } else if (first == "TIMEZONE") {
                                     var re = /^([0-9]{4,})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(\.[0-9]+)?(Z|([+-])([0-9]{2}):([0-9]{2}))?$/;
@@ -3621,13 +3713,13 @@ RDF = {
                                             + (offset_hour === 0 ? "" : offset_hour/1+"H")
                                             + (offset_minute === 0 ? "" : offset_minute/1+"M");
                                     }
-                                    return RDF.RDFLiteral(lex, undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral(lex, undefined, _RDF.IRI(XSD_NS+"integer", _RDF.Position0()), _RDF.Position0());
 //     tz 17.4.5.9 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-tz
                                 } else if (first == "TZ") {
                                     var re = /^([0-9]{4,})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(\.[0-9]+)?(Z|([+-])([0-9]{2}):([0-9]{2}))?$/;
                                     var match = params[0].lex.match(re);
                                     var z_or_offset = match[8];
-                                    return RDF.RDFLiteral((z_or_offset || ""), undefined, RDF.IRI(XSD_NS+"integer", RDF.Position0()), RDF.Position0());
+                                    return _RDF.RDFLiteral((z_or_offset || ""), undefined, _RDF.IRI(XSD_NS+"integer", _RDF.Position0()), _RDF.Position0());
 // Hash Functions 17.4.6 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-hash
 //     MD5 17.4.6.1 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-md5
 //     SHA1 17.4.6.2 http://www.w3.org/TR/2013/REC-sparql11-query-20130321/#func-sha1
@@ -3640,7 +3732,7 @@ RDF = {
                                 }
                             } else {
                                 // or a variable name
-                                // return new this.Var(s, RDF.Position0());
+                                // return new this.Var(s, _RDF.Position0());
                                 // js scoping is such a PITA!
                                 return {_: 'Var', lex: first};
                             }
@@ -3674,7 +3766,7 @@ RDF = {
                                 skipSpace();
                                 var o = resolveVar(getToken());
                                     try {
-                                        doc.push(RDF.Triple(s, p, o));
+                                        doc.push(_RDF.Triple(s, p, o));
                                     } catch (e) {
                                         message("Skipping: \"" + e + "\"\n"
                                                 +"while instantiating \"" + code.substr(start, i-start) + "\".");
@@ -3687,7 +3779,7 @@ RDF = {
                             }
                         }
                     } else if ('always' in conf && conf['always'] == true) {
-                        doc.push(RDF.Triple(context.s, context.p, context.o));
+                        doc.push(_RDF.Triple(context.s, context.p, context.o));
                     }
                 }
 
@@ -3826,7 +3918,7 @@ RDF = {
             });
             if (disjoints.length === 1)
                 return disjoints[0];
-            return new RDF.OrRule(disjoints, RDF.Position2(this.ruleMap[key].line, this.ruleMap[key].column));
+            return new _RDF.OrRule(disjoints, _RDF.Position2(this.ruleMap[key].line, this.ruleMap[key].column));
         };
         this.serializeRule = function (label, orig) {
             var ret = '';
@@ -3933,8 +4025,8 @@ RDF = {
             var key = point.toString() + ' @' + asStr + "," + subShapes;
             var resOrPromise = validatorStuff.termResults.get(key);
             if (resOrPromise === undefined) {
-                var tmp = new RDF.ValRes(); // temporary empty solution
-                tmp.status = RDF.DISPOSITION.PASS; // matchedEmpty(this.ruleMap[asStr]);
+                var tmp = new _RDF.ValRes(); // temporary empty solution
+                tmp.status = _RDF.DISPOSITION.PASS; // matchedEmpty(this.ruleMap[asStr]);
                 validatorStuff.termResults.provisional(key, validatorStuff.async ? Promise.resolve(tmp) : tmp, validatorStuff.pointStack);
 
                 var closedSubGraph;
@@ -3956,7 +4048,7 @@ RDF = {
                                 return true;
                             });
                             if (remaining.length)
-                            { res.status = RDF.DISPOSITION.FAIL; res.error_noMatchExtra(rule, remaining); }
+                            { res.status = _RDF.DISPOSITION.FAIL; res.error_noMatchExtra(rule, remaining); }
                         }
                         return res;
                     }
@@ -3999,7 +4091,7 @@ RDF = {
                 }) :
                 post(resOrPromise);
             function post (ret) {
-                if (ret.status == RDF.DISPOSITION.PASS) {
+                if (ret.status == _RDF.DISPOSITION.PASS) {
                     _Schema.dispatch(1, 'begin', _Schema.init, {},
                                      _Schema.makeBeginContext(validatorStuff.iriResolver, _Schema.alwaysInvoke));
                     var what = ret.postInvoke(_Schema, validatorStuff);
@@ -4011,7 +4103,7 @@ RDF = {
                         }).length ? false : true;
                     })
                     if (missed.length) {
-                        ret.status = RDF.DISPOSITION.FAIL;
+                        ret.status = _RDF.DISPOSITION.FAIL;
                         ret.errors = missed;
                     }
                 }
@@ -4038,8 +4130,8 @@ RDF = {
         };
 
         this.findTypes = function (db, subjects, validatorStuff) {
-            var ret = new RDF.ValRes(); // accumulate validation successes.
-            ret.status = RDF.DISPOSITION.PASS;
+            var ret = new _RDF.ValRes(); // accumulate validation successes.
+            ret.status = _RDF.DISPOSITION.PASS;
 
             for (var handler in this.handlers)
                 if ('beginFindTypes' in this.handlers[handler])
@@ -4056,14 +4148,14 @@ RDF = {
 
                         // var closedSubGraph = db.triplesMatching(s, null, null); @@ needed?
 
-                        var instSh = RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0());
+                        var instSh = _RDF.IRI("http://open-services.net/ns/core#instanceShape", _RDF.Position0());
                         var nestedValidatorStuff = validatorStuff.push(s, ruleLabel, instSh);
                         var resOrPromise = schema.validate(s, ruleLabel, db, nestedValidatorStuff, false);
                         if (validatorStuff.async) {
                             resOrPromise.then(postValidate).catch(function (e) {
                                 console.dir(e);
                                 debugger;
-                                RDF.message(e);
+                                _RDF.message(e);
                             });
                             promises.push(resOrPromise);
                         } else {
@@ -4071,11 +4163,11 @@ RDF = {
                         }
                         function postValidate (res) {
                             // If it passed or is indeterminate,
-                            if (res.status !== RDF.DISPOSITION.FAIL) {
+                            if (res.status !== _RDF.DISPOSITION.FAIL) {
 
                                 // record the success.
-                                RDF.message(s.toString() + " is a " + ruleLabel.toString());
-                                var t = RDF.Triple(s, RDF.IRI("http://open-services.net/ns/core#instanceShape", RDF.Position0()), ruleLabel);
+                                _RDF.message(s.toString() + " is a " + ruleLabel.toString());
+                                var t = _RDF.Triple(s, _RDF.IRI("http://open-services.net/ns/core#instanceShape", _RDF.Position0()), ruleLabel);
                                 ret.matchedTree(schema.ruleMap[ruleLabel], t, res);
                             }
                         }
@@ -4109,14 +4201,14 @@ RDF = {
                     ret = handlers[handlerName][event](code, valRes, context);
                 } catch (e) {
                     var message =
-                        [["actionCategory", RDF.actionCategory.ACTION],
+                        [["actionCategory", _RDF.actionCategory.ACTION],
                          ["text", "exception invoking:"],
                          ["code", "handlers["+handlerName+"]["+event+"](\""+code+"\", valRes, "+context+")"],
                          ["text", "[["],
                          ["NestedError", e],
                          ["text", "]]"]
                         ];
-                    error = RDF.StructuredError(message);
+                    error = _RDF.StructuredError(message);
                 }
 
                 // restore old register function
@@ -4131,17 +4223,17 @@ RDF = {
                     var handlerName = this.alwaysInvoke[event][i];
                     if (!(handlerName in codes)) { // Skip handlers which will be called below.
                         var ex = callHandler(handlerName, event, null, valRes, context);
-                        if (ex == RDF.DISPOSITION.FAIL)
-                            return RDF.DISPOSITION.FAIL;
+                        if (ex == _RDF.DISPOSITION.FAIL)
+                            return _RDF.DISPOSITION.FAIL;
                     }
                 }
             for (var handlerName in codes)
                 if (this.handlers[handlerName] && this.handlers[handlerName][event] && this.handlers[handlerName].when === when) {
                     var ex = callHandler(handlerName, event, codes[handlerName].code, valRes, context);
-                    if (ex == RDF.DISPOSITION.FAIL)
-                        return RDF.DISPOSITION.FAIL;
+                    if (ex == _RDF.DISPOSITION.FAIL)
+                        return _RDF.DISPOSITION.FAIL;
                 }
-            return RDF.DISPOSITION.PASS;
+            return _RDF.DISPOSITION.PASS;
         };
         this.seen = {};
         this.SPARQLvalidation2 = function (func, prefixes, prepend, append) {
@@ -4164,7 +4256,7 @@ RDF = {
                     + append;
             } catch (e) {
                 var m = "failed to generate SPARQL validation query because:\n" + e;
-                RDF.message(m);
+                _RDF.message(m);
                 return m;
             }
         };
@@ -4173,14 +4265,14 @@ RDF = {
                 function (rule, schema, label, prefixes, depth, counters, contextCard) {
                     return rule.SPARQLvalidation(schema, label, prefixes, depth, counters, contextCard);
                 }, prefixes,
-                RDF.SPARQLprefixes(prefixes) + "ASK {\n", "}\n");
+                _RDF.SPARQLprefixes(prefixes) + "ASK {\n", "}\n");
         }
         this.SPARQLremainingTriples = function (prefixes) {
             var ret = this.SPARQLvalidation2(
                 function (rule, schema, label, prefixes, depth, counters, contextCard) {
                     return rule.SPARQLvalidation(schema, label, prefixes, depth, counters, contextCard);
                 }, prefixes,
-                RDF.SPARQLprefixes(prefixes) + "\
+                _RDF.SPARQLprefixes(prefixes) + "\
 SELECT ?s ?p ?o {\n\
   { ?s ?p ?o } MINUS\n\
   {\n","    {\n");
@@ -4197,18 +4289,18 @@ SELECT ?s ?p ?o {\n\
         this.SPARQLvalidation3 = function (label, prefixes, depth, counters) {
             var start = label.toString();
             if (this.seen[start])
-                throw new RDF.ValidationRecursion(this.seen[start]);
+                throw new _RDF.ValidationRecursion(this.seen[start]);
             if (!this.ruleMap[start])
-                throw new RDF.UnknownRule(start);
+                throw new _RDF.UnknownRule(start);
 
             this.seen[start] = label;
             return this.ruleMap[start].SPARQLvalidation(this, label, prefixes, depth, counters, {min:1, max:1})
         };
         this.SPARQLdataDump3 = function (start, label, prefixes, depth, counters) {
             if (this.seen[start])
-                throw new RDF.ValidationRecursion(this.seen[start]);
+                throw new _RDF.ValidationRecursion(this.seen[start]);
             if (!this.ruleMap[start])
-                throw new RDF.UnknownRule(start);
+                throw new _RDF.UnknownRule(start);
 
             this.seen[start] = label;
             return this.ruleMap[start].SPARQLdataDump(this, label, prefixes, depth, counters, {min:1, max:1})
@@ -4216,9 +4308,9 @@ SELECT ?s ?p ?o {\n\
         this.SPARQLremainingTriples3 = function (label, as, prefixes, depth, counters) {
             var start = label.toString();
             if (this.seen[start])
-                throw new RDF.ValidationRecursion(this.seen[start]);
+                throw new _RDF.ValidationRecursion(this.seen[start]);
             if (!this.ruleMap[start])
-                throw new RDF.UnknownRule(start);
+                throw new _RDF.UnknownRule(start);
 
             this.seen[start] = label;
             return this.ruleMap[start].SPARQLremainingTriples(this, label, as, prefixes, depth, counters)
@@ -4227,14 +4319,14 @@ SELECT ?s ?p ?o {\n\
             var variables = [];
             var ret = this.SPARQLvalidation2(
                 function (rule, schema, label, prefixes, depth, counters, contextCard) {
-                    return rule.SPARQLdataDump(schema, {lex:'start'}, // <-- dirty hack to emulate RDF term
+                    return rule.SPARQLdataDump(schema, {lex:'start'}, // <-- dirty hack to emulate _RDF term
                                                prefixes, depth, variables);
                 }, prefixes, '');
-            ret = RDF.SPARQLprefixes(prefixes) + "SELECT "+Object.keys(variables).map(function (s) { return '?'+s; }).join(' ')+" {\n" + ret + "}\n";
+            ret = _RDF.SPARQLprefixes(prefixes) + "SELECT "+Object.keys(variables).map(function (s) { return '?'+s; }).join(' ')+" {\n" + ret + "}\n";
             return ret;
         }
         this.toResourceShapes = function (prefixes, sePrefix, rsPrefix) {
-            var ret = RDF.SPARQLprefixes(prefixes);
+            var ret = _RDF.SPARQLprefixes(prefixes);
             dbCopy = this.db.clone();
             for (var label in this.ruleMap) {
                 var rule = this.ruleMap[label];
@@ -4274,10 +4366,11 @@ SELECT ?s ?p ?o {\n\
             needed = typeof needed !== 'undefined' ? needed : {};
             var uses = {};
             var Schema = this; // this is apparently unavailable in _walk.
-            function _walk (rule, parents) {
+            function _walk (rule, shapeLabelsSeen, howWeGotHere) {
                 function _dive (into) {
-                    if (parents.indexOf(into) === -1) {
-                        parents.map(function (p) {
+		    // Avoid recursion:
+                    if (shapeLabelsSeen.indexOf(into) === -1) {
+                        shapeLabelsSeen.map(function (p) {
                             if (uses[p] === undefined)
                                 uses[p] = [];
                             uses[p].push(into);
@@ -4286,14 +4379,15 @@ SELECT ?s ?p ?o {\n\
                         if (next === undefined) {
                             if (looseEnds[into] === undefined)
                                 looseEnds[into] = { p:[] };
-                            var p = parents[parents.length-1];
+                            var p = shapeLabelsSeen[shapeLabelsSeen.length-1];
                             if (looseEnds[into][p] === undefined)
                                 looseEnds[into][p] = [];
-                            looseEnds[into][p].push(rule.toString());
+                            // looseEnds[into][p].push(rule.toString());
+                            looseEnds[into][p].push(howWeGotHere.concat(rule).map(function (r) { return r.toString(); }).join('/'));
                         } else {
-                            parents.push(into);
-                            _walk(next, parents);
-                            parents.pop();
+                            shapeLabelsSeen.push(into);
+                            _walk(next, shapeLabelsSeen, howWeGotHere.concat([rule]));
+                            shapeLabelsSeen.pop();
                         }
                     }
                 };
@@ -4303,7 +4397,7 @@ SELECT ?s ?p ?o {\n\
                         _dive(rule.valueClass.label.toString());
                     break;
                 case "UnaryRule":
-                    _walk(rule.rule, parents);
+                    _walk(rule.rule, shapeLabelsSeen, howWeGotHere);
                     break;
                 case "IncludeRule":
                     _dive(rule.include.toString());
@@ -4312,11 +4406,11 @@ SELECT ?s ?p ?o {\n\
                     break;
                 case "AndRule":
                     for (var conj = 0; conj < rule.conjoints.length; ++conj)
-                        _walk(rule.conjoints[conj], parents);
+                        _walk(rule.conjoints[conj], shapeLabelsSeen, howWeGotHere);
                     break;
                 case "OrRule":
                     for (var disj = 0; disj < rule.disjoints.length; ++disj)
-                        _walk(rule.disjoints[disj], parents);
+                        _walk(rule.disjoints[disj], shapeLabelsSeen, howWeGotHere);
                     break;
                 default: throw "what's a \"" + rule._ + "\"?"
                 }
@@ -4324,18 +4418,19 @@ SELECT ?s ?p ?o {\n\
             for (var ri = 0; ri < this.ruleLabels.length; ++ri) {
                 var ruleLabel = this.ruleLabels[ri];
                 if (!this.isVirtualShape[ruleLabel.toString()])
-                    _walk(this.ruleMap[ruleLabel], [ruleLabel]); // this.getRuleMapClosure
+                    _walk(this.ruleMap[ruleLabel], [ruleLabel.toString()], [ruleLabel.toString()]); // this.getRuleMapClosure
             }
 
             //for (var p in uses) {
             for (var i = 0; i < includes.length; ++i) {
                 var p = includes[i];
                 needed[p] = true;
-                for (var c in uses[p]) needed[uses[p][c]] = true;
+                for (var c in uses[p])
+		    needed[uses[p][c]] = true;
             }
 
 
-            ret = new RDF.Schema(this._pos);
+            ret = new _RDF.Schema(this._pos);
             ret.startRule = this.startRule;
             ret.eventHandlers = this.eventHandlers;
             ret.derivedShapes = {};
@@ -4431,7 +4526,7 @@ SELECT ?s ?p ?o {\n\
             return ret;
         }
         RuleMatch = function (rule, triple) {
-            this._ = 'RuleMatch'; this.status = RDF.DISPOSITION.PASS; this.rule = rule; this.triple = triple;
+            this._ = 'RuleMatch'; this.status = _RDF.DISPOSITION.PASS; this.rule = rule; this.triple = triple;
             this.toString = function (depth) {
                 return pad(depth) + this.rule.toString() + " matched by "
                     + this.triple.toString();
@@ -4450,7 +4545,7 @@ SELECT ?s ?p ?o {\n\
             }
         },
         RuleMatchTree = function (rule, triple, r) {
-            this._ = 'RuleMatchTree'; this.status = RDF.DISPOSITION.PASS; this.rule = rule; this.triple = triple; this.r = r;
+            this._ = 'RuleMatchTree'; this.status = _RDF.DISPOSITION.PASS; this.rule = rule; this.triple = triple; this.r = r;
             this.toString = function (depth) {
                 return pad(depth) + this.rule.toString() + " matched by "
                     + this.triple.toString() + "\n" + this.r.toString(depth+1);
@@ -4475,7 +4570,7 @@ SELECT ?s ?p ?o {\n\
             }
         },
         RuleMatchEmpty = function (rule) {
-            this._ = 'RuleMatchEmpty'; this.status = RDF.DISPOSITION.PASS; this.rule = rule;
+            this._ = 'RuleMatchEmpty'; this.status = _RDF.DISPOSITION.PASS; this.rule = rule;
             this.toString = function (depth) {
                 return pad(depth) + this.rule.toString() + " permitted to not match";
             };
@@ -4490,7 +4585,7 @@ SELECT ?s ?p ?o {\n\
             }
         },
         RuleMatchGroup = function (rule, point, r) {
-            this._ = 'RuleMatchGroup'; this.status = RDF.DISPOSITION.PASS; this.rule = rule; this.point = point; this.r = r;
+            this._ = 'RuleMatchGroup'; this.status = _RDF.DISPOSITION.PASS; this.rule = rule; this.point = point; this.r = r;
             this.toString = function (depth) {
                 return this.r.toString(depth);
             };
@@ -4511,18 +4606,18 @@ SELECT ?s ?p ?o {\n\
         this._ = 'ValRes'; this.matches = []; this.errors = [], this.misses = [], this.tripleToRules = {};
         this.postInvoke = function (schema, validatorStuff) {
             var ret = [];
-            if (this.status != RDF.DISPOSITION.FAIL)
+            if (this.status != _RDF.DISPOSITION.FAIL)
                 for (var i = 0; i < this.matches.length; ++i)
-                    if (this.matches[i].status == RDF.DISPOSITION.PASS) {
+                    if (this.matches[i].status == _RDF.DISPOSITION.PASS) {
                         ret = ret.concat(this.matches[i].postInvoke(schema, validatorStuff));
                     }
             return ret;
         }
         this.triples = function () {
             var ret = [];
-            if (this.status != RDF.DISPOSITION.FAIL)
+            if (this.status != _RDF.DISPOSITION.FAIL)
                 for (var i = 0; i < this.matches.length; ++i)
-                    if (this.matches[i].status == RDF.DISPOSITION.PASS)
+                    if (this.matches[i].status == _RDF.DISPOSITION.PASS)
                         ret = ret.concat(this.matches[i].triples());
             return ret;
         }
@@ -4570,7 +4665,7 @@ SELECT ?s ?p ?o {\n\
         },
 
         RuleFail = function (rule, triple) {
-            this._ = 'RuleFail'; this.status = RDF.DISPOSITION.FAIL; this.rule = rule; this.triple = triple;
+            this._ = 'RuleFail'; this.status = _RDF.DISPOSITION.FAIL; this.rule = rule; this.triple = triple;
             this.toString = function (depth) {
                 return pad(depth) + "expected " + this.triple.toString()
                     + " to match " + this.rule.toString();
@@ -4583,7 +4678,7 @@ SELECT ?s ?p ?o {\n\
             this.errors.push(new RuleFail(rule, triple));
         },
         RuleFailTree = function (rule, triple, r) {
-            this._ = 'RuleFailTree'; this.status = RDF.DISPOSITION.FAIL; this.rule = rule; this.triple = triple; this.r = r;
+            this._ = 'RuleFailTree'; this.status = _RDF.DISPOSITION.FAIL; this.rule = rule; this.triple = triple; this.r = r;
             this.toString = function (depth) {
                 return pad(depth) + "expected " + this.triple.toString()
                     + " to match " + this.rule.toString()
@@ -4599,7 +4694,7 @@ SELECT ?s ?p ?o {\n\
         },
 
         RuleFailExtra = function (rule, triples) {
-            this._ = 'RuleFailExtra'; this.status = RDF.DISPOSITION.FAIL; this.rule = rule; this.triples = triples;
+            this._ = 'RuleFailExtra'; this.status = _RDF.DISPOSITION.FAIL; this.rule = rule; this.triples = triples;
             this.toString = function (depth) {
                 return pad(depth) + "expected " + this.triples.toString()
                     + " to be covered by " + this.rule.toString();
@@ -4613,7 +4708,7 @@ SELECT ?s ?p ?o {\n\
         },
 
         RuleFailValue = function (rule, triple) {
-            this._ = 'RuleFailValue'; this.status = RDF.DISPOSITION.FAIL; this.rule = rule; this.triple = triple;
+            this._ = 'RuleFailValue'; this.status = _RDF.DISPOSITION.FAIL; this.rule = rule; this.triple = triple;
             this.toString = function (depth) {
                 return pad(depth) + "expected object of " + this.triple.toString()
                     + " to match value of " + this.rule.toString();
@@ -4651,7 +4746,7 @@ SELECT ?s ?p ?o {\n\
             this.errors.push(new RuleFailEval(codeObj, this));
         },
         RuleFailMax = function (max, rule, triple) {
-            this._ = 'RuleFailMax'; this.max = max; this.status = RDF.DISPOSITION.FAIL; this.rule = rule; this.triple = triple;
+            this._ = 'RuleFailMax'; this.max = max; this.status = _RDF.DISPOSITION.FAIL; this.rule = rule; this.triple = triple;
             this.toString = function (depth) {
                 return pad(depth) + this.triple.toString()
                     + " exceeds max cardinality " + this.max
@@ -4665,7 +4760,7 @@ SELECT ?s ?p ?o {\n\
             this.errors.push(new RuleFailMax(max, rule, triple));
         },
         RuleFailMin = function (min, rule) {
-            this._ = 'RuleFailMin'; this.min = min; this.status = RDF.DISPOSITION.FAIL; this.rule = rule;
+            this._ = 'RuleFailMin'; this.min = min; this.status = _RDF.DISPOSITION.FAIL; this.rule = rule;
             this.toString = function (depth) {
                 return pad(depth) + "expected at least " + this.min
                     + " matches of " + this.rule.toString();
@@ -4678,7 +4773,7 @@ SELECT ?s ?p ?o {\n\
             this.errors.push(new RuleFailMin(min, rule));
         },
         RuleFailOrNone = function (failures, rule) {
-            this._ = 'RuleFailOrNone'; this.failures = failures; this.status = RDF.DISPOSITION.FAIL; this.rule = rule;
+            this._ = 'RuleFailOrNone'; this.failures = failures; this.status = _RDF.DISPOSITION.FAIL; this.rule = rule;
             this.toString = function (depth) {
                 return pad(depth) + "no matches of " + this.rule.toString()
                     + "[[" + this.failures.map(function (f) {
@@ -4696,7 +4791,7 @@ SELECT ?s ?p ?o {\n\
             this.errors.push(new RuleFailOrNone(failures, rule));
         },
         RuleFailOrMulti = function (failures, rule) {
-            this._ = 'RuleFailOrMulti'; this.failures = failures; this.status = RDF.DISPOSITION.FAIL; this.rule = rule;
+            this._ = 'RuleFailOrMulti'; this.failures = failures; this.status = _RDF.DISPOSITION.FAIL; this.rule = rule;
             this.toString = function (depth) {
                 return pad(depth) + "matched more than one of " + this.rule.toString()
                     + "[[" + this.failures.map(function (f) {
@@ -4715,7 +4810,7 @@ SELECT ?s ?p ?o {\n\
         },
 
         RuleFailMixedOpt = function (passes, empties, rule) {
-            this._ = 'RuleFailMixedOpt'; this.passes = passes; this.empties = empties; this.status = RDF.DISPOSITION.FAIL; this.rule = rule;
+            this._ = 'RuleFailMixedOpt'; this.passes = passes; this.empties = empties; this.status = _RDF.DISPOSITION.FAIL; this.rule = rule;
             this.toString = function (depth) {
                 return pad(depth) + "mixed matches of " + this.rule.toString() + "\n"
                     + "passed: [[" + this.passes.map(function (f) {
@@ -4744,7 +4839,7 @@ SELECT ?s ?p ?o {\n\
                 this.matches.push(res.matches[i]);
             for (var i = 0; i < res.errors.length; ++i)
                 this.errors.push(res.errors[i]);
-            if (res.status == RDF.DISPOSITION.FAIL)
+            if (res.status == _RDF.DISPOSITION.FAIL)
                 this.copyMatchedTriples(res);
             for (var i = 0; i < res.misses.length; ++i)
                 this.misses.push(res.misses[i]);
@@ -4753,7 +4848,7 @@ SELECT ?s ?p ?o {\n\
             this.misses.push.apply(this.misses, res.errors)
         },
         this.passed = function () {
-            return this.status == RDF.DISPOSITION.PASS;
+            return this.status == _RDF.DISPOSITION.PASS;
             return this.matches.length > 0 && this.errors.length === 0;
         },
         this.toString = function (depth) {
@@ -4826,7 +4921,7 @@ SELECT ?s ?p ?o {\n\
             pointStack: [],
             termResults: termResults,
             push: function (node, shape, predicate) {
-                var nestedValidatorStuff = RDF.ValidatorStuff(this.iriResolver, this.closedShapes, this.async, this.termResults);
+                var nestedValidatorStuff = _RDF.ValidatorStuff(this.iriResolver, this.closedShapes, this.async, this.termResults);
                 this.pointStack.forEach(function (elt) {
                     nestedValidatorStuff.pointStack.push(elt);
                 });
@@ -4840,7 +4935,12 @@ SELECT ?s ?p ?o {\n\
 };
 
 // enumerate inheritance
-RDF.IRI.prototype.origText = origText;
-RDF.RDFLiteral.prototype.origText = origText;
-RDF.LangTag.prototype.origText = origText;
-RDF.BNode.prototype.origText = origText;
+_RDF.IRI.prototype.origText = origText;
+_RDF.RDFLiteral.prototype.origText = origText;
+_RDF.LangTag.prototype.origText = origText;
+_RDF.BNode.prototype.origText = origText;
+
+if (typeof require !== 'undefined' && typeof exports !== 'undefined')
+  module.exports = _RDF; // node environment
+else
+  RDF = _RDF;
