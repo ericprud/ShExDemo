@@ -87,14 +87,20 @@ startRule       = l:label _ { curSchema.startRule = l; return l; }
     // return new RDF.ValueReference(b, RDF.Position5(text(), line(), column(), offset(), text().length));
 }
 
-shape           = v:_VIRTUAL? l:label _ t:typeSpec _ m:CodeMap {
+shape           = v:_VIRTUAL? l:label _ e:extra? t:typeSpec _ m:CodeMap {
     var r = Object.keys(m).length ? new RDF.UnaryRule(t, {min:1, max:1}, m, RDF.Position5(text(), line(), column(), offset(), text().length)) : t;
     r.setLabel(l);
     curSchema.add(l, r);
     if (v)
         curSchema.markVirtual(r);
+    curSchema.setExtraPredicates(l, e === null ? [] : e);
 }
 _VIRTUAL        = VIRTUAL _ { return true; }
+
+extra           = [Ee][Xx][Tt][Rr][Aa] _ iris:_iriSpace* { return iris }
+_iriSpace       = i:(iri / RDF_TYPE) _ { return i.lex; }
+
+
 typeSpec        = includes:include* '{' _ exp:OrExpression? _ '}' {
     // exp could be null if it's an empty (probably parent) rule.
     if (includes.length) {
@@ -180,7 +186,9 @@ arc             = CONCOMITANT _ keyword:ATSIGN _ l:label _ r:repeatCount? _ p:pr
     if (p) ret.setRuleID(p);
     return ret;
 }
-                / bang:('!' _ )? inverse:('^' _ )? addative:('+' _ )? n:nameClass _ v:valueClass _ d:defahlt? _ r:repeatCount? _ p:properties? _ c:CodeMap {
+                / bang:('!' _ )? inverse:('^' _ )? additive:('+' _ )? n:nameClass _ v:valueClass _ d:defahlt? _ r:repeatCount? _ p:properties? _ c:CodeMap {
+    if (additive)
+      throw "+ syntax is obselte -- add 'EXTRA " + n.term.lex + "' after the label in the shape declaration.";
     if (d)
         throw peg$buildException('default (='+d.toString()+') not currently supported', null, peg$reportedPos);
     var width = v._pos.offset-offset()+v._pos.width;
@@ -193,7 +201,7 @@ arc             = CONCOMITANT _ keyword:ATSIGN _ l:label _ r:repeatCount? _ p:pr
     } else {
         r = {min: 1, max: 1};
     }
-    var ret = new RDF.AtomicRule(bang?true:false, inverse?true:false, addative?true:false, n, v, r.min, r.max, c, RDF.Position5(text(), line(), column(), offset(), width));
+    var ret = new RDF.AtomicRule(bang?true:false, inverse?true:false, additive?true:false, n, v, r.min, r.max, c, RDF.Position5(text(), line(), column(), offset(), width));
     if (p) ret.setRuleID(p);
     return ret;
 }

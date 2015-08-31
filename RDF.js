@@ -1927,7 +1927,7 @@ var _RDF = {
         // ArcRule: if (contextCard.min === 0 ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
         // if(SIZE(matchName)<min|>max) return 𝕗;
         // vs=matchName.map(valueClass(v,_,g,{min:1, max:1})); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
-        this.validate = function (schema, point, contextCard, db, validatorStuff) {
+        this.validate = function (schema, point, extras, contextCard, db, validatorStuff) {
             var matched = 0;
             var ret = new _RDF.ValRes();
             ret.status = _RDF.DISPOSITION.PASS;
@@ -2022,7 +2022,7 @@ var _RDF = {
                                 ret.add(pass.r);
                             });
                             for (var iFails2 = 0; iFails2 < fails.length; ++iFails2)
-                                if (!_AtomicRule.additive)
+                                if (extras.indexOf(nameClass.term.lex))
                                     ret.missed(fails[iFails2].r);
                         }
                     }
@@ -2207,7 +2207,7 @@ var _RDF = {
         // Concomittant: if (contextCard.min === 0 ∧ SIZE(matchName)=0) if (min=0) return 𝜃 else return ∅;
         // if(SIZE(matchName)<min|>max) return 𝕗;
         // vs=matchName.map(valueClass(v,_,g,{min:1, max:1})); if(∃𝕗) return 𝕗; return dispatch('post', 𝕡);
-        this.validate = function (schema, point, contextCard, db, validatorStuff) {
+        this.validate = function (schema, point, extras, contextCard, db, validatorStuff) {
             var matched = 0;
             var ret = new _RDF.ValRes();
             ret.status = _RDF.DISPOSITION.PASS;
@@ -2418,10 +2418,10 @@ var _RDF = {
         };
         // GroupRule: v=validity(r,p,g,{min(contextCard.min, opt.min), max(contextCard.max, opt.max)); if(𝕗|𝜃) return v;
         // if(∅) {if(contextCard.min === 0) return ∅ else if (opt) return 𝕡 else return 𝕗}; return dispatch('post', );
-        this.validate = function (schema, point, contextCard, db, validatorStuff) {
+        this.validate = function (schema, point, extras, contextCard, db, validatorStuff) {
             var _UnaryRule = this;
             schema.dispatch(0, 'enter', this.codes, this, {o:point}); // !! lie! it's the *subject*!
-            var resOrPromise = this.rule.validate(schema, point,
+            var resOrPromise = this.rule.validate(schema, point, extras,
                                                   {min:Math.min(contextCard.min,this.opt.min),
                                                    max:this.opt.max === undefined ?
                                                    undefined :
@@ -2532,7 +2532,7 @@ var _RDF = {
             charmap.insertAfter(this.include._pos.offset+this.include._pos.width, "</span>", 0);
             // @@@ hilight include this.rule.colorize(charmap, idMap, termStringToIds, idPrefix);
         };
-        this.validate = function (schema, point, contextCard, db, validatorStuff) {
+        this.validate = function (schema, point, extras, contextCard, db, validatorStuff) {
             return schema.validatePoint(point, this.include, db, validatorStuff, false);
         };
         this.SPARQLvalidation = function (schema, label, prefixes, depth, counters, contextCard) {
@@ -2580,7 +2580,7 @@ var _RDF = {
         };
         this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
         };
-        this.validate = function (schema, point, contextCard, db, validatorStuff) {
+        this.validate = function (schema, point, extras, contextCard, db, validatorStuff) {
             var ret = new _RDF.ValRes();
             ret.status = contextCard.min === 0 ? _RDF.DISPOSITION.NONE : _RDF.DISPOSITION.PASS; // nod agreeably
             return validatorStuff.async ? Promise.resolve(ret) : ret;
@@ -2634,7 +2634,7 @@ var _RDF = {
         // AndRule: vs=conjoints.map(validity(_,p,g,o)); if(∃𝕗) return 𝕗;
         // if(∃𝕡∧∃∅) return 𝕗; if(∄𝕡∧∄∅) return 𝜃 else if(∃𝕡) return 𝕡 else return ∅
         // Note, this FAILs an empty disjunction.
-        this.validate = function (schema, point, contextCard, db, validatorStuff) {
+        this.validate = function (schema, point, extras, contextCard, db, validatorStuff) {
             var ret = new _RDF.ValRes();
             var seenFail = false;
             var allPass = _RDF.DISPOSITION.PASS;
@@ -2642,7 +2642,7 @@ var _RDF = {
             var empties = [];
             var resOrPromises = []; // list of results or promises of results.
             this.conjoints.forEach(function (conj) {
-                var resOrPromise = conj.validate(schema, point, contextCard, db, validatorStuff);
+                var resOrPromise = conj.validate(schema, point, extras, contextCard, db, validatorStuff);
                 if (validatorStuff.async)
                     resOrPromises.push(resOrPromise.then(testConjunct));
                 else
@@ -2803,7 +2803,7 @@ var _RDF = {
         // ∃!x -> true if there's exactly one x in vs
         // OrRule: vs=disjoints.map(validity(_,p,g,o)); if(∄𝕡∧∄∅∧∄𝜃) return 𝕗;
         // if(∃!𝕡) return 𝕡; if(∃!𝜃) return 𝜃 else return 𝕗;
-        this.validate = function (schema, point, contextCard, db, validatorStuff) {
+        this.validate = function (schema, point, extras, contextCard, db, validatorStuff) {
             var ret = new _RDF.ValRes();
             var allErrors = true;
             var passCount = 0;
@@ -2812,7 +2812,7 @@ var _RDF = {
             var failures = [];
             var promises = [];
             this.disjoints.forEach(function (disj) {
-                var resOrPromise = disj.validate(schema, point, contextCard, db, validatorStuff);
+                var resOrPromise = disj.validate(schema, point, extras, contextCard, db, validatorStuff);
                 if (validatorStuff.async)
                     promises.push(resOrPromise.then(testExclusiveness));
                 else
@@ -3811,6 +3811,7 @@ var _RDF = {
         this.isVirtualShape = {};
         this.init = {};
         this.comments = [];
+        this.extraPredicatesMap = {};
 
         /* integrityCheck - Test for both user error (undefined references) and
          * algorithm error (labels out of synch with label-to-rule map).
@@ -3962,6 +3963,10 @@ var _RDF = {
             this.ruleLabels.push(label);
             this.ruleMap[key] = rule;
         }
+        this.setExtraPredicates = function (label, predicates) {
+            var key = label.toString();
+            this.extraPredicatesMap[key] = predicates;
+        }
         this.addComment = function (c) {
             this.comments.push(c);
         },
@@ -4034,7 +4039,7 @@ var _RDF = {
                     closedSubGraph = db.triplesMatching(point, null, null);
 
                 var rule = subShapes ? this.getRuleMapClosure(as) : this.ruleMap[asStr];
-                resOrPromise = rule.validate(this, point, {min:1, max:1}, db, validatorStuff);
+                resOrPromise = rule.validate(this, point, this.extraPredicatesMap[asStr], {min:1, max:1}, db, validatorStuff);
 
                 // Make sure we used all of the closedSubGraph.
                 if (validatorStuff.closedShapes) {
