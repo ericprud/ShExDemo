@@ -37,6 +37,18 @@
 
     var curSchema = new RDF.Schema();
     curSchema.db = db;
+
+    function offset() {
+      return location().start.offset;
+    }
+
+    function line() {
+      return location().start.line;
+    }
+
+    function column() {
+      return location().start.column;
+    }
 }
 ShExDoc         = _ directive* _ssc_statement? {
     if (curSubject.length > 0 ||

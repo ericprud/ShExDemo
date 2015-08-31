@@ -60,6 +60,18 @@
 	var pos = RDF.Position5(text(), line(), column(), offset(), value.length);
 	return RDF.RDFLiteral(value, undefined, dt, pos);
     }
+
+    function offset() {
+      return location().start.offset;
+    }
+
+    function line() {
+      return location().start.line;
+    }
+
+    function column() {
+      return location().start.column;
+    }
 }
 
 turtleDoc = _ statement* _ {
