@@ -841,7 +841,7 @@ var _RDF = {
 	    return match(this.triples.slice());
 	  },
 
-	  // old, slow (but interesting) permutations schema
+	  // old, slow (but interesting) permutations scheme
           __oldEquals_dont_use: function (right) {
             if (this.triples.length !== right.triples.length)
               return false;
