@@ -159,9 +159,7 @@ UnaryExpression = i:_id? a:arc {
 }
                 / inc:include { return inc; } // @@ default action sufficient?
                 / i:_id? '(' _ exp:OrExpression _ ')' _ r:repeatCount? _ c:CodeMap {
-    if (r)
-        width = r.ends-offset();
-    else
+    if (r === null)
         r = {min: 1, max: 1};
     if (curSubject.length > 0)
         curSubject.pop();

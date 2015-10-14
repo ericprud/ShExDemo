@@ -159,9 +159,7 @@ ShExParser = (function() {
         peg$c45 = ")",
         peg$c46 = { type: "literal", value: ")", description: "\")\"" },
         peg$c47 = function(i, exp, r, c) {
-            if (r)
-                width = r.ends-offset();
-            else
+            if (r === null)
                 r = {min: 1, max: 1};
             if (curSubject.length > 0)
                 curSubject.pop();
