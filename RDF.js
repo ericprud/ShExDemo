@@ -2022,7 +2022,7 @@ var _RDF = {
                                 ret.add(pass.r);
                             });
                             for (var iFails2 = 0; iFails2 < fails.length; ++iFails2)
-                                if (extras.indexOf(nameClass.term.lex))
+                                if (extras !== undefined && extras.indexOf(nameClass.term.lex) !== -1)
                                     ret.missed(fails[iFails2].r);
                         }
                     }
