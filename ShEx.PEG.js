@@ -26,7 +26,7 @@
     var iriResolver = ("iriResolver" in options) ? options.iriResolver : RDF.createIRIResolver();
     var bnodeScope = ("bnodeScope" in options) ? options.bnodeScope : RDF.createBNodeScope();
     iriResolver.errorHandler = function (message) {
-        throw peg$buildException(message, null, peg$reportedPos);
+        throw peg$buildException(message, null, peg$savedPos);
     };
 
     function _literalHere (value, type) {
@@ -188,7 +188,7 @@ arc             = CONCOMITANT _ keyword:ATSIGN _ l:label _ r:repeatCount? _ p:pr
     if (additive)
       throw "+ syntax is obselte -- add 'EXTRA " + n.term.lex + "' after the label in the shape declaration.";
     if (d)
-        throw peg$buildException('default (='+d.toString()+') not currently supported', null, peg$reportedPos);
+        throw peg$buildException('default (='+d.toString()+') not currently supported', null, peg$savedPos);
     var width = v._pos.offset-offset()+v._pos.width;
     if (r) {
         width = r.ends-offset();
