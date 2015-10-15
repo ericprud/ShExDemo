@@ -22,8 +22,8 @@ function walkShape (schema, shapeLabel, funcs) {
           funcs.endReference(rule);
       } else if (rule.valueClass._ === 'ValueType' ||
                  (rule.valueClass._ === 'ValueWild' &&
-                  rule.valueClass.exclusions.length === 0)) {
-        return funcs.variable ? funcs.variable(rule, rule.codes[MAP].code) : null;
+                  rule.valueClass.exclusions.length === 0)) { debugger;
+        return funcs.variable && rule.codes[MAP] ? funcs.variable(rule, rule.codes[MAP].code) : null;
       } else if (rule.valueClass._ === 'ValueSet' &&
                  rule.valueClass.values.length === 1) {
         var o = rule.valueClass.values[0];
@@ -76,7 +76,7 @@ function tryFileFunction (file, f) {
   return ret;
 }
 
-function Mapper (fromFile, lib) {
+function Mapper (fromShExCList, lib) {
   var knownVars = {};
   var schemaDetails = {};
 
@@ -110,8 +110,10 @@ function Mapper (fromFile, lib) {
   }
 
   var fromIRIResolver = RDF.createIRIResolver();
-  var fromSchema = tryFileFunction(fromFile, function (text) {
-    return ShExParser.parse(text, {iriResolver: fromIRIResolver});
+  var fromSchemaList = fromShExCList.map(function (shexc) {
+    return tryFileFunction(shexc, function (text) {
+      return ShExParser.parse(text, {iriResolver: fromIRIResolver});
+    });
   });
 
   return {
@@ -122,20 +124,21 @@ function Mapper (fromFile, lib) {
         return TurtleParser.parse(text, {iriResolver: dataIRIResolver});
       });
 
-      /** Validate input graph data with the fromSchema
-       */
-      fromSchema.alwaysInvoke = {};
-      fromSchema.handlers = {};
-      fromSchema.handlers[MAP] = {
-        when: 1,
-        begin: function (code, valRes, context) { _add(code, valRes, context); },
-        post: function (code, valRes, context) { _add(code, valRes, context); }
-      }
+      fromSchemaList.forEach(function (fromSchema) {
+	/** Validate input graph data with the fromSchema
+	 */
+	fromSchema.alwaysInvoke = {};
+	fromSchema.handlers = {};
+	fromSchema.handlers[MAP] = {
+          when: 1,
+          begin: function (code, valRes, context) { _add(code, valRes, context); },
+          post: function (code, valRes, context) { _add(code, valRes, context); }
+	}
 
-      var termResults = RDF.TermResults();
-      var vs = RDF.ValidatorStuff(dataIRIResolver, false, false, termResults);
-      var r = fromSchema.validate(inputGraph.slice(0,1)[0].s, fromSchema.startRule, inputGraph, vs, true);
-
+	var termResults = RDF.TermResults();
+	var vs = RDF.ValidatorStuff(dataIRIResolver, false, false, termResults);
+	fromSchema.validate(inputGraph.slice(0,1)[0].s, fromSchema.startRule, inputGraph, vs, true);
+      });
       var outputGraph = RDF.Dataset();
       var bnodeScope = RDF.createBNodeScope();
 

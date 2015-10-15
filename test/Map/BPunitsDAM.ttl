@@ -1,0 +1,6 @@
+_:b0 <http://shexspec.github.io/extensions/Map/#BPunitsDAM-diastolic> _:b2.
+_:b2 <http://shexspec.github.io/extensions/Map/#BPunitsDAM-value> "70"^^<http://www.w3.org/2001/XMLSchema#float>.
+_:b2 <http://shexspec.github.io/extensions/Map/#BPunitsDAM-units> "mmHg".
+_:b0 <http://shexspec.github.io/extensions/Map/#BPunitsDAM-systolic> _:b1.
+_:b1 <http://shexspec.github.io/extensions/Map/#BPunitsDAM-value> "110"^^<http://www.w3.org/2001/XMLSchema#float>.
+_:b1 <http://shexspec.github.io/extensions/Map/#BPunitsDAM-units> "mmHg".
