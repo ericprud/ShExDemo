@@ -3807,6 +3807,7 @@ var _RDF = {
                 var prints = [];
 
                 this.post = function (code, valRes, context) {
+                    var status = _RDF.DISPOSITION.PASS;
                     if (code) {
 		      // ' fail("some mess\\"age") '
 		      var res = code.match(/^ *(fail|print) *\( *(?:(\"(?:[^\\"]|\\")*\")|([spo])) *\) *$/);
@@ -3815,10 +3816,14 @@ var _RDF = {
 			var particle = res[2] ? res[2] : context[res[3]].lex;
 			if (action === "print")
 			  prints.push(particle);
-			else
+			else {
 			  prints.push("failing with msg: "+particle);
+			  status = _RDF.DISPOSITION.FAIL;
+			  valRes.r.error_badEval(particle);
+			}
 		      }
                     }
+                    return status;
                 };
 
                 this.end = function (code, valRes, context) {
