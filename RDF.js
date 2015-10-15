@@ -3817,7 +3817,6 @@ var _RDF = {
 			if (action === "print")
 			  prints.push(particle);
 			else {
-			  prints.push("failing with msg: "+particle);
 			  status = _RDF.DISPOSITION.FAIL;
 			  valRes.r.error_badEval(particle);
 			}
