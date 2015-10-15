@@ -1063,12 +1063,12 @@ ShExDemo = function() {
 
             var timeBefore = (new Date).getTime();
             iface.validator.termResults = {}; // clear out yester-cache
-
             iface.validator.handlers = {
                 '<http://shexspec.github.io/extensions/GenX/>': RDF.GenXHandler(document.implementation, new XMLSerializer()),
                 '<http://shexspec.github.io/extensions/GenJ/>': RDF.GenJHandler({}),
                 '<http://shexspec.github.io/extensions/GenN/>': RDF.GenNHandler({}),
-                '<http://shexspec.github.io/extensions/GenR/>': RDF.GenRHandler({})
+                '<http://shexspec.github.io/extensions/GenR/>': RDF.GenRHandler({}),
+                '<http://shexspec.github.io/extensions/Test/>': RDF.TestHandler({})
             };
             iface.validator.alwaysInvoke = {};
             if (!$("#opt-disable-js").is(":checked")) {
@@ -1814,6 +1814,7 @@ ShExDemo = function() {
                         generatorInterface('<http://shexspec.github.io/extensions/GenJ/>', 'GenJ', 'application/json');
                         generatorInterface('<http://shexspec.github.io/extensions/GenN/>', 'GenN', 'text/plain');
                         generatorInterface('<http://shexspec.github.io/extensions/GenR/>', 'GenR', 'text/plain');
+                        generatorInterface('<http://shexspec.github.io/extensions/Test/>', 'Test', 'application/json');
                         if (!$("#opt-disable-js").is(":checked"))
                             generatorInterface('<http://shexspec.github.io/extensions/ps/>',   'text/plain');
                     }

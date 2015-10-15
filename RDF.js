@@ -3799,6 +3799,40 @@ var _RDF = {
         };
     },
 
+    TestHandler: function () {
+        return {
+            when: 1,
+            text: null,
+            begin: function (code, valRes, context) {
+                var prints = [];
+
+                this.post = function (code, valRes, context) {
+                    if (code) {
+		      // ' fail("some mess\\"age") '
+		      var res = code.match(/^ *(fail|print) *\( *(?:(\"(?:[^\\"]|\\")*\")|([spo])) *\) *$/);
+		      if (res) {
+			var action = res[1];
+			var particle = res[2] ? res[2] : context[res[3]].lex;
+			if (action === "print")
+			  prints.push(particle);
+			else
+			  prints.push("failing with msg: "+particle);
+		      }
+                    }
+                };
+
+                this.end = function (code, valRes, context) {
+                    // console.dir(doc);
+                    this.text = JSON.stringify({
+		      prints: prints
+		    }, null, "  ");;
+                }
+            },
+            link: null,
+            visit: null
+        };
+    },
+
     Schema: function (_pos) {
         this._ = 'Schema'; this._pos = _pos;
         this.ruleMap = {};
