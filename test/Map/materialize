@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+
+RDF = require('../../RDF'); // ugly global for TurtleParser
+require('../../TurtleParser.js'); // even worse
+var Mapper = require('../../ShExMap');
+
+var fromFiles = [];
+var toFiles = [];
+var dataFile = null;
+
+for (var i = 2; i < process.argv.length; ++i) {
+  if (process.argv[i] === '-i') {
+    if (++i === process.argv.length) {
+      throw "exepcted input schema file after -i flag";
+    }
+    fromFiles.push(process.argv[i]);
+  } else if (process.argv[i] === '-o') {
+    if (++i === process.argv.length) {
+      throw "exepcted output schema file after -o flag";
+    }
+    toFiles.push(process.argv[i]);
+  } else if (process.argv[i] === '-d') {
+    if (++i === process.argv.length) {
+      throw "exepcted data file after -d flag";
+    }
+    if (dataFile !== null) {
+      throw "duplicate data file -- already saw " + dataFile;
+    }
+    dataFile = process.argv[i];
+  } else {
+    throw "unknown option " + process.argv[i];
+  }
+}
+if (fromFiles.length === 0) {
+  throw "expected at least one input schema file"
+}
+if (toFiles.length === 0) {
+  throw "expected at least one output schema file"
+}
+if (dataFile === null) {
+  throw "expected one input data file"
+}
+
+console.log(Mapper(fromFiles, toFiles).materialize(dataFile).toString());
+
+/* try
+     materialize -i BPFHIR.shex -o BPunitsDAM.shex -d BPFHIR.ttl
+     materialize -i BPunitsDAM.shex -o BPFHIR.shex -d BPunitsDAM.ttl
+     materialize -i BPFHIRsys.shex -i BPFHIRdia.shex -o BPunitsDAM.shex -d BPFHIR.ttl
+*/
