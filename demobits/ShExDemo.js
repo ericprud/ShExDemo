@@ -629,7 +629,7 @@ ShExDemo = function() {
 
         // Done filling the input fields; start the interface.
         allDataIsLoaded: function() {
-            setHandler($("#schema .textInput"), iface.queueSchemaUpdate);
+            setHandler($("#schema .textInput, #ctl-shexV2"), iface.queueSchemaUpdate);
             setHandler($("#data .textInput"), iface.queueDataUpdate);
             setHandler($("#ctl-colorize, #starting-node, #opt-pre-typed, #opt-instance-linkage, #opt-find-type, #opt-disable-js, #opt-closed-shapes"),
                        iface.handleParameterUpdate);
@@ -698,6 +698,9 @@ ShExDemo = function() {
                      $(selector).val(val);
              });
 
+            if (iface.queryParms["ShExVersion"] == "2")
+                $("#ctl-shexV2").click();
+
             // enablePre parses schema and data and validates if possible.
             if (iface.queryParms['colorize'] == "true") { // switch to pre after unhiding.
                 $("#ctl-colorize").prop( "checked", true );
@@ -732,9 +735,17 @@ ShExDemo = function() {
         handleSchemaUpdate: function () {
             var now = textValue('#schema');
             // Early return if nothing's changed.
-            if (last['#schema .textInput'] === now)
+            if (last['#schema .textInput'] === now
+                && $("#ctl-shexV2").is(":checked") === last["#ctl-shexV2"])
                 return;
             last['#schema .textInput'] = now;
+
+            last["#ctl-shexV2"]  = $("#ctl-shexV2").is(":checked");
+            if ($("#ctl-shexV2").is(":checked")) {
+                iface.queryParms['ShExVersion'] = ["2"];
+            } else {
+                delete iface.queryParms['ShExVersion'];
+            }
 
             // Reflect changed text in ['schema'] (not ['schemaURL']).
             delete iface.queryParms['schemaURL'];
@@ -743,7 +754,8 @@ ShExDemo = function() {
             iface.parseSchema() && iface.graph && iface.validate();
         },
         queueSchemaUpdate: function (ev) {
-            if (textValue("#schema") === last["#schema .textInput"])
+            if (textValue("#schema") === last["#schema .textInput"]
+                && $("#ctl-shexV2").is(":checked") === last["#ctl-shexV2"])
                 return;
 
             iface.clearStatus();
@@ -935,9 +947,11 @@ ShExDemo = function() {
             $("#view a").addClass("disabled");
             iface.validator = null;
             try {
+                var warningsWereHidden = $("#schema .message .warnings").css("display") === "none";
+                var shexParser = $("#ctl-shexV2").is(":checked") ? ShEx2Parser : ShExParser;
                 iface.schema = iface.runParser("#schema", "Schema", "schema-color", "r",
                                                function(text, iriResolver) {
-                                                   return ShExParser.parse(text, {iriResolver: iriResolver});
+                                                   return shexParser.parse(text, {iriResolver: iriResolver});
                                                });
                 var warnings = iface.schema.obj.integrityCheck();
                 if (warnings.length) {

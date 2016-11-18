@@ -125,9 +125,14 @@ This is appended with the cloned contents of .hasTooltip .toolTip in order to:
                   <li>
                     parsing:
                     <ul>
-                      <li><a href="FancyShExDemo.html?starting-nodes=sh%3AShapeShape&amp;dataURL=test%2FParser%2Fshacl.ttl&amp;schemaURL=test%2FParser%2Fshacl.shex&amp;colorize=true">ShExC for SHACL</a></li>
+                      <li><a href="FancyShExDemo.html?starting-nodes=sh%3AShapeShape&amp;dataURL=test%2FParser%2Fshacl.ttl&amp;schemaURL=test%2FParser%2Fshacl.shex&amp;colorize=true&amp;ShExVersion=2">ShExC for SHACL</a></li>
                     </ul>
                   </li>
+                </ul>
+              </li>
+              <li>domain-specific
+                <ul>
+                  <li>(simplified) FHIR Medication: <a href="FancyShExDemo?starting-nodes=%3Cmed1%3E&amp;schema=PREFIX%20fhir%3A%20%3Chttp%3A%2F%2Fhl7.org%2Ffhir%2F%3E%0A%0Astart%3D%3CMedication%3E%0A%0A%3CMedication%3E%20%7B%0A%20%20a%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5Bfhir%3AMedication%5D%3F%2C%0A%20%20fhir%3AMedication.code%20%20%20%20%20%20%20%20%20%20%20%20%40%3CCodeableConcept%3E%2B%2C%0A%20%20fhir%3AMedication.product%20%7B%0A%20%20%20%20fhir%3AMedication.product.form%20%20%40%3CCodeableConcept%3E%3F%2C%0A%20%20%20%20fhir%3AMedication.product.ingredient%20%7B%0A%20%20%20%20%20%20fhir%3AMedication.product.ingredient.item%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%20fhir%3Areference%20%40%3CSubstance%3E%20%7D%20OR%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%20fhir%3Areference%20%40%3CMedication%3E%20%7D%0A%20%20%20%20%7D*%0A%20%20%7D%3F%0A%7D%0A%0A%3CSubstance%3E%20%7B%20a%20%5Bfhir%3ASubstance%5D%20%7D%0A%0A%3CCodeableConcept%3E%20%7B%20%0A%20%20a%20%5Bfhir%3ACodeableConcept%5D%2C%0A%20%20fhir%3ACodeableConcept.coding%20%40%3Ccoding%3E%2B%0A%7D%0A%0A%3Ccoding%3E%20%7B%0A%20a%20%5Bfhir%3ACoding%5D%2C%0A%20fhir%3ACoding.system%20%20%7B%20fhir%3Avalue%20LITERAL%20%7D%2C%0A%20fhir%3ACoding.code%20%20%20%20%7B%20fhir%3Avalue%20LITERAL%20%7D%2C%0A%20fhir%3ACoding.display%20%7B%20fhir%3Avalue%20LITERAL%20%7D%0A%7D%0A&amp;data=PREFIX%20fhir%3A%20%3Chttp%3A%2F%2Fhl7.org%2Ffhir%2F%3E%0A%3Cmed1%3E%20a%20fhir%3AMedication%3B%0A%20%20%20fhir%3AMedication.code%20%5B%20%0A%20%20%20%20%20%20a%20fhir%3ACodeableConcept%3B%0A%20%20%20%20%20%20fhir%3ACodeableConcept.coding%20%5B%20%0A%20%20%20%20%20%20%20%20%20a%20fhir%3ACoding%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.system%20%20%5B%20fhir%3Avalue%20%22http%3A%2F%2Fmyorg.example%2Fmedications%2F%22%20%5D%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.code%20%20%20%20%5B%20fhir%3Avalue%20%228252-50580049660%22%20%5D%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.display%20%5B%20fhir%3Avalue%20%22ACETAMINOPHEN%22%20%5D%0A%20%20%20%20%20%20%20%5D%0A%20%20%20%20%5D%3B%0A%20%20%20fhir%3AMedication.code%20%5B%20%0A%20%20%20%20%20%20a%20fhir%3ACodeableConcept%3B%0A%20%20%20%20%20%20fhir%3ACodeableConcept.coding%20%5B%0A%20%20%20%20%20%20%20%20%20a%20fhir%3ACoding%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.system%20%20%5B%20fhir%3Avalue%20%22http%3A%2F%2Fhl7.org%2Ffhir%2Fsid%2Fndc%22%20%5D%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.code%20%20%20%20%5B%20fhir%3Avalue%20%2250580049660%22%20%5D%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.display%20%5B%20fhir%3Avalue%20%22TYLENOL%20325%20MG%20TABLET%22%20%5D%0A%20%20%20%20%20%20%5D%0A%20%20%20%20%20%5D%0A.&amp;ShExVersion=2&amp;colorize=true">pass</a> <a href="FancyShExDemo?starting-nodes=%3Cmed1%3E&amp;schema=PREFIX%20fhir%3A%20%3Chttp%3A%2F%2Fhl7.org%2Ffhir%2F%3E%0A%0Astart%3D%3CMedication%3E%0A%0A%3CMedication%3E%20%7B%0A%20%20a%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5Bfhir%3AMedication%5D%3F%2C%0A%20%20fhir%3AMedication.code%20%20%20%20%20%20%20%20%20%20%20%20%40%3CCodeableConcept%3E%2B%2C%0A%20%20fhir%3AMedication.product%20%7B%0A%20%20%20%20fhir%3AMedication.product.form%20%20%40%3CCodeableConcept%3E%3F%2C%0A%20%20%20%20fhir%3AMedication.product.ingredient%20%7B%0A%20%20%20%20%20%20fhir%3AMedication.product.ingredient.item%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%20fhir%3Areference%20%40%3CSubstance%3E%20%7D%20OR%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%20fhir%3Areference%20%40%3CMedication%3E%20%7D%0A%20%20%20%20%7D*%0A%20%20%7D%3F%0A%7D%0A%0A%3CSubstance%3E%20%7B%20a%20%5Bfhir%3ASubstance%5D%20%7D%0A%0A%3CCodeableConcept%3E%20%7B%20%0A%20%20a%20%5Bfhir%3ACodeableConcept%5D%2C%0A%20%20fhir%3ACodeableConcept.coding%20%40%3Ccoding%3E%2B%0A%7D%0A%0A%3Ccoding%3E%20%7B%0A%20a%20%5Bfhir%3ACoding%5D%2C%0A%20fhir%3ACoding.system%20%20%7B%20fhir%3Avalue%20LITERAL%20%7D%2C%0A%20fhir%3ACoding.code%20%20%20%20%7B%20fhir%3Avalue%20LITERAL%20%7D%2C%0A%20fhir%3ACoding.display%20%7B%20fhir%3Avalue%20LITERAL%20%7D%0A%7D%0A&amp;data=PREFIX%20fhir%3A%20%3Chttp%3A%2F%2Fhl7.org%2Ffhir%2F%3E%0A%3Cmed1%3E%20a%20fhir%3AMedication%3B%0A%20%20%20fhir%3AMedication.code%20%5B%20%0A%20%20%20%20%20%20a%20fhir%3ACodeableConcept%3B%0A%20%20%20%20%20%20fhir%3ACodeableConcept.coding%20%5B%20%0A%20%20%20%20%20%20%20%20%20a%20fhir%3ACoding%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.system%20%20%5B%20fhir%3Avalue%20%22http%3A%2F%2Fmyorg.example%2Fmedications%2F%22%20%5D%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.code%20%20%20%20%5B%20fhir%3Avalue%20%3C8252-50580049660%3E%20%5D%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.display%20%5B%20fhir%3Avalue%20%22ACETAMINOPHEN%22%20%5D%0A%20%20%20%20%20%20%20%5D%0A%20%20%20%20%5D%3B%0A%20%20%20fhir%3AMedication.code%20%5B%20%0A%20%20%20%20%20%20a%20fhir%3ACodeableConcept%3B%0A%20%20%20%20%20%20fhir%3ACodeableConcept.coding%20%5B%0A%20%20%20%20%20%20%20%20%20a%20fhir%3ACoding%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.system%20%20%5B%20fhir%3Avalue%20%22http%3A%2F%2Fhl7.org%2Ffhir%2Fsid%2Fndc%22%20%5D%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.code%20%20%20%20%5B%20fhir%3Avalue%20%2250580049660%22%20%5D%3B%0A%20%20%20%20%20%20%20%20%20fhir%3ACoding.display%20%5B%20fhir%3Avalue%20%22TYLENOL%20325%20MG%20TABLET%22%20%5D%0A%20%20%20%20%20%20%5D%0A%20%20%20%20%20%5D%0A.&amp;ShExVersion=2&amp;colorize=true">fail</a></li>
                 </ul>
               </li>
             </ul>
@@ -173,7 +178,7 @@ This is appended with the cloned contents of .hasTooltip .toolTip in order to:
     <div id="controls">
 
                 <div class="header" id="title">
-                    <h1><a href="." tabindex="10">ShEx</a></h1>
+                    <h1><a href="." tabindex="10">ShEx</a><label for="ctl-shexV2">2</label><input id="ctl-shexV2" type="checkbox"/></h1>
                     <h2>Data Validation Workbench</h2>
                 </div>
 
@@ -386,6 +391,7 @@ This is appended with the cloned contents of .hasTooltip .toolTip in order to:
         <script src="demobits/webtoolkit.base64.js" type="text/javascript"></script>
         <script src="RDF.js" type="text/javascript"></script>
         <script src="ShExParser.js" type="text/javascript"></script>
+        <script src="ShEx2Parser.js" type="text/javascript"></script>
         <script src="TurtleParser.js" type="text/javascript"></script>
         <script src="demobits/ShExDemo-layout.js" type="text/javascript"></script>
         <script src="demobits/ShExDemo.js" type="text/javascript"></script>
@@ -560,6 +566,7 @@ This is appended with the cloned contents of .hasTooltip .toolTip in order to:
                 $("#data-query-select").on('input', newQuery);
                 $("#data-query").submit(loadOrValidate);
 
+                $('#ctl-shexV2').button();
                 try {
                     prepareLayout(function (p1) {
                       $("#schema .textInput").outerWidth($("#schema").innerWidth()-1);

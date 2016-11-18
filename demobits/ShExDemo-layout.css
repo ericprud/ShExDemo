@@ -295,3 +295,25 @@ font-size: 70% !important;
 .ui-layout-pane {
   overflow: visible !important;
 }
+
+label[for=ctl-shexV2] .ui-button-text {
+    line-height: 1.4ex;
+    padding: 0 .2em;
+    background-color: #3b7;
+    font-weight: bold;
+    margin-top: -.5ex;
+    padding-left: 0;
+}
+
+label[for=ctl-shexV2] .ui-button-text {
+    color: #777;
+}
+
+label[for=ctl-shexV2].ui-state-active .ui-button-text {
+    color: #ff7;
+}
+
+label[for=ctl-shexV2].ui-state-hover {
+    border-width: thin;
+}
+
