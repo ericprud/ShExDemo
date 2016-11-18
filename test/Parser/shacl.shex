@@ -5,8 +5,8 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 start=sh:ShapeShape
 sh:ShapeShape {
-  a (sh:Shape)?,
-  (  sh:property        @sh:PropertyShape
+  a [sh:Shape]?,
+  (  sh:property        @sh:PropertyShape OR { a sh:X }
    | sh:inverseProperty @sh:InversePropertyShape
    | sh:choice          @sh:OrShapeShape
    | sh:propertyGroup   @sh:ShapeShape)*
@@ -18,7 +18,7 @@ sh:ShapeShape {
 }
 
 sh:OrShapeShape {
-  a (sh:OrShape)?,
+  a [sh:OrShape]?,
   (  sh:property        @sh:PropertyShape
    | sh:inverseProperty @sh:InversePropertyShape
    | sh:choice          @sh:OrShapeShape
@@ -30,7 +30,7 @@ sh:OrShapeShape {
 }
 
 sh:PropertyShape {
-  a (sh:PropertyShape)?,
+  a [sh:PropertyShape]?,
   sh:predicate IRI         %ps{ $$ = new RDF.NameTerm(_.o); %},
   (  sh:allowedValue .+    %ps{ $$ = new RDF.ValueSet(_list); %}
    | sh:valueShape IRI     %ps{ $$ = new RDF.ValueReference(_.o); %}
@@ -45,7 +45,7 @@ sh:PropertyShape {
  %}
 
 sh:InversePropertyShape {
-  a (sh:InversePropertyShape)?,
+  a [sh:InversePropertyShape]?,
   sh:predicate IRI         %ps{ $$ = new RDF.NameTerm(_.o) %},
   (  sh:allowedValue .+    %ps{ $$ = new RDF.ValueSet(_list); %}
    | sh:valueShape IRI     %ps{ $$ = new RDF.ValueReference(_.o); %}
