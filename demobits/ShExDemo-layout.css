@@ -14,7 +14,7 @@
 	overflow: hidden;
 }
 #examples .header { 
-	background: #80ade5 url(http://layout.jquery-dev.com/demos/img/80ade5_40x100_textures_04_highlight_hard_100.png) 0 50% repeat-x;
+	background: #80ade5 url(demobits/80ade5_40x100_textures_04_highlight_hard_100.png) 0 50% repeat-x;
 	border-bottom: 1px solid #777;
 	font-weight: bold;
 	text-align: center;
@@ -47,14 +47,14 @@
 
 /* north-pane is not resizable
 .resizer-north-dragging ,
-.resizer-north:hover		{ background: url(http://layout.jquery-dev.com/demos/img/resizable-n.gif) repeat-x center; }*/
+.resizer-north:hover		{ background: url(demobits/resizable-n.gif) repeat-x center; }*/
 .resizer-south-dragging ,
-.resizer-south:hover		{ background: url(http://layout.jquery-dev.com/demos/img/resizable-s.gif) repeat-x center; }
+.resizer-south:hover		{ background: url(demobits/resizable-s.gif) repeat-x center; }
 	
 .resizer-west-dragging ,
-.resizer-west-open:hover	{ background: url(http://layout.jquery-dev.com/demos/img/resizable-w.gif) repeat-y center; }
+.resizer-west-open:hover	{ background: url(demobits/resizable-w.gif) repeat-y center; }
 .resizer-east-dragging ,
-.resizer-east-open:hover	{ background: url(http://layout.jquery-dev.com/demos/img/resizable-e.gif) repeat-y center; }
+.resizer-east-open:hover	{ background: url(demobits/resizable-e.gif) repeat-y center; }
 
 .resizer-west-open ,
 .resizer-east-open {
@@ -76,10 +76,10 @@
 .resizer-dragging-limit	{ background: #FF3300 !important; }
 
 /* IE6 * HACK - always show resizer graphics because IE6 cannot understand elem:hover */
-/** html .resizer-north		{ background: url(http://layout.jquery-dev.com/demos/img/resizable-n.gif) repeat-x center !important; } */
-* html .resizer-south		{ background: url(http://layout.jquery-dev.com/demos/img/resizable-s.gif) repeat-x center !important; }
-* html .resizer-west-open	{ background: url(http://layout.jquery-dev.com/demos/img/resizable-w.gif) repeat-y center !important; }
-* html .resizer-east-open	{ background: url(http://layout.jquery-dev.com/demos/img/resizable-e.gif) repeat-y center !important; }
+/** html .resizer-north		{ background: url(demobits/resizable-n.gif) repeat-x center !important; } */
+* html .resizer-south		{ background: url(demobits/resizable-s.gif) repeat-x center !important; }
+* html .resizer-west-open	{ background: url(demobits/resizable-w.gif) repeat-y center !important; }
+* html .resizer-east-open	{ background: url(demobits/resizable-e.gif) repeat-y center !important; }
 /** html .resizer-north , */
 * html .resizer-south ,
 * html .resizer-west-open ,
@@ -93,14 +93,14 @@
 */
 
 .toggler-north-open ,
-.toggler-south-closed 		{ background: url(http://layout.jquery-dev.com/demos/img/toggle-up.gif) no-repeat center bottom; }
+.toggler-south-closed 		{ background: url(demobits/toggle-up.gif) no-repeat center bottom; }
 .toggler-north-closed ,
-.toggler-south-open   		{ background: url(http://layout.jquery-dev.com/demos/img/toggle-dn.gif) no-repeat center top; }
+.toggler-south-open   		{ background: url(demobits/toggle-dn.gif) no-repeat center top; }
 /*
 .toggler-east-closed ,
-.toggler-west-open    { background: url(http://layout.jquery-dev.com/demos/img/toggle-lt.gif) no-repeat center right; }
+.toggler-west-open    { background: url(demobits/toggle-lt.gif) no-repeat center right; }
 .toggler-west-closed ,
-.toggler-east-open    { background: url(http://layout.jquery-dev.com/demos/img/toggle-rt.gif) no-repeat center left; }
+.toggler-east-open    { background: url(demobits/toggle-rt.gif) no-repeat center left; }
 */
 
 /*
@@ -108,7 +108,7 @@
 */
 .resizer-west-closed ,
 .resizer-east-closed {
-	background: #D1E6FC url(http://layout.jquery-dev.com/demos/img/D1E6FC_40x100_textures_10_dots_medium_90.png) 0 0 repeat;
+	background: #D1E6FC url(demobits/D1E6FC_40x100_textures_10_dots_medium_90.png) 0 0 repeat;
 	border-top: 1px solid #777;
 	border-bottom: 1px solid #777;
 }
@@ -130,7 +130,7 @@ ul.toolbar {
 	width:		100%;
 	list-style:	none;
 	text-align: left;
-	background: #D6D6D6 url(http://layout.jquery-dev.com/demos/img/d6d6d6_40x100_textures_02_glass_80.png) 0 50% repeat-x;
+	background: #D6D6D6 url(demobits/d6d6d6_40x100_textures_02_glass_80.png) 0 50% repeat-x;
 	border-top: 1px solid #BBB;
 	}
 	ul.toolbar li {
@@ -145,7 +145,7 @@ ul.toolbar {
 	}
 	ul.toolbar li:hover {
 		color: #005;
-		background: #EEE url(http://layout.jquery-dev.com/demos/img/eeeeee_40x100_textures_02_glass_90.png) 0 50% repeat-x;
+		background: #EEE url(demobits/eeeeee_40x100_textures_02_glass_90.png) 0 50% repeat-x;
 		border-top-color: #BBB;
 		border-bottom-color: #BBB;
 	}
@@ -169,10 +169,10 @@ ul.toolbar {
 			filter: alpha(opacity=100);
 		}
 		li.button-toggle-north span	,
-		li.button-open-south span	{ background: url(http://layout.jquery-dev.com/demos/img/go-up-on.gif) no-repeat center; }
-		li.button-close-south span	{ background: url(http://layout.jquery-dev.com/demos/img/go-dn-on.gif) no-repeat center; }
-		li.button-pin-up span		{ background: url(http://layout.jquery-dev.com/demos/img/pin-up-on.gif) no-repeat center; }
-		li.button-pin-down span		{ background: url(http://layout.jquery-dev.com/demos/img/pin-dn-on.gif) no-repeat center; }
+		li.button-open-south span	{ background: url(demobits/go-up-on.gif) no-repeat center; }
+		li.button-close-south span	{ background: url(demobits/go-dn-on.gif) no-repeat center; }
+		li.button-pin-up span		{ background: url(demobits/pin-up-on.gif) no-repeat center; }
+		li.button-pin-down span		{ background: url(demobits/pin-dn-on.gif) no-repeat center; }
 
 /*
  *	extJS-STYLE TOGGLE & PIN BUTTONS
@@ -197,22 +197,22 @@ span.button-pin-west	{ right: 1px; }
 span.button-pin-east	{ left:	 1px; }
 
 /* CUSTOM pin-buttons */
-span.button-pin-up 		  		{ background: url(http://layout.jquery-dev.com/demos/img/pin-up-off.gif) no-repeat center; }
-span.button-pin-up:hover   		{ background: url(http://layout.jquery-dev.com/demos/img/pin-up-on.gif)  no-repeat center; }
-span.button-pin-down 	  		{ background: url(http://layout.jquery-dev.com/demos/img/pin-dn-off.gif) no-repeat center; }
-span.button-pin-down:hover 		{ background: url(http://layout.jquery-dev.com/demos/img/pin-dn-on.gif)  no-repeat center; }
+span.button-pin-up 		  		{ background: url(demobits/pin-up-off.gif) no-repeat center; }
+span.button-pin-up:hover   		{ background: url(demobits/pin-up-on.gif)  no-repeat center; }
+span.button-pin-down 	  		{ background: url(demobits/pin-dn-off.gif) no-repeat center; }
+span.button-pin-down:hover 		{ background: url(demobits/pin-dn-on.gif)  no-repeat center; }
 
 /* CUSTOM close-buttons */
-span.button-close-west			{ background: url(http://layout.jquery-dev.com/demos/img/go-lt-off.gif) no-repeat center; }
-span.button-close-west:hover	{ background: url(http://layout.jquery-dev.com/demos/img/go-lt-on.gif)  no-repeat center; }
-span.button-close-east			{ background: url(http://layout.jquery-dev.com/demos/img/go-rt-off.gif) no-repeat center; }
-span.button-close-east:hover	{ background: url(http://layout.jquery-dev.com/demos/img/go-rt-on.gif)  no-repeat center; }
+span.button-close-west			{ background: url(demobits/go-lt-off.gif) no-repeat center; }
+span.button-close-west:hover	{ background: url(demobits/go-lt-on.gif)  no-repeat center; }
+span.button-close-east			{ background: url(demobits/go-rt-off.gif) no-repeat center; }
+span.button-close-east:hover	{ background: url(demobits/go-rt-on.gif)  no-repeat center; }
 
 /* STANDARD toggler-buttons - when the east/west panes are 'closed' */
-.toggler-west-closed		{ background: url(http://layout.jquery-dev.com/demos/img/go-rt-off.gif) no-repeat center; }
-.toggler-west-closed:hover	{ background: url(http://layout.jquery-dev.com/demos/img/go-rt-on.gif)  no-repeat center; }
-.toggler-east-closed		{ background: url(http://layout.jquery-dev.com/demos/img/go-lt-off.gif) no-repeat center; }
-.toggler-east-closed:hover	{ background: url(http://layout.jquery-dev.com/demos/img/go-lt-on.gif)  no-repeat center; }
+.toggler-west-closed		{ background: url(demobits/go-rt-off.gif) no-repeat center; }
+.toggler-west-closed:hover	{ background: url(demobits/go-rt-on.gif)  no-repeat center; }
+.toggler-east-closed		{ background: url(demobits/go-lt-off.gif) no-repeat center; }
+.toggler-east-closed:hover	{ background: url(demobits/go-lt-on.gif)  no-repeat center; }
 
 
 /*
