@@ -52,7 +52,7 @@
     var iriResolver = ("iriResolver" in options) ? options.iriResolver : RDF.createIRIResolver();
     var bnodeScope = ("bnodeScope" in options) ? options.bnodeScope : RDF.createBNodeScope();
     iriResolver.errorHandler = function (message) {
-        throw peg$buildException(message, null, peg$reportedPos);
+        error(message);
     };
 
     function _literalHere (value, type) {

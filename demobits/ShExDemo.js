@@ -39,18 +39,19 @@ ShExDemo = function() {
         if (typeof(e) == 'object') {
             var text = "";
             var errorMarkerId = null;
-            if ('offset' in e && $("#ctl-colorize").is(":checked")) {
+            var start = 'location' in e ? e.location.start : null;
+            if (start && $("#ctl-colorize").is(":checked")) {
                 var now = textValue(id);
                 var element = $(id + " pre").get(0);
                 var textMap = new CharMap(now);
                 textMap.HTMLescape();
                 errorMarkerId = label + "-error1";
-                textMap.insertAfter(e.offset, "<span class='parseError' id='"+errorMarkerId+"'>", 0);
-                textMap.insertAfter(e.offset, "</span>", 0);
+                textMap.insertAfter(start.offset, "<span class='parseError' id='"+errorMarkerId+"'>", 0);
+                textMap.insertAfter(start.offset, "</span>", 0);
                 element.innerHTML = textMap.getText();
             }
-            if ('line' in e) text += "Line " + e.line + " ";
-            if ('column' in e) text += "Column " + e.column + " ";
+            if (start) text += "Line " + start.line + " ";
+            if (start) text += "Column " + start.column + " ";
             if ('message' in e) text += e.message;
             else text += e;
 
@@ -831,7 +832,7 @@ ShExDemo = function() {
         },
 
         handleParameterUpdate: function() {
-            if($("#starting-nodes").val() === last["#starting-nodes"]
+            if(   $("#starting-nodes").val() === last["#starting-nodes"]
                && $("#opt-pre-typed").is(":checked") === last["#opt-pre-typed"]
                && $("#opt-instance-linkage").is(":checked") === last["#opt-instance-linkage"]
                && $("#opt-find-type").is(":checked") === last["#opt-find-type"]
@@ -938,7 +939,26 @@ ShExDemo = function() {
                                                function(text, iriResolver) {
                                                    return ShExParser.parse(text, {iriResolver: iriResolver});
                                                });
-                iface.schema.obj.integrityCheck();
+                var warnings = iface.schema.obj.integrityCheck();
+                if (warnings.length) {
+                    var warningsBox = $("<span class=\"warnings\"/>").text(warnings.join("\n"));
+                    var hideWarningsButton = $("<button>hide warnings</button>")
+                    function hideWarnings () {
+                        warningsBox.hide();
+                        hideWarningsButton.text("show warnings").on("click", showWarnings);
+                        iface.layoutPanelHeights();
+                    }
+                    function showWarnings () {
+                        warningsBox.show();
+                        hideWarningsButton.text("hide warnings").on("click", hideWarnings);
+                        iface.layoutPanelHeights();;
+                    }
+                    if (warningsWereHidden)
+                        hideWarnings();
+                    else
+                        showWarnings();
+                    $("#schema .now").append("<br/>").append(hideWarningsButton).append(warningsBox);
+                }
                 iface.validator = iface.schema.obj; // intuitive alias
                 enableValidatorLink();
                 if (iface.graph)
@@ -1031,12 +1051,11 @@ ShExDemo = function() {
                 //     iface.updateURLParameters();
                 // }
             } catch (e) {
-                if (typeof(e) !== 'object' || e.type !== "pending") {
+                if (typeof(e) !== 'object' || e.type !== "pending")
                     iface.parseMessage("#data .now").
                         removeClass("progress").
                         addClass("error").
                         append(buildErrorMessage(e, "#data", "Data"));
-                }
             }
 
             iface.updateURL();

@@ -477,7 +477,7 @@ var _RDF = {
                 if (orig && this._pos && "origText" in this._pos) {
                     var ret = this._pos.origText();
                     if (ret[0] != '\u005b' && ret[0] != '\u0028') // !open square bracket && !open paren
-                        return orig;
+                        return ret;
                 }
                 return '_:' + this.lex;
             },
@@ -806,42 +806,42 @@ var _RDF = {
             if (this.triples.length !== right.triples.length)
               return false;
 
-	    var m = {};
-	    var toMatch = this.triples.slice();
-	    function match (g) {
+            var m = {};
+            var toMatch = this.triples.slice();
+            function match (g) {
               function val (term) {
                 if (term._ === 'BNode')
-		  return (term in m) ? m[term] : null
-		else
-		  return term;
+                  return (term in m) ? m[term] : null
+                else
+                  return term;
               }
 
-	      if (g.length == 0)
-		return true;
-	      var t = g.pop(), s = val(t.s), o = val(t.o);
-	      var tm = right.triplesMatching(s, t.p, o);
-	      return tm.reduce(function (ret, triple) {
-		var adds = [];
-		function add (term) {
-		  if (val(term) === null) {
-		    adds.push(term.lex);
-		    m[term.lex] = triple.s;
-		  }
-		}
-		add(t.s);
-		add(t.o);
-		ret = match(g);
-		if (!ret)
-		  adds.forEach(function (added) {
-		    delete m[term.lex];
-		  });
-		return ret;
-	      }, false);
-	    }
-	    return match(this.triples.slice());
-	  },
+              if (g.length == 0)
+                return true;
+              var t = g.pop(), s = val(t.s), o = val(t.o);
+              var tm = right.triplesMatching(s, t.p, o);
+              return tm.reduce(function (ret, triple) {
+                var adds = [];
+                function add (term) {
+                  if (val(term) === null) {
+                    adds.push(term.lex);
+                    m[term.lex] = triple.s;
+                  }
+                }
+                add(t.s);
+                add(t.o);
+                ret = match(g);
+                if (!ret)
+                  adds.forEach(function (added) {
+                    delete m[term.lex];
+                  });
+                return ret;
+              }, false);
+            }
+            return match(this.triples.slice());
+          },
 
-	  // old, slow (but interesting) permutations scheme
+          // old, slow (but interesting) permutations scheme
           __oldEquals_dont_use: function (right) {
             if (this.triples.length !== right.triples.length)
               return false;
@@ -901,8 +901,8 @@ var _RDF = {
         var separator = url.match(/\?/) ? ';' : '?';
         var defaultParms = $.extend({
                 type: 'GET',
-                dataType: "text"
-                //contentType: 'text/plain',{turtle,shex}
+                dataType: "text",
+                Accept: "text/turtle"
         }, constructorParms);
         var lastQuery = null;
         var lastURL = null;
@@ -919,7 +919,13 @@ var _RDF = {
                     delete parms.done;
                 }
                 var merge = $.extend({
-                    url: url + separator + "query=" + encodeURIComponent(query)
+                    url: url + separator + "query=" + encodeURIComponent(query),
+                    // crossDomain: false,
+                    // headers: {
+                    //   "Foo": "bar",
+                    //   "Origin": location.host,
+                    //   "Access-Control-Allow-Headers": "x-requested-with"
+                    // }
                 }, parms);
                 lastURL = merge.url;
 
@@ -1385,7 +1391,7 @@ var _RDF = {
     },
 
     /*
-      needCounter: either we in are an optional group or we're testing a ValueReference
+      needCounter: either we in are an optional group or we're testing a ShapeReference
       card: undefined if we can't test cardinality (i.e. we're in a group) or {min:Int, max:Int}
      */
     arcCount: function (schema, label, prefixes, depth, counters, needCounter, predicate, predicateTest, object, objectTest, card, code) {
@@ -1438,11 +1444,126 @@ var _RDF = {
         return new _RDF.QueryClause(counter, str);
     },
 
+    // P1 OR P2
+    ValueOr: function (disjuncts, keywords, _pos) {
+        // valueExprMap
+        this._ = 'ValueOr'; this.disjuncts = disjuncts; this.keywords = keywords; this._pos = _pos; // total valueExpr boundaries
+        var _ValueOr = this;
+        this.toString = function (orig, schema) {
+            return this.disjuncts.map(function (d) { return d.toString(orig); }).join(" OR ");
+        },
+        this.assignId = function (charmap, idPrefix) {
+            this.disjuncts.forEach(function (v, o) {
+                if (o !== _ValueOr.keywords.length)
+                    charmap.insertBefore(_ValueOr.keywords[o]._pos.offset, "<span class='keyword'>", 0);
+                v.assignId(charmap, idPrefix+"_"+o);
+                if (o !== _ValueOr.keywords.length)
+                    charmap.insertAfter(_ValueOr.keywords[0]._pos.offset+_ValueOr.keywords[0]._pos.width, "</span>", 0);
+            });
+        }
+        this.validate = function (schema, rule, t, point, db, validatorStuff) { // @@ same as ValueSet
+            var ret = null;
+            function match (ret1) {
+                if (ret1.status == _RDF.DISPOSITION.PASS)
+                    ret = ret1;
+            }
+            function done () {
+                if (ret)
+                    return ret;
+                else {
+                    var ret2 = new _RDF.ValRes();
+                    { ret2.status = _RDF.DISPOSITION.FAIL; ret2.error_noMatch(rule, t); }
+                    return validatorStuff.async ? Promise.resolve(ret2) : ret2;
+                }
+            }
+            if (validatorStuff.async) {
+                return Promise.all(this.disjuncts.map(function (value) {
+                    return value.validate(schema, rule, t, point, db, validatorStuff).then(match);
+                })).then(done);
+            } else {
+                this.disjuncts.forEach(function (value) {
+                    match(value.validate(schema, rule, t, point, db, validatorStuff));
+                });
+                return done();
+            }
+        },
+        this.SPARQLobject = function (prefixes) {
+            return "?o";
+        },
+        this.SPARQLobjectTest = function (prefixes) {
+            return this.disjuncts.map(function (d) { return d.SPARQLobjectTest(prefixes); }).join(" OR ");
+        },
+        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
+            return _RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        },
+        this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
+            return _RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        },
+        this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
+            return _RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
+        },
+        this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
+            return "# Resource Shapes can't express this:\n" + this.toString().replace(/^/mg, "# ");
+        },
+        this.toSExpression = function (depth) {
+            return "(ValueOr "+(this.disjuncts.map(function(ex){return ex.toString();}).join(' '))+")";
+        },
+        this.toHaskell = function (depth) {
+            return "(ValueOr "+(this.disjuncts.map(function(ex){return ex.toString();}).join(' '))+")";
+        };
+    },
+
+    // $<foo>
+    ValueExprReference: function (label, keyword, _pos) {
+        // valueExprMap
+        this._ = 'ValueExprReference'; this.label = label; this.keyword = keyword; this._pos = _pos; // total valueExpr boundaries
+        this.toString = function (orig, schema) {
+            return '$' + this.label.toString(orig);
+        },
+        this.assignId = function (charmap, idPrefix) { // @@ could add " id='"+id+"'"
+            if (this.keyword) {
+                charmap.insertBefore(this.keyword._pos.offset, "<span class='keyword'>", 0);
+                charmap.insertAfter(this.keyword._pos.offset+this._pos.width, "</span>", 0);
+            }
+            charmap.insertBefore(this.label._pos.offset, "<span class='valueName'>", 0);
+            charmap.insertAfter(this.label._pos.offset+this._pos.width, "</span>", 0);
+        }
+        this.validate = function (schema, valueExpr, t, point, db, validatorStuff) {
+            return this.valueExprMap[this.label].validate(schema, valueExpr, t, point, db, validatorStuff);
+        },
+        this.SPARQLobject = function (prefixes) {
+            return "?o";
+        },
+        this.SPARQLobjectTest = function (prefixes) {
+            return this.valueExprMap[this.label].SPARQLobjectTest(prefixes);
+        },
+        this.SPARQLobjectJoin = function (schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, card, code) {
+            return _RDF.arcTest(schema, label, prefixes, depth, counters, contextCard, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        },
+        this.SPARQLobjectDump = function (schema, label, prefixes, depth, variables, predicate, predicateTest, card, code) {
+            return _RDF.arcDump(schema, label, prefixes, depth, variables, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes), card, code);
+        },
+        this.SPARQLobjectSelect = function (schema, label, as, prefixes, depth, counters, predicate, predicateTest) {
+            return _RDF.arcSelect(schema, as, prefixes, depth, counters, predicate, predicateTest, this.SPARQLobject(prefixes), this.SPARQLobjectTest(prefixes));
+        },
+        this.toResourceShapes = function (db, prefixes, sePrefix, rsPrefix, depth) {
+            return this.valueExprMap[this.label].toResourceShapes(db, prefixes, sePrefix, rsPrefix, depth);
+        },
+        this.toSExpression = function (depth) {
+            return "(ValueExprRef "+this.label.toString()+")";
+        },
+        this.toHaskell = function (depth) {
+            return "(ValueExprRef "+this.label.toString()+")";
+        };
+    },
+
     // @<foo>
-    ValueReference: function (label, keyword, _pos) {
-        this._ = 'ValueReference'; this.label = label; this.keyword = keyword; this._pos = _pos; // total rule boundaries
+    ShapeReference: function (label, keyword, _pos) {
+        this._ = 'ShapeReference'; this.label = label; this.keyword = keyword; this._pos = _pos; // total rule boundaries
         this.toString = function (orig, schema) {
             var l = this.label.toString(orig);
+            if (l.length > 50 || l.match(/\n/)) // render terse shape decls inline
+                l = this.label.toString(false);
             if (schema && this.label._ === 'BNode' && l in schema.ruleMap)
                 return "{ " + schema.ruleMap[l].toString(orig) + " }";
             else
@@ -1558,10 +1679,10 @@ var _RDF = {
             return rsFix + "valueShape " + defix(this.label, prefixes) + " ;\n";
         },
         this.toSExpression = function (depth) {
-            return "(ValueRef "+this.label.toString()+")";
+            return "(ShapeRef "+this.label.toString()+")";
         },
         this.toHaskell = function (depth) {
-            return "(ValueRef "+this.label.toString()+")";
+            return "(ShapeRef "+this.label.toString()+")";
         };
     },
 
@@ -1696,8 +1817,7 @@ var _RDF = {
                 v.term.assignId(charmap, idPrefix+"_"+o);
             });
         }
-        this.validate = function (schema, rule, t, point, db, validatorStuff) {
-            var _ValueSet = this;
+        this.validate = function (schema, rule, t, point, db, validatorStuff) { // @@ same as ValueOr
             var ret = null;
             function match (ret1) {
                 if (ret1.status == _RDF.DISPOSITION.PASS)
@@ -1908,7 +2028,7 @@ var _RDF = {
             this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
             charmap.insertBefore(this.label._pos.offset, "<span class='shapeName'>", 0);
             charmap.insertAfter(this.label._pos.offset+this.label._pos.width, "</span>", 0);
-            if (this.valueClass._ == 'ValueReference') { // not very OO
+            if (this.valueClass._ == 'ShapeReference') { // not very OO
                 this.valueClass.label.assignId(charmap, ruleId+"_ref");
                 termStringToIds.add(this.valueClass.label.toString(true), this.valueClass.label.id);
             }
@@ -1971,7 +2091,7 @@ var _RDF = {
                     var fails = [];
                     var promises = [];
                     matchName.forEach(function (t) {
-                        if (_AtomicRule.valueClass._ == 'ValueReference')
+                        if (_AtomicRule.valueClass._ == 'ShapeReference')
                             schema.dispatch(0, 'link', _AtomicRule.codes, null, t);
                         var resOrPromise = _AtomicRule.valueClass.validate(schema, _AtomicRule, t,
                                                                  _AtomicRule.reversed ? t.s : t.o,
@@ -1981,7 +2101,7 @@ var _RDF = {
                         else
                             noteResults(resOrPromise);
                         function noteResults (r) {
-                            if (_AtomicRule.valueClass._ != 'ValueReference')
+                            if (_AtomicRule.valueClass._ != 'ShapeReference')
                                 schema.dispatch(0, 'visit', _AtomicRule.codes, r, t);
                             if (!r.passed() ||
                                 schema.dispatch(0, 'post', _AtomicRule.codes, r, t) == _RDF.DISPOSITION.FAIL)
@@ -2022,7 +2142,7 @@ var _RDF = {
                                 ret.add(pass.r);
                             });
                             for (var iFails2 = 0; iFails2 < fails.length; ++iFails2)
-                                if (extras !== undefined && extras.indexOf(nameClass.term.lex) !== -1)
+                                if (extras === undefined || extras.indexOf(nameClass.term.lex) === -1)
                                     ret.missed(fails[iFails2].r);
                         }
                     }
@@ -2190,7 +2310,7 @@ var _RDF = {
         this.colorize = function (charmap, idMap, termStringToIds, idPrefix) {
             var ruleId = idPrefix + idMap.add(this.toKey());
             this.label.assignId(charmap, ruleId+"_s"); // @@ could idMap.addMember(...), but result is more noisy
-            if (this.valueClass._ == 'ValueReference') { // not very OO
+            if (this.valueClass._ == 'ShapeReference') { // not very OO
                 this.valueClass.label.assignId(charmap, ruleId+"_ref");
                 termStringToIds.add(this.valueClass.label.toString(true), this.valueClass.label.id);
             }
@@ -2239,7 +2359,7 @@ var _RDF = {
                 var promises = [];
                 matchName.forEach(function (s) {
                     var t = _RDF.Triple(point, _ConcomitantRule.nameClass.term, s); // make up connecting triple for reporting
-                    if (_ConcomitantRule.valueClass._ == 'ValueReference')
+                    if (_ConcomitantRule.valueClass._ == 'ShapeReference')
                         schema.dispatch(0, 'link', _ConcomitantRule.codes, null, t);
                     var resOrPromise = _ConcomitantRule.valueClass.validate(schema, _ConcomitantRule, t,
                                                                              s,
@@ -2249,7 +2369,7 @@ var _RDF = {
                     else
                         noteResults(resOrPromise);
                     function noteResults (r) {
-                        if (_ConcomitantRule.valueClass._ != 'ValueReference')
+                        if (_ConcomitantRule.valueClass._ != 'ShapeReference')
                             schema.dispatch(0, 'visit', _ConcomitantRule.codes, r, t);
                         if (r.passed() &&
                             schema.dispatch(0, 'post', _ConcomitantRule.codes, r, t) != _RDF.DISPOSITION.FAIL)
@@ -2776,7 +2896,6 @@ var _RDF = {
                 lead + ")\n";
         };
         this.prepend = function (elts) {
-            debugger;
             this.conjoints = elts.concat(this.conjoints);
         };
     },
@@ -3809,18 +3928,18 @@ var _RDF = {
                 this.post = function (code, valRes, context) {
                     var status = _RDF.DISPOSITION.PASS;
                     if (code) {
-		      // ' fail("some mess\\"age") '
-		      var res = code.match(/^ *(fail|print) *\( *(?:(\"(?:[^\\"]|\\")*\")|([spo])) *\) *$/);
-		      if (res) {
-			var action = res[1];
-			var particle = res[2] ? res[2] : context[res[3]].lex;
-			if (action === "print")
-			  prints.push(particle);
-			else {
-			  status = _RDF.DISPOSITION.FAIL;
-			  valRes.r.error_badEval(particle);
-			}
-		      }
+                      // ' fail("some mess\\"age") '
+                      var res = code.match(/^ *(fail|print) *\( *(?:(\"(?:[^\\"]|\\")*\")|([spo])) *\) *$/);
+                      if (res) {
+                        var action = res[1];
+                        var particle = res[2] ? res[2] : context[res[3]].lex;
+                        if (action === "print")
+                          prints.push(particle);
+                        else {
+                          status = _RDF.DISPOSITION.FAIL;
+                          valRes.r.error_badEval(particle);
+                        }
+                      }
                     }
                     return status;
                 };
@@ -3828,8 +3947,8 @@ var _RDF = {
                 this.end = function (code, valRes, context) {
                     // console.dir(doc);
                     this.text = JSON.stringify({
-		      prints: prints
-		    }, null, "  ");;
+                      prints: prints
+                    }, null, "  ");;
                 }
             },
             link: null,
@@ -3841,6 +3960,8 @@ var _RDF = {
         this._ = 'Schema'; this._pos = _pos;
         this.ruleMap = {};
         this.ruleLabels = [];
+        this.valueExprMap = {};
+        this.valueExprLabels = [];
         this.prefixDecls = [];
         this._startDecl = undefined;
         this.startRule = undefined;
@@ -3854,17 +3975,18 @@ var _RDF = {
         /* integrityCheck - Test for both user error (undefined references) and
          * algorithm error (labels out of synch with label-to-rule map).
          */
-        this.integrityCheck = function (ob, checked, errors) {
+        this.integrityCheck = function (ob, checked, errors, missingShapes) {
             errors = errors || [];
+            missingShapes = missingShapes || [];
             checked = checked || []; // Top level creates cache.
-            function checkByLabel (targetLabel) {
+            function checkShapeByLabel (targetLabel) {
                 var asStr = targetLabel.toString();
                 if (!(asStr in _Schema.ruleMap))
-                    errors.push("found no definition for " + asStr);
+                    missingShapes.push(asStr);
                 else
                     if (checked.indexOf(asStr) === -1) {
                         checked.push(asStr);
-                        _Schema.integrityCheck(_Schema.ruleMap[asStr], checked, errors);
+                        _Schema.integrityCheck(_Schema.ruleMap[asStr], checked, errors, missingShapes);
                     }
             }
             var _Schema = this;
@@ -3872,53 +3994,72 @@ var _RDF = {
                 switch (ob._) {
                 case 'AtomicRule':
                 case 'ConcomitantRule':
-                    if (ob.valueClass._ === 'ValueReference')
-                        checkByLabel(ob.valueClass.label);
+                    if (ob.valueClass._ === 'ShapeReference')
+                        checkShapeByLabel(ob.valueClass.label);
                     break;
                 case 'UnaryRule':
                     if (ob.rule === undefined)
                         errors.push("broken UnaryRule with undefined child rule");
                     else
-                        _Schema.integrityCheck(ob.rule, checked, errors);
+                        _Schema.integrityCheck(ob.rule, checked, errors, missingShapes);
                     break;
                 case 'IncludeRule':
                     if (ob.include === undefined)
                         errors.push("broken IncludeRule with undefined inclusion");
                     else
-                        checkByLabel(ob.include);
+                        checkShapeByLabel(ob.include);
                     break;
                 case 'EmptyRule':
                     break;
                 case 'AndRule':
                     ob.conjoints.forEach(function (conj) {
-                        _Schema.integrityCheck(conj, checked, errors);
+                        _Schema.integrityCheck(conj, checked, errors, missingShapes);
                     });
                     break;
                 case 'OrRule':
                     ob.disjoints.forEach(function (disj) {
-                        _Schema.integrityCheck(disj, checked, errors);
+                        _Schema.integrityCheck(disj, checked, errors, missingShapes);
                     });
                     break;
                 }
             } else {
-                var labelStrings = _Schema.ruleLabels.map(function (l) { return l.toString(); });
-                var missingLabels = Object.keys(_Schema.ruleMap).filter(function (k) {
-                    return labelStrings.indexOf(k) < 0;
+                var shapeLabelStrings = _Schema.ruleLabels.map(function (l) { return l.toString(); });
+                var missingShapeLabels = Object.keys(_Schema.ruleMap).filter(function (k) {
+                    return shapeLabelStrings.indexOf(k) < 0;
                 });
-                if (missingLabels.length)
-                    errors.push("broken internal state: missing labels for " + missingLabels.join(", "));
+                if (missingShapeLabels.length)
+                    errors.push("broken internal state: missing labels for " + missingShapeLabels.join(", "));
 
-                var missingMap = _Schema.ruleLabels.filter(function (k) {
+                var missingShape = _Schema.ruleLabels.filter(function (k) {
                     return !(k.toString() in _Schema.ruleMap);
                 });
-                if (missingMap.length)
-                    errors.push("broken internal state: missing keys for " + missingMap.join(", "));
+                if (missingShape.length)
+                    errors.push("broken internal state: missing keys for " + missingShape.join(", "));
 
                 _Schema.ruleLabels.forEach(function (l) {
-                    checkByLabel(l);
+                    checkShapeByLabel(l);
                 });
-                if (errors.length)
-                    throw errors.join("\n");
+
+                var valueExprLabelStrings = _Schema.valueExprLabels.map(function (l) { return l.toString(); });
+                var missingValueExprLabels = Object.keys(_Schema.valueExprMap).filter(function (k) {
+                    return valueExprLabelStrings.indexOf(k) < 0;
+                });
+                if (missingValueExprLabels.length)
+                    errors.push("broken internal state: missing labels for " + missingValueExprLabels.join(", "));
+
+                var missingValueExpr = _Schema.valueExprLabels.filter(function (k) {
+                    return !(k.toString() in _Schema.valueExprMap);
+                });
+                if (missingValueExpr.length)
+                    errors.push("broken internal state: missing keys for " + missingValueExpr.join(", "));
+
+                _Schema.valueExprLabels.forEach(function (l) {
+                    checkValueExprByLabel(l);
+                });
+
+                if (!ob && missingShapes.length) // horrible hack to add missings only at outer level
+                    errors.push("found no definition for " + missingShapes.join(", "));
+                return errors;
             }
         }
 
@@ -3994,12 +4135,19 @@ var _RDF = {
         this.startDecl = function (start, label) {
             this._startDecl = {start:start, label:label};
         }
-        this.add = function (label, rule) {
+        this.addShape = function (label, rule) {
             var key = label.toString();
             if (this.ruleMap[key])
                 throw "unexpected duplicate rule label: " + key;
             this.ruleLabels.push(label);
             this.ruleMap[key] = rule;
+        }
+        this.addValueExpr = function (label, valueExpr) {
+            var key = label.toString();
+            if (this.valueExprMap[key])
+                throw "unexpected duplicate valueExpr label: " + key;
+            this.valueExprLabels.push(label);
+            this.valueExprMap[key] = valueExpr;
         }
         this.setExtraPredicates = function (label, predicates) {
             var key = label.toString();
@@ -4035,6 +4183,15 @@ var _RDF = {
                 charmap.insertBefore(code._pos.offset, "<span id='"+ruleId+"_"+k+"' class='code'>", 0);
                 charmap.insertAfter(code._pos.offset+code._pos.width, "</span>", 0);
             });
+            for (var i = 0; i < this.valueExprLabels.length; ++i) {
+                var label = this.valueExprLabels[i];
+                var valueExpr = this.valueExprMap[label.toString()];
+                valueExpr.colorize(charmap, idMap, termStringToIds, idPrefix);
+                charmap.insertBefore(valueExpr._pos.offset, "<span class='shape'>", 0);
+                charmap.insertAfter(valueExpr._pos.offset+valueExpr._pos.width, "</span>", 0);
+                // colorizing assigns ids; add to term map after colorizing
+                termStringToIds.add(label.toString(true), label.id);
+            }
             for (var i = 0; i < this.ruleLabels.length; ++i) {
                 var label = this.ruleLabels[i];
                 var rule = this.ruleMap[label.toString()];
@@ -4197,7 +4354,6 @@ var _RDF = {
                         if (validatorStuff.async) {
                             resOrPromise.then(postValidate).catch(function (e) {
                                 console.dir(e);
-                                debugger;
                                 _RDF.message(e);
                             });
                             promises.push(resOrPromise);
@@ -4411,7 +4567,7 @@ SELECT ?s ?p ?o {\n\
             var Schema = this; // this is apparently unavailable in _walk.
             function _walk (rule, shapeLabelsSeen, howWeGotHere) {
                 function _dive (into) {
-		    // Avoid recursion:
+                    // Avoid recursion:
                     if (shapeLabelsSeen.indexOf(into) === -1) {
                         shapeLabelsSeen.map(function (p) {
                             if (uses[p] === undefined)
@@ -4436,7 +4592,7 @@ SELECT ?s ?p ?o {\n\
                 };
                 switch (rule._) {
                 case "AtomicRule":
-                    if (rule.valueClass._== "ValueReference")
+                    if (rule.valueClass._== "ShapeReference")
                         _dive(rule.valueClass.label.toString());
                     break;
                 case "UnaryRule":
@@ -4469,7 +4625,7 @@ SELECT ?s ?p ?o {\n\
                 var p = includes[i];
                 needed[p] = true;
                 for (var c in uses[p])
-		    needed[uses[p][c]] = true;
+                    needed[uses[p][c]] = true;
             }
 
 
@@ -4486,7 +4642,7 @@ SELECT ?s ?p ?o {\n\
                     ret.derivedShapes[ruleLabelStr] = this.derivedShapes[ruleLabelStr];
                     if (this.isVirtualShape[ruleLabelStr])
                         ret.isVirtualShape[ruleLabelStr] = true;
-                    ret.add(ruleLabel, this.ruleMap[ruleLabelStr]);
+                    ret.addShape(ruleLabel, this.ruleMap[ruleLabelStr]);
                 }
             }
             return ret;
@@ -4940,7 +5096,7 @@ SELECT ?s ?p ?o {\n\
                         var key = frame.node.toString()+" @"+frame.shape.toString()+",true"; // ,true == validatePoint() cache with subshapes enabled
                         ret.push({node:frame.node,
                                   shape:frame.shape,
-                                  res:_TermResults.cache[key].passed(),
+                                  res: (_TermResults.cache[key] instanceof Promise ? true : _TermResults.cache[key].passed()),
                                   key: key
                                  });
                     });

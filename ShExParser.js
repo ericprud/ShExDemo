@@ -64,15 +64,15 @@ ShExParser = (function() {
             var r = Object.keys(m).length ? new RDF.UnaryRule(t, {min:1, max:1}, m, RDF.Position5(text(), line(), column(), offset(), text().length)) : t;
             var b = RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column(), offset(), 1));
             r.setLabel(b);
-            curSchema.add(b, r);
+            curSchema.addShape(b, r);
             curSchema.startRule = b;
             return null;
-            // return new RDF.ValueReference(b, RDF.Position5(text(), line(), column(), offset(), text().length));
+            // return new RDF.ShapeReference(b, RDF.Position5(text(), line(), column(), offset(), text().length));
         },
         peg$c12 = function(v, l, e, t, m) {
             var r = Object.keys(m).length ? new RDF.UnaryRule(t, {min:1, max:1}, m, RDF.Position5(text(), line(), column(), offset(), text().length)) : t;
             r.setLabel(l);
-            curSchema.add(l, r);
+            curSchema.addShape(l, r);
             if (v)
                 curSchema.markVirtual(r);
             curSchema.setExtraPredicates(l, e === null ? [] : e);
@@ -173,7 +173,7 @@ ShExParser = (function() {
         peg$c49 = { type: "literal", value: "$", description: "\"$\"" },
         peg$c50 = function(i) { curSubject.push(i); return i; },
         peg$c51 = function(keyword, l, r, p, c) {
-            var v = new RDF.ValueReference(l, keyword, RDF.Position5(text(), line(), column(), offset(), text().length));
+            var v = new RDF.ShapeReference(l, keyword, RDF.Position5(text(), line(), column(), offset(), text().length));
             var width = v._pos.offset-offset()+v._pos.width;
             if (r)
                 width = r.ends-offset();
@@ -218,14 +218,14 @@ ShExParser = (function() {
                 new RDF.NameTerm(i, RDF.Position5(text(), line(), column(), offset(), text().length));
         },
         peg$c64 = function(keyword, l) {
-            return new RDF.ValueReference(l, keyword,
+            return new RDF.ShapeReference(l, keyword,
                                           RDF.Position5(text(), line(), column(), offset(), text().length));
         },
         peg$c65 = function(r) {
             var b = RDF.BNode(bnodeScope.nextLabel(), RDF.Position5(text(), line(), column(), offset(), 1));
             r.setLabel(b);
-            curSchema.add(b, r);
-            return new RDF.ValueReference(b, null,
+            curSchema.addShape(b, r);
+            return new RDF.ShapeReference(b, null,
                                           RDF.Position5(text(), line(), column(), offset(), text().length));
         },
         peg$c66 = function(t) { return new RDF.ValueType(t, RDF.Position5(text(), line(), column(), offset(), t._pos.width)); },
